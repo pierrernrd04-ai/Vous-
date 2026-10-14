@@ -1,0 +1,42 @@
+# Automatisations Stripe sans serveur.
+# - Lancement manuel (onglet Actions → « Stripe » → Run workflow) : crée produit, prix et Payment Links.
+# - Planifié le 18/10 à 22:00 UTC (= lundi 19/10 00:00 à Paris) : désactive le lien à 19 €.
+# Secret requis : STRIPE_SECRET_KEY (Settings → Secrets and variables → Actions).
+name: Stripe
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "setup ou deactivate-launch"
+        default: setup
+        required: true
+  schedule:
+    - cron: "0 22 18 10 *"
+
+jobs:
+  stripe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Vérifier le secret
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          if [ -z "$STRIPE_SECRET_KEY" ]; then echo "::error::Ajoute le secret STRIPE_SECRET_KEY"; exit 1; fi
+      - name: Désactiver le prix de lancement
+        if: github.event_name == 'schedule' || inputs.action == 'deactivate-launch'
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%Y)" != "2026" ]; then echo "Rien à faire cette année."; exit 0; fi
+          node scripts/stripe-setup.mjs --deactivate-launch
+      - name: Créer produit, prix et liens
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'setup'
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://traceo-pass.pages.dev' }}
+        run: node scripts/stripe-setup.mjs
