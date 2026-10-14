@@ -1,0 +1,29 @@
+{
+  "name": "traceo-pass",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pass J-24 · Traceo : programme de préparation marathon et semi de Paris 2027, généré automatiquement.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p functions/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "token": "node scripts/token.mjs",
+    "pages:dev": "wrangler pages dev dist --compatibility-date=2026-09-01"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261014.1",
+    "@playwright/test": "1.56.1",
+    "@types/node": "22.20.5",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4",
+    "wrangler": "4.151.0"
+  }
+}
