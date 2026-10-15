@@ -98,8 +98,10 @@ export interface PaceComputation {
   paces: Plan['paces'];
   predicted: Plan['predicted'];
   /**
-   * Présente quand l'objectif du niveau est irréaliste au vu du T10
-   * (on garde alors l'allure prédite) : texte en français à afficher.
+   * Présente quand l'allure course n'est pas celle de l'objectif du niveau :
+   * objectif irréaliste au vu du T10 (on garde alors l'allure prédite), ou
+   * objectif très en deçà du potentiel (allure plafonnée à prédiction + 5 %).
+   * Texte en français à afficher (repris dans la note de la semaine 1).
    */
   note?: string;
 }

@@ -37,7 +37,10 @@ export const API_ROUTES = {
  */
 export type PreviewQuery = Partial<Record<keyof PlanInput, string>>;
 
-/** 200 — `Cache-Control: public, max-age=3600`. */
+/**
+ * 200 — `Cache-Control: public, max-age=3600`.
+ * 422 `invalid_input` (détails = erreurs de validation) ou `plan_too_short`.
+ */
 export type PreviewResponse = PlanPreview;
 
 /* ---------------- GET /api/unlock?session_id=cs_… ---------------- */
@@ -49,6 +52,13 @@ export interface UnlockQuery {
   session_id: string;
 }
 
+/**
+ * 200 — `Cache-Control: no-store`.
+ * 400 `invalid_session_id` (format, ou session inconnue de Stripe), 402 `not_paid`
+ * (session ouverte, expirée, non payée, ou mode test/réel incohérent avec la clé),
+ * 403 `unknown_payment_link`, 502 `stripe_unavailable` (panne, délai de 8 s dépassé),
+ * 500 `server_misconfigured`.
+ */
 export interface UnlockResponse {
   token: string;
   email: string;
@@ -58,6 +68,14 @@ export interface UnlockResponse {
 
 /* ---------------- POST /api/plan ---------------- */
 
+/** Taille maximale du corps de `POST /api/plan`, en octets (sinon 413 `payload_too_large`). */
+export const PLAN_REQUEST_MAX_BYTES = 4096;
+
+/**
+ * Réponses : 200 `Plan` (`no-store`) ; 400 `bad_request` (JSON illisible) ;
+ * 401 `invalid_token` ; 413 `payload_too_large` ; 422 `invalid_input`
+ * (détails = erreurs de validation) ou `plan_too_short`.
+ */
 export interface PlanRequest {
   token: string;
   input: PlanInput;
@@ -69,6 +87,7 @@ export type PlanResponse = Plan;
 
 export type ApiErrorCode =
   | 'bad_request'
+  | 'payload_too_large'
   | 'invalid_input'
   | 'plan_too_short'
   | 'invalid_session_id'
@@ -83,7 +102,8 @@ export type ApiErrorCode =
 /** Statut HTTP associé à chaque code d'erreur. */
 export const API_ERROR_STATUS = {
   bad_request: 400,
-  invalid_input: 400,
+  payload_too_large: 413,
+  invalid_input: 422,
   plan_too_short: 422,
   invalid_session_id: 400,
   invalid_token: 401,

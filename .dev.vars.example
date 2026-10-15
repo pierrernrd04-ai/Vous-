@@ -1,0 +1,14 @@
+# Copier en .dev.vars (jamais commité) pour `npm run pages:dev`.
+# En production : à définir dans Cloudflare Pages → Paramètres → Variables et secrets.
+
+# Clé restreinte Stripe, permission unique « Checkout Sessions : lecture ».
+STRIPE_KEY=rk_test_remplace_moi
+
+# Secret HMAC des jetons, au moins 32 caractères (ex. `openssl rand -base64 48`).
+TOKEN_SECRET=remplace-moi-par-une-longue-chaine-aleatoire-de-48-caracteres
+
+# Ids des Payment Links acceptés (19 € et 29 €), séparés par des virgules.
+PAYMENT_LINK_IDS=plink_lancement,plink_normal
+
+# URL publique du site, sans barre finale.
+SITE_URL=http://127.0.0.1:8788

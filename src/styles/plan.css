@@ -1,0 +1,516 @@
+/*
+ * Plan complet (/plan/) · en-tête, outils, semaines en accordéon, réglages,
+ * et feuille d'impression (PDF via l'impression du navigateur).
+ */
+
+.plan-app {
+  padding-bottom: var(--sp-6);
+}
+
+.print-only {
+  display: none;
+}
+
+/* ---------- Chargement ---------- */
+.plan-loading {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.plan-loading__label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--c-ink-2);
+  font-weight: var(--fw-bold);
+}
+
+.skeleton--title {
+  width: min(420px, 80%);
+  height: 2.6rem;
+}
+
+.skeleton--line {
+  width: min(560px, 95%);
+  height: 1.1rem;
+}
+
+.skeleton--block {
+  height: 120px;
+  border-radius: var(--r-lg);
+}
+
+.state--compact {
+  padding-block: var(--sp-5);
+}
+
+.paste-form {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: stretch;
+}
+
+.paste-form > label {
+  font-weight: var(--fw-bold);
+}
+
+.paste-form > .btn--sm {
+  justify-self: start;
+}
+
+.plan-waiver {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.plan-setup__intro {
+  display: grid;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.plan-setup__intro h1:focus,
+.state h1:focus,
+.plan-hero h1:focus {
+  outline: none;
+}
+
+/* ---------- En-tête du plan ---------- */
+.plan-hero {
+  display: grid;
+  gap: var(--sp-5);
+  padding-block: var(--sp-6) var(--sp-5);
+  background: var(--grad-hero);
+}
+
+.plan-hero__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.plan-hero__copy {
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.plan-hero h1 {
+  font-size: clamp(2rem, 1.4rem + 3vw, 3.25rem);
+}
+
+.plan-hero__date {
+  color: var(--c-ink-2);
+}
+
+.plan-hero__date strong {
+  color: var(--c-ink);
+}
+
+.plan-hero__countdown {
+  padding: var(--sp-2) var(--sp-4);
+  border: var(--bw) solid var(--c-accent-line);
+  border-radius: var(--r-lg);
+  background: var(--c-accent-soft);
+  font: var(--fw-black) clamp(2rem, 1.5rem + 2.5vw, 3rem) / 1 var(--f-display);
+  letter-spacing: var(--tracking-display);
+  color: var(--c-accent-text);
+}
+
+.plan-notices {
+  display: grid;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+/* ---------- Outils ---------- */
+.plan-tools {
+  position: sticky;
+  top: var(--nav-h);
+  z-index: calc(var(--z-nav) - 1);
+  display: grid;
+  gap: var(--sp-2);
+  padding-block: var(--sp-3);
+  background: var(--c-nav);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.plan-tools__row {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+  padding-block: 4px;
+}
+
+.plan-tools__row::-webkit-scrollbar {
+  display: none;
+}
+
+.plan-tools__row .btn {
+  flex: none;
+}
+
+.plan-tools .install-help:empty {
+  display: none;
+}
+
+.plan-story {
+  display: grid;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: var(--sp-5);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+}
+
+.plan-story[hidden] {
+  display: none;
+}
+
+.plan-story h2 {
+  font-size: var(--fs-xl);
+}
+
+.plan-section-title {
+  font-size: var(--fs-xl);
+}
+
+.plan-overview,
+.plan-weeks,
+.plan-paces,
+.plan-settings {
+  display: grid;
+  gap: var(--sp-4);
+  margin-top: var(--sp-6);
+}
+
+.plan-overview .card {
+  padding: var(--sp-4);
+}
+
+/* ---------- Semaines ---------- */
+.plan-weeks__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.weeks {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.week {
+  border: var(--bw) solid var(--c-line);
+  border-left: 4px solid var(--phase-color);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  scroll-margin-top: calc(var(--nav-h) + 72px);
+}
+
+.week.is-current {
+  border-color: var(--c-accent-line);
+  border-left-color: var(--phase-color);
+  box-shadow: var(--glow-soft);
+}
+
+.week.is-deload {
+  border-left-style: dashed;
+}
+
+.week__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 60px;
+  padding: var(--sp-3) var(--sp-4);
+  cursor: pointer;
+  list-style: none;
+}
+
+.week__summary::-webkit-details-marker {
+  display: none;
+}
+
+.week__summary:focus-visible {
+  border-radius: var(--r-md);
+}
+
+.week__index {
+  min-width: 2.6em;
+  font: var(--fw-black) var(--fs-lg) / 1 var(--f-display);
+  color: var(--phase-color);
+}
+
+.week__main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.week__dates {
+  font-weight: var(--fw-black);
+}
+
+.week__meta {
+  color: var(--c-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+
+.week__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.week__progress {
+  min-width: 2.6em;
+  padding: 0.15em 0.55em;
+  border-radius: var(--r-pill);
+  background: var(--c-surface-2);
+  color: var(--c-ink-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-black);
+  text-align: center;
+}
+
+.week.is-complete .week__progress {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-text);
+}
+
+.week__chevron {
+  color: var(--c-muted);
+  transition: transform var(--dur) var(--ease);
+}
+
+.week[open] .week__chevron {
+  transform: rotate(180deg);
+}
+
+.week__body {
+  display: grid;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-3) var(--sp-4);
+}
+
+.week__title {
+  display: none;
+}
+
+@media (max-width: 420px) {
+  .week__summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .week__badges {
+    grid-column: 2 / 3;
+    justify-content: flex-start;
+  }
+
+  .week__chevron {
+    grid-row: 1;
+    grid-column: 3;
+  }
+}
+
+/* ---------- Réglages et accès ---------- */
+.plan-settings__box {
+  padding: 0;
+}
+
+.plan-settings__box > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: var(--tap);
+  padding: var(--sp-4) var(--sp-5);
+  font: var(--fw-black) var(--fs-xl) / 1.2 var(--f-display);
+  cursor: pointer;
+  list-style: none;
+}
+
+.plan-settings__box > summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-settings__box > summary .icon {
+  color: var(--c-accent-text);
+  transition: transform var(--dur) var(--ease);
+}
+
+.plan-settings__box[open] > summary .icon {
+  transform: rotate(180deg);
+}
+
+.plan-settings__body {
+  display: grid;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-5) var(--sp-5);
+}
+
+.plan-access {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+}
+
+.plan-access h2 {
+  font-size: var(--fs-xl);
+}
+
+.plan-access .copy-field {
+  width: 100%;
+}
+
+.plan-access > label {
+  font-weight: var(--fw-bold);
+}
+
+.plan-health {
+  margin-top: var(--sp-6);
+}
+
+/* ======================================================================
+ * Impression : plan complet, compact, sans interface.
+ * ==================================================================== */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  .print-head {
+    margin-bottom: 4mm;
+    font-size: 9pt;
+    color: #444;
+  }
+
+  .plan-tools,
+  .plan-story,
+  .plan-settings,
+  .plan-overview,
+  .install-banner,
+  .toast,
+  .skip-link,
+  .session__actions .btn,
+  .plan-weeks__head .btn {
+    display: none !important;
+  }
+
+  .plan-hero {
+    padding: 0 0 4mm;
+    background: none;
+  }
+
+  .plan-hero__countdown {
+    border: 1px solid #000;
+    background: none;
+    color: #000;
+    font-size: 20pt;
+  }
+
+  .stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .stat {
+    padding: 2mm 3mm;
+  }
+
+  .plan-weeks,
+  .plan-paces {
+    margin-top: 5mm;
+  }
+
+  .week {
+    border-left-width: 3px;
+    break-inside: auto;
+    box-shadow: none;
+  }
+
+  .week::details-content {
+    content-visibility: visible;
+    display: block;
+  }
+
+  .week__summary {
+    min-height: 0;
+    padding: 2mm 3mm;
+    break-after: avoid;
+  }
+
+  .week__chevron,
+  .week__badges .badge {
+    display: none;
+  }
+
+  .week__body {
+    padding: 0 3mm 3mm;
+  }
+
+  .session-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2mm;
+  }
+
+  .session {
+    gap: 1mm;
+    padding: 2mm 3mm 2mm 4mm;
+    border-radius: 3mm;
+    break-inside: avoid;
+    font-size: 9pt;
+  }
+
+  .session::before {
+    width: 2px;
+  }
+
+  .session__title {
+    font-size: 10.5pt;
+  }
+
+  .session__km {
+    font-size: 12pt;
+  }
+
+  .session__paces li {
+    padding: 0 2mm;
+    font-size: 8.5pt;
+  }
+
+  .session__steps {
+    font-size: 8.5pt;
+  }
+
+  .session__actions {
+    padding-top: 1mm;
+    border-top: 0;
+  }
+
+  .session__done input {
+    width: 12px;
+    height: 12px;
+  }
+
+  .plan-health {
+    margin-top: 5mm;
+    font-size: 8.5pt;
+  }
+}

@@ -1,0 +1,9 @@
+# Cloudflare Pages · Pass J-24 · Traceo
+# Secrets (STRIPE_KEY, TOKEN_SECRET, PAYMENT_LINK_IDS) : tableau de bord Pages
+# → Paramètres → Variables et secrets (type « Secret »), ou `wrangler pages secret put`.
+name = "traceo-pass"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-09-01"
+
+[vars]
+SITE_URL = "https://traceo-pass.pages.dev"

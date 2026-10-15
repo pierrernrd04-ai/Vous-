@@ -1,0 +1,65 @@
+/*
+ * Page de retour après paiement (/merci/).
+ */
+
+.merci__ok {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.merci__hello {
+  padding-block: var(--sp-5) 0;
+}
+
+.merci__hello h1:focus,
+.state h1:focus {
+  outline: none;
+}
+
+.merci__link,
+.merci__waiver {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.merci__link p,
+.merci__waiver p {
+  color: var(--c-ink-2);
+}
+
+.merci__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.merci__actions .btn {
+  flex: 1 1 220px;
+}
+
+.merci__next {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+}
+
+.merci__next h2 {
+  font-size: var(--fs-xl);
+}
+
+.merci__steps {
+  display: grid;
+  gap: var(--sp-3);
+  padding-left: 1.4em;
+  color: var(--c-ink-2);
+}
+
+.merci__steps strong {
+  color: var(--c-ink);
+}
+
+.merci .health-warning {
+  text-align: center;
+}

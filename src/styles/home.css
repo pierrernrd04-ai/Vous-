@@ -1,0 +1,564 @@
+/*
+ * Page d'accueil · Pass J-24 · Traceo
+ */
+
+/* ---------- Accroche ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding-block: var(--sp-6) var(--sp-7);
+  background: var(--grad-hero);
+}
+
+.hero__grid {
+  display: grid;
+  gap: var(--sp-7);
+  align-items: center;
+}
+
+.hero__copy {
+  display: grid;
+  gap: var(--sp-4);
+  justify-items: start;
+}
+
+.hero h1 {
+  font-size: clamp(2.6rem, 1.6rem + 5.6vw, 4.75rem);
+}
+
+.hero__day1 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--c-ink-2);
+  font-weight: var(--fw-semibold);
+}
+
+.hero__day1 .icon {
+  color: var(--c-accent-text);
+}
+
+.hero__day1 [data-day1-left] {
+  color: var(--c-muted);
+  font-weight: var(--fw-medium);
+}
+
+.hero__offer {
+  display: grid;
+  gap: var(--sp-2);
+  justify-items: start;
+  margin-top: var(--sp-2);
+}
+
+.hero__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+
+.hero__amount {
+  font: var(--fw-black) clamp(2.5rem, 2rem + 3vw, 3.25rem) / 1 var(--f-display);
+  letter-spacing: var(--tracking-display);
+}
+
+.hero__once {
+  color: var(--c-ink-2);
+  font-weight: var(--fw-bold);
+}
+
+.hero__sentence {
+  color: var(--c-accent-text);
+  font-weight: var(--fw-bold);
+}
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  width: 100%;
+  margin-top: var(--sp-2);
+}
+
+.hero__ctas .btn {
+  flex: 1 1 260px;
+}
+
+.hero__trust {
+  color: var(--c-muted);
+  font-size: var(--fs-xs);
+}
+
+@media (min-width: 960px) {
+  .hero {
+    padding-block: var(--sp-8);
+  }
+
+  .hero__grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+
+  .hero__ctas .btn {
+    flex: 0 1 auto;
+  }
+}
+
+/* ---------- Téléphone d'exemple ---------- */
+.hero__visual {
+  display: flex;
+  justify-content: center;
+}
+
+.phone {
+  position: relative;
+  display: grid;
+  gap: var(--sp-3);
+  width: min(340px, 100%);
+  padding: var(--sp-4);
+  border: var(--bw) solid var(--c-line-strong);
+  border-radius: 34px;
+  background: var(--c-surface);
+  box-shadow: var(--shadow-2), var(--glow-soft);
+  transform: rotate(-2deg);
+}
+
+.phone__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-inline: var(--sp-1);
+}
+
+.phone__eyebrow {
+  color: var(--c-accent-text);
+  font: var(--fw-black) var(--fs-xs) / 1.2 var(--f-body);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.phone__dates {
+  color: var(--c-ink-2);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+}
+
+.phone__map {
+  position: relative;
+  overflow: hidden;
+  height: 190px;
+  border-radius: var(--r-lg);
+  background: var(--c-bg-2);
+  border: var(--bw) solid var(--c-line);
+}
+
+.phone__map svg {
+  width: 100%;
+  height: 100%;
+}
+
+.phone__streets path {
+  fill: none;
+  stroke: var(--c-line-strong);
+  stroke-width: 7;
+  opacity: 0.55;
+}
+
+.phone__route {
+  fill: none;
+  stroke: url(#route-grad);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgb(37 201 143 / 0.55));
+}
+
+.phone__start {
+  fill: var(--c-accent);
+  stroke: var(--c-bg);
+  stroke-width: 3;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .phone__route {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: j24-draw 2.4s var(--ease) 0.3s forwards;
+  }
+}
+
+@keyframes j24-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.phone__badge {
+  position: absolute;
+  left: var(--sp-3);
+  bottom: var(--sp-3);
+  padding: 0.3em 0.8em;
+  border-radius: var(--r-pill);
+  background: var(--c-nav);
+  color: var(--c-ink);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.phone__sessions {
+  display: grid;
+  gap: var(--sp-1);
+  padding: 0;
+  list-style: none;
+}
+
+.phone__sessions li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-2);
+}
+
+.phone__sessions strong {
+  color: var(--c-ink);
+}
+
+.phone__sessions em {
+  font-style: normal;
+  font-weight: var(--fw-black);
+  color: var(--c-ink);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c-accent);
+}
+
+.dot--ef { background: var(--c-type-ef); }
+.dot--qualite { background: var(--c-type-qualite); }
+.dot--renfo { background: var(--c-type-renfo); }
+.dot--sl { background: var(--c-type-sl); }
+
+.phone__cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  border-radius: var(--r-pill);
+  background: var(--grad-accent);
+  color: var(--c-accent-ink);
+  font-weight: var(--fw-black);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Courses ---------- */
+.races {
+  margin-top: calc(-1 * var(--sp-5));
+  position: relative;
+}
+
+.race-cards {
+  display: grid;
+  gap: var(--sp-3);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .race-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.race-card {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-5);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.race-card__kind {
+  color: var(--c-accent-text);
+  font: var(--fw-black) var(--fs-xs) / 1.2 var(--f-body);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.race-card__date {
+  font: var(--fw-black) var(--fs-xl) / 1.15 var(--f-display);
+}
+
+.race-card__weeks {
+  color: var(--c-ink-2);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Étapes ---------- */
+.steps {
+  display: grid;
+  gap: var(--sp-4);
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+@media (min-width: 820px) {
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.step {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+}
+
+.step p {
+  color: var(--c-ink-2);
+}
+
+.step__num {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--grad-accent);
+  color: var(--c-accent-ink);
+  font: var(--fw-black) 1.25rem / 1 var(--f-display);
+}
+
+/* ---------- Bandeaux ---------- */
+.section--band {
+  background: var(--c-bg-2);
+  border-block: var(--bw) solid var(--c-line);
+}
+
+/* ---------- Inclus ---------- */
+.features {
+  display: grid;
+  gap: var(--sp-3);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1000px) {
+  .features {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .feature--wide {
+    grid-column: span 2;
+  }
+}
+
+.feature {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-2);
+  padding: var(--sp-5);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+}
+
+.feature .icon {
+  width: 30px;
+  height: 30px;
+  margin-bottom: var(--sp-1);
+  color: var(--c-accent-text);
+}
+
+.feature h3 {
+  font-size: var(--fs-lg);
+}
+
+.feature p {
+  color: var(--c-ink-2);
+  font-size: var(--fs-sm);
+}
+
+.feature--wide {
+  border-color: var(--c-accent-line);
+  background: linear-gradient(135deg, var(--c-accent-soft), transparent 70%), var(--c-surface);
+}
+
+/* ---------- Phases ---------- */
+.phases {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.phases__chart {
+  padding: var(--sp-5);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  min-height: 220px;
+}
+
+.phase-list {
+  display: grid;
+  gap: var(--sp-3);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .phase-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.phase-item {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+  border-left: 4px solid var(--phase-color);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+}
+
+.phase-item strong {
+  color: var(--phase-color);
+}
+
+.phase-item span {
+  color: var(--c-ink-2);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Offre ---------- */
+.offer {
+  display: grid;
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .offer {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+}
+
+.offer__card {
+  display: grid;
+  gap: var(--sp-4);
+  justify-items: start;
+}
+
+.offer__card .btn--block {
+  margin-top: var(--sp-2);
+}
+
+.offer__price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  color: var(--c-ink-2);
+  font-weight: var(--fw-bold);
+}
+
+.offer__amount {
+  color: var(--c-ink);
+  font: var(--fw-black) clamp(3rem, 2.2rem + 4vw, 4rem) / 1 var(--f-display);
+  letter-spacing: var(--tracking-display);
+}
+
+.offer__sentence {
+  color: var(--c-accent-text);
+  font-weight: var(--fw-bold);
+}
+
+.offer__compare {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  border: var(--bw) dashed var(--c-line-strong);
+  border-radius: var(--r-lg);
+  color: var(--c-ink-2);
+}
+
+.offer__compare h3 {
+  color: var(--c-ink);
+  font-size: var(--fs-lg);
+}
+
+.offer__compare strong {
+  color: var(--c-ink);
+}
+
+/* ---------- Santé ---------- */
+.health {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: flex-start;
+  border-color: var(--c-warn);
+  background: var(--c-warn-soft);
+}
+
+.health .icon {
+  width: 30px;
+  height: 30px;
+  color: var(--c-warn);
+}
+
+.health h2 {
+  font-size: var(--fs-lg);
+  margin-bottom: var(--sp-2);
+}
+
+.health p {
+  color: var(--c-ink-2);
+}
+
+/* ---------- Appel final ---------- */
+.final {
+  display: grid;
+  gap: var(--sp-4);
+  justify-items: center;
+  padding: var(--sp-7) var(--sp-5);
+  border-radius: var(--r-xl);
+  background: var(--grad-hero), var(--c-surface);
+  border: var(--bw) solid var(--c-line);
+  text-align: center;
+}
+
+.final .hero__ctas {
+  justify-content: center;
+}
+
+.final .hero__ctas .btn {
+  flex: 0 1 auto;
+}
+
+/* ---------- Impression ---------- */
+@media print {
+  .hero__visual,
+  .countdown {
+    display: none !important;
+  }
+}

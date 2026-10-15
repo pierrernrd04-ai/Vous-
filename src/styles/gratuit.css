@@ -1,0 +1,319 @@
+/*
+ * Page gratuite (/gratuit/) · formulaire, semaine 1, vue d'ensemble, calculateur.
+ */
+
+.page-hero {
+  padding-block: var(--sp-6) var(--sp-5);
+  background: var(--grad-hero);
+}
+
+.page-hero .wrap {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.free {
+  display: grid;
+  gap: var(--sp-5);
+  padding-bottom: var(--sp-6);
+}
+
+.free__form h2 {
+  font-size: var(--fs-xl);
+  margin-bottom: var(--sp-5);
+}
+
+.free__status:empty {
+  display: none;
+}
+
+.free__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  color: var(--c-ink-2);
+  font-weight: var(--fw-bold);
+}
+
+.free__error {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+}
+
+/* ---------- Résultat ---------- */
+.result {
+  display: grid;
+  gap: var(--sp-6);
+}
+
+.result__head {
+  display: grid;
+  gap: var(--sp-3);
+  border-color: var(--c-accent-line);
+  box-shadow: var(--shadow-1), var(--glow-soft);
+}
+
+.result__head h2 {
+  scroll-margin-top: calc(var(--nav-h) + var(--sp-4));
+}
+
+.result__head h2:focus {
+  outline: none;
+}
+
+.result__dates {
+  color: var(--c-ink-2);
+}
+
+.result__block {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.result__block > h3 {
+  font-size: var(--fs-xl);
+}
+
+.result__block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.result__block-head h3 {
+  font-size: var(--fs-xl);
+  margin-right: auto;
+}
+
+.result__chart {
+  padding: var(--sp-4);
+}
+
+/* ---------- Semaines verrouillées ---------- */
+.locked-weeks {
+  display: grid;
+  gap: var(--sp-2);
+  padding: 0;
+  list-style: none;
+}
+
+.locked-week {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--bw) solid var(--c-line);
+  border-left: 4px solid var(--phase-color);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+}
+
+.locked-week.is-deload {
+  border-left-style: dashed;
+}
+
+.locked-week__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-sm);
+}
+
+.locked-week__index {
+  min-width: 2.5em;
+  font: var(--fw-black) var(--fs-md) / 1 var(--f-display);
+}
+
+.locked-week__dates {
+  color: var(--c-ink-2);
+}
+
+.locked-week__km {
+  margin-left: auto;
+  font-weight: var(--fw-black);
+}
+
+.locked-week__lock {
+  color: var(--c-muted);
+}
+
+.locked-week__blur {
+  display: grid;
+  gap: var(--sp-2);
+  filter: blur(5px);
+  opacity: 0.7;
+  user-select: none;
+  pointer-events: none;
+}
+
+.locked-week__line {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+}
+
+.locked-week__line b,
+.locked-week__line i {
+  font-style: normal;
+}
+
+.unlock {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+  margin-top: var(--sp-2);
+}
+
+.unlock__icon {
+  width: 32px;
+  height: 32px;
+  color: var(--c-accent-text);
+}
+
+.unlock h4 {
+  font-size: var(--fs-xl);
+}
+
+.unlock p {
+  color: var(--c-ink-2);
+}
+
+.unlock .hint {
+  justify-self: stretch;
+}
+
+/* ---------- Calculateur ---------- */
+.calc .section-head {
+  margin-bottom: var(--sp-4);
+}
+
+.calc__form {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+@media (min-width: 620px) {
+  .calc__form {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+  }
+
+  .calc__form .error {
+    grid-column: 1 / -1;
+  }
+}
+
+.calc__out {
+  display: grid;
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+
+.calc__summary {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--c-accent-soft);
+  color: var(--c-ink-2);
+  font-size: var(--fs-lg);
+}
+
+.calc__summary strong {
+  color: var(--c-ink);
+}
+
+.calc__grid {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+@media (min-width: 620px) {
+  .calc__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.calc__col {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-3);
+}
+
+.calc__col h3 {
+  font-size: var(--fs-lg);
+}
+
+.equiv {
+  width: 100%;
+  overflow: hidden;
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-md);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.equiv th,
+.equiv td {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: var(--bw) solid var(--c-line);
+  text-align: left;
+}
+
+.equiv thead th {
+  color: var(--c-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.equiv tbody th {
+  color: var(--c-ink-2);
+  font-weight: var(--fw-semibold);
+}
+
+.equiv td {
+  font-weight: var(--fw-black);
+}
+
+.equiv tr:last-child th,
+.equiv tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ---------- Appel à l'achat ---------- */
+.free__cta {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.free__cta p {
+  color: var(--c-ink-2);
+}
+
+.free__cta-price strong {
+  color: var(--c-ink);
+  font: var(--fw-black) var(--fs-2xl) / 1 var(--f-display);
+}
+
+.free__health {
+  padding: var(--sp-4);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+@media print {
+  .free__form,
+  .calc,
+  .free__cta,
+  .unlock,
+  .story-panel {
+    display: none !important;
+  }
+}
