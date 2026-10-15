@@ -16,14 +16,14 @@
 | 10 | [L'IA pour agents immobiliers](10-ia-immobilier/) | IA / immobilier |
 | 11 | [L'IA pour artisans : devis, relances et avis clients](11-ia-artisans/) | IA / artisanat |
 | 12 | [CV, lettre et entretien : ta recherche d'emploi avec l'IA](12-ia-recherche-emploi/) | IA / emploi |
-| 13 | [Écris une page de vente qui donne envie d'acheter](13-page-de-vente/) | Copywriting |
-| 14 | [Lance une newsletter que les gens ouvrent vraiment](14-newsletter/) | E-mail marketing |
-| 15 | [Instagram pour commerces de quartier](15-instagram-commerce-local/) | Réseaux sociaux / local |
-| 16 | [LinkedIn pour freelances](16-linkedin-freelance/) | LinkedIn / B2B |
-| 17 | [Ta fiche Google : sois trouvé près de chez toi](17-google-business/) | SEO local |
-| 18 | [Des photos produit pro avec ton smartphone](18-photo-produit-smartphone/) | Photo / e-commerce |
-| 19 | [Des visuels pro avec Canva, sans être graphiste](19-canva-visuels/) | Design / Canva |
-| 20 | [Pilote ton activité d'indépendant dans Notion](20-notion-independant/) | Organisation / Notion |
+| 13 | [Lance et anime ton run club de quartier](13-run-club/) | Running social |
+| 14 | [Padel : les bases pour progresser dès tes premiers matchs](14-padel-debutant/) | Padel |
+| 15 | [Deviens créateur UGC : ton portfolio et tes premières marques](15-createur-ugc/) | Création de contenu UGC |
+| 16 | [Automatise ta petite entreprise avec des agents IA](16-agents-ia-pme/) | IA / automatisation |
+| 17 | [Cultive tes pleurotes à la maison](17-champignons-maison/) | Culture de champignons |
+| 18 | [Ton pain au levain maison, de A à Z](18-levain-maison/) | Boulangerie maison |
+| 19 | [Entretiens et dépanne toi-même ton vélo électrique](19-velo-electrique-entretien/) | Vélo électrique |
+| 20 | [Deviens ghostwriter LinkedIn : vends l'écriture de posts](20-ghostwriter-linkedin/) | Freelance / écriture |
 
 ## Contenu de chaque dossier
 
@@ -70,4 +70,4 @@ Deux options, choisis-en une :
 
 ### 3. Lancement conseillé
 
-Ne lance pas les 20 en même temps. Commence par les 3 dont tu peux parler le plus légitimement (par exemple 01, 02 et 05, en lien avec Traceo et ton usage de Claude), mesure les ventes pendant 2 semaines, puis ajoute les autres par lots de 3 ou 4.
+Ne lance pas les 20 en même temps. Commence par les 3 dont tu peux parler le plus légitimement (par exemple 01, 13 et 05 : course à pied, run club et Claude, en lien avec Traceo), mesure les ventes pendant 2 semaines, puis ajoute les autres par lots de 3 ou 4.
