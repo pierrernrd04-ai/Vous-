@@ -1,0 +1,30 @@
+{
+  "slug": "claude-independants",
+  "titre": "Claude pour indépendants : délègue ton admin à l'IA",
+  "sous_titre": "E-mails clients, devis, relances de factures, comptes rendus et organisation de la semaine : une méthode et 22 prompts prêts à copier, sans exposer les données de tes clients.",
+  "niche": "IA / indépendants",
+  "cible": "Freelances, consultants et indépendants qui gèrent seuls leur relation client et leur facturation, et veulent réduire le temps passé sur l'administratif avec un assistant IA.",
+  "prix": 49,
+  "modules": [
+    "Les fondations : ton dossier de contexte et tes règles de confidentialité",
+    "Les e-mails clients : répondre vite, juste, sans y passer la soirée",
+    "Devis et propositions commerciales : de l'appel au document en 20 minutes",
+    "Relances de factures : récupérer ton argent sans abîmer la relation",
+    "Comptes rendus de réunion : clairs, actionnables, envoyés le jour même",
+    "Organiser ta semaine avec l'IA"
+  ],
+  "mots_cles": [
+    "Claude",
+    "IA pour indépendants",
+    "freelance",
+    "administratif",
+    "e-mail client",
+    "devis",
+    "relance facture",
+    "compte rendu",
+    "organisation",
+    "prompts",
+    "confidentialité",
+    "RGPD"
+  ]
+}

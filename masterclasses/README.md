@@ -39,27 +39,22 @@ Communs à tout le catalogue : [`_commun/sav.md`](_commun/sav.md) (organisation,
 
 ## Mise en ligne
 
-### 0. Bloquant avant la première vente (légal)
+### 0. Avant la première vente
 
-- [ ] Compléter adresse, SIREN, e-mail, téléphone et **médiateur de la consommation** dans `src/legal.ts` et `_commun/cgv.md`.
-- [ ] Décider : garantie « remboursé sous 14 jours » oui ou non (voir `_commun/sav.md`). Si oui, l'ajouter aux pages de vente et aux CGV.
-- [ ] Créer une adresse e-mail support.
+- [ ] Créer une adresse e-mail support et la renseigner dans Stripe (elle apparaît sur les reçus).
 - [ ] Remplir le bloc « Qui suis-je » de chaque page de vente (emplacements `[PRÉSENTATION DU FORMATEUR À COMPLÉTER]`).
 
-### 1. Paiement (Stripe)
+### 1. Paiement (liens Stripe)
 
-Deux options, choisis-en une :
+Un lien de paiement par masterclass, créés d'un coup par le script :
 
-- **A. Le paiement intégré de TinyPages** (si ton offre TinyPages le propose, connecté à ton compte Stripe) : l'accès est alors livré automatiquement après l'achat. Crée un produit à 49 € par masterclass dans TinyPages. Active la case de renonciation au droit de rétractation si elle est disponible ; sinon, ajoute la phrase au-dessus du bouton.
-- **B. Payment Links Stripe** (prêts à générer) : un lien de paiement par masterclass, créés d'un coup par le script.
+```sh
+# d'abord en test, puis en live
+STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-masterclasses.mjs
+STRIPE_SECRET_KEY=sk_live_... ACCESS_BASE_URL=https://<ton-site> node scripts/stripe-masterclasses.mjs
+```
 
-  ```sh
-  # d'abord en test, puis en live
-  STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-masterclasses.mjs
-  STRIPE_SECRET_KEY=sk_live_... ACCESS_BASE_URL=https://<ton-site> node scripts/stripe-masterclasses.mjs
-  ```
-
-  Les 20 URL sont écrites dans `_commun/payment-links.json`. Colle chaque URL sur le bouton « Je commence pour 49 € » de sa page. Avec `ACCESS_BASE_URL`, l'acheteur est redirigé vers `<site>/<slug>/acces` ; sans elle, Stripe affiche une confirmation et tu envoies l'accès par e-mail (réponse R1 de `_commun/sav.md`).
+Les 20 URL sont écrites dans `_commun/payment-links.json`. Colle chaque URL sur le bouton « Je commence pour 49 € » de sa page. Avec `ACCESS_BASE_URL`, l'acheteur est redirigé vers `<site>/<slug>/acces` ; sans elle, Stripe affiche une confirmation et tu envoies l'accès par e-mail (réponse R1 de `_commun/sav.md`).
 
 ### 2. Pages TinyPages (par masterclass)
 

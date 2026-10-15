@@ -5,11 +5,11 @@ Source de vérité pour toutes les masterclasses de ce dossier. Toute la copie e
 ## Offre
 
 - **Prix** : 49 € TTC, paiement unique, « TVA non applicable, art. 293 B du CGI ». Jamais de prix barré, jamais de « -X % », jamais de faux compte à rebours.
-- **Vendeur** : Pierre Renard, entrepreneur individuel (identité complète dans `src/legal.ts`).
+- **Vendeur** : Pierre Renard, entrepreneur individuel.
 - **Plateforme** : TinyPages (page de vente + accès au contenu), paiement Stripe (Payment Link) ou checkout TinyPages.
 - **Format** : masterclass écrite, 5 à 7 modules, accès immédiat et à vie, exercices, modèles à copier, checklist finale. Lisible en 2 à 4 h, appliquée en 7 à 30 jours.
 - **Rétractation** : contenu numérique fourni immédiatement à la demande expresse de l'acheteur, qui renonce à son droit de rétractation (art. L221-28 13° C. conso). Case à cocher obligatoire au paiement.
-- **Garantie commerciale** : aucune par défaut. Ne jamais écrire « satisfait ou remboursé » (décision du vendeur, à activer dans `_commun/sav.md` s'il le souhaite).
+- **Garantie commerciale** : aucune. Ne jamais écrire « satisfait ou remboursé ».
 
 ## Règles de qualité (non négociables)
 

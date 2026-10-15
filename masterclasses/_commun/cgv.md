@@ -1,11 +1,10 @@
 # Conditions générales de vente — Masterclasses
 
 *À publier sur une page TinyPages dédiée et à lier depuis chaque page de vente. Dernière mise à jour : [DATE].*
-*Les champs `[À COMPLÉTER]` doivent être remplis avant la première vente (mêmes valeurs que `src/legal.ts`).*
 
 ## 1. Vendeur
 
-Pierre Renard, entrepreneur individuel. Adresse : [À COMPLÉTER]. SIREN : [À COMPLÉTER]. E-mail : [À COMPLÉTER]. Téléphone : [À COMPLÉTER]. TVA non applicable, art. 293 B du CGI.
+Pierre Renard, entrepreneur individuel. Contact : l'adresse e-mail indiquée sur le reçu de paiement. TVA non applicable, art. 293 B du CGI.
 
 ## 2. Objet
 
@@ -29,7 +28,6 @@ L'accès est fourni immédiatement après le paiement (lien envoyé par e-mail e
 
 Conformément à l'article L221-28 13° du Code de la consommation, le droit de rétractation ne peut être exercé pour un contenu numérique fourni sur un support immatériel dont l'exécution a commencé, après accord préalable exprès du consommateur et renoncement exprès à son droit de rétractation. En validant sa commande, l'acheteur demande l'accès immédiat et reconnaît renoncer à ce droit ; cette confirmation figure sur son reçu.
 
-[OPTION GARANTIE — à supprimer si non retenue : En plus de ses obligations légales, le vendeur rembourse intégralement toute masterclass sur simple demande par e-mail dans les 14 jours suivant l'achat.]
 
 ## 7. Garanties légales
 
@@ -41,16 +39,12 @@ Les masterclasses sont protégées par le droit d'auteur. L'acheteur peut utilis
 
 ## 9. Service client et réclamations
 
-Par e-mail à [À COMPLÉTER], réponse sous 48 h ouvrées.
+Par e-mail, à l'adresse indiquée sur le reçu de paiement. Réponse sous 48 h ouvrées.
 
-## 10. Médiation
+## 10. Données personnelles
 
-En cas de litige non résolu, le consommateur peut recourir gratuitement au médiateur de la consommation : [NOM, ADRESSE, SITE — À COMPLÉTER]. Plateforme européenne de règlement en ligne des litiges : https://ec.europa.eu/consumers/odr (à vérifier : la plateforme peut avoir été fermée ; supprimer la mention le cas échéant).
+Les données de commande (nom, e-mail, facturation) sont utilisées pour fournir l'accès, facturer et répondre au SAV, et conservées le temps légal de conservation comptable. Les e-mails de promotion ne sont envoyés qu'avec consentement et comportent un lien de désinscription. Droits d'accès, de rectification et de suppression : par e-mail, à la même adresse. Réclamation possible auprès de la CNIL.
 
-## 11. Données personnelles
-
-Les données de commande (nom, e-mail, facturation) sont utilisées pour fournir l'accès, facturer et répondre au SAV, et conservées le temps légal de conservation comptable. Les e-mails de promotion ne sont envoyés qu'avec consentement et comportent un lien de désinscription. Droits d'accès, de rectification et de suppression : [E-MAIL À COMPLÉTER]. Réclamation possible auprès de la CNIL.
-
-## 12. Droit applicable
+## 11. Droit applicable
 
 Droit français. À défaut d'accord amiable, les tribunaux compétents sont ceux prévus par la loi.

@@ -4,7 +4,7 @@
 
 ## 1. Hero
 
-# Réponds à tes clients, envoie tes devis et relance tes factures en deux fois moins d'effort
+# Réponds à tes clients, envoie tes devis et relance tes factures sans y passer tes soirées
 
 **Une masterclass écrite pour confier le premier jet de ton admin à un assistant IA comme Claude, sans exposer les données de tes clients.**
 

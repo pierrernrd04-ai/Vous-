@@ -16,7 +16,6 @@ Le SAV propre à chaque sujet est dans `NN-slug/sav.md`. Ici : l'organisation et
   - **double paiement** ou erreur de facturation : remboursement intégral, toujours ;
   - **accès jamais fourni** malgré nos relances : remboursement intégral ;
   - **contenu non conforme à la description** de la page de vente : remboursement intégral.
-- **Option garantie commerciale** (à décider par le vendeur, puis l'écrire sur les pages de vente et dans les CGV) : « Si la masterclass ne t'apporte rien, écris-moi dans les 14 jours après l'achat, je te rembourse sans discuter. » Bon levier de conversion à 49 € ; coût = les remboursements demandés.
 - **Remboursement Stripe** : Paiements → le paiement → Rembourser. Prévenir le client avec la réponse R4 ci-dessous.
 
 ## Réponses prêtes à envoyer
@@ -85,7 +84,3 @@ Le SAV propre à chaque sujet est dans `NN-slug/sav.md`. Ici : l'organisation et
 > Je comprends ta frustration, et merci de me l'avoir dit directement. [Reconnaître le problème précis.] Voici ce que je fais : [action concrète + délai].
 >
 > Pierre
-
-## Médiation
-
-Tout vendeur à des consommateurs doit proposer un médiateur de la consommation (art. L612-1 C. conso). Son nom et ses coordonnées vont dans les CGV et les mentions légales (`src/legal.ts`, champ `mediator`, encore à compléter).

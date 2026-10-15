@@ -1,0 +1,27 @@
+{
+  "slug": "ia-enseignants",
+  "titre": "L'IA pour préparer tes cours en deux fois moins de temps",
+  "sous_titre": "Séquences, différenciation, évaluations et corrigés avec l'IA, sans exposer les données de tes élèves",
+  "niche": "IA / éducation",
+  "cible": "Enseignants du primaire au supérieur, formateurs et professeurs particuliers qui veulent préparer leurs cours plus efficacement avec un assistant IA, en restant maîtres du fond",
+  "prix": 49,
+  "modules": [
+    "Le brief pédagogique : arrêter les réponses génériques",
+    "Séquences et séances",
+    "Différencier sans y passer la nuit",
+    "Évaluations, grilles et corrigés",
+    "Données élèves, RGPD et déontologie",
+    "Triche et usage de l'IA par les élèves",
+    "Ton système : bibliothèque de prompts et routine"
+  ],
+  "mots_cles": [
+    "IA enseignant",
+    "préparer ses cours avec l'IA",
+    "prompts professeur",
+    "différenciation pédagogique",
+    "évaluation QCM IA",
+    "RGPD données élèves",
+    "triche IA élèves",
+    "charte usage IA classe"
+  ]
+}
