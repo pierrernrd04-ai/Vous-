@@ -13,7 +13,7 @@ Bonjour,
 
 Huit fois 1 km de course, et après chaque kilomètre un atelier : SkiErg, traîneau, burpees, rameur, marche chargée, fentes, wall balls. Sur le papier, chaque morceau paraît faisable. Ensemble, c'est autre chose.
 
-La plupart des débutants que je vois se préparer font l'une de ces deux erreurs : beaucoup de musculation et pas assez de course, ou l'inverse. Et presque personne n'écrit sa stratégie avant le jour J.
+Deux erreurs reviennent souvent chez les débutants : beaucoup de musculation et pas assez de course, ou l'inverse. Et presque personne n'écrit sa stratégie avant le jour J.
 
 J'ai donc écrit « Ta première course HYROX : la méthode en 12 semaines ». Une méthode indépendante, sans lien avec l'organisateur.
 
@@ -72,7 +72,7 @@ Pierre
 
 Bonjour,
 
-L'objection que j'entends le plus : « Je ne peux pas me préparer, ma salle n'a ni traîneau ni SkiErg. »
+Une objection revient souvent : « Je ne peux pas me préparer, ma salle n'a ni traîneau ni SkiErg. »
 
 C'est une vraie contrainte, et je ne vais pas te dire qu'elle n'existe pas. Mais elle ne bloque pas la préparation.
 

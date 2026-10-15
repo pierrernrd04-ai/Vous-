@@ -71,7 +71,7 @@ Pierre
 
 Bonjour,
 
-L'objection que j'entends le plus souvent : « Je n'aurai pas le temps de m'entraîner pendant 10 semaines. »
+Une objection revient souvent : « Je n'aurai pas le temps de m'entraîner pendant 10 semaines. »
 
 Elle est légitime. Alors voici exactement ce que demande le programme :
 
