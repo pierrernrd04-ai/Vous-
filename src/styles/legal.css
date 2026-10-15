@@ -51,8 +51,8 @@
 .legal-toc ol {
   display: grid;
   gap: var(--sp-1) var(--sp-5);
-  padding-left: 1.4em;
-  color: var(--c-muted);
+  padding: 0;
+  list-style: none; /* les titres portent déjà leur numéro */
   font-size: var(--fs-sm);
 }
 
@@ -114,6 +114,11 @@
   padding-left: 1.3em;
 }
 
+/* L'espacement des listes vient de `gap` (pas de la marge de .prose). */
+.legal__section li + li {
+  margin-top: 0;
+}
+
 .legal__section strong {
   color: var(--c-ink);
 }
@@ -171,10 +176,10 @@
 }
 
 /* ---------- Fiches des traitements (confidentialité) ---------- */
-.legal-cards {
+.legal__section .legal-cards {
   display: grid;
   gap: var(--sp-3);
-  padding: 0 !important;
+  padding: 0;
   list-style: none;
 }
 
@@ -188,6 +193,7 @@
 }
 
 .legal-card h3 {
+  margin-top: 0;
   font-size: var(--fs-md);
 }
 
@@ -210,7 +216,7 @@
 }
 
 @media (min-width: 720px) {
-  .legal-cards {
+  .legal__section .legal-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

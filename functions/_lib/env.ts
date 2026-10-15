@@ -18,8 +18,10 @@ export interface StripeConfig {
 
 export type ConfigResult<T> = { ok: true; config: T } | { ok: false; invalid: string[] };
 
-const STRIPE_KEY_RE = /^(?:sk|rk)_(live|test)_[A-Za-z0-9]+$/;
-const PAYMENT_LINK_ID_RE = /^plink_[A-Za-z0-9]+$/;
+// Les vrais identifiants Stripe sont alphanumériques après le préfixe ; « _ » est toléré
+// pour les valeurs factices des environnements locaux et e2e (`plink_test_x`).
+const STRIPE_KEY_RE = /^(?:sk|rk)_(live|test)_[A-Za-z0-9][A-Za-z0-9_]*$/;
+const PAYMENT_LINK_ID_RE = /^plink_[A-Za-z0-9][A-Za-z0-9_]*$/;
 
 /** Mode Stripe d'une clé, ou `null` si la clé n'a pas un format reconnu. */
 export function stripeKeyMode(key: string | undefined): StripeMode | null {

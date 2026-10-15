@@ -67,11 +67,23 @@ export const LONG_RUN_MAX_KM: Readonly<Record<RaceKind, Readonly<Record<Level, n
  */
 export const LONG_RUN_MAX_MINUTES = 180;
 
-/** Part maximale de la sortie longue dans le volume hebdomadaire. */
-export const LONG_RUN_SHARE = 0.35;
-/** Exception : 3 dernières sorties longues du spécifique marathon. */
-export const LONG_RUN_SHARE_MARATHON_SPECIFIC = 0.45;
-export const LONG_RUN_SPECIFIC_COUNT = 3;
+/**
+ * Part maximale de la sortie longue dans le volume hebdomadaire, selon la phase
+ * (décision du 14/10/2026, qui remplace l'ancienne règle 35 % / 45 %) : 40 % en base,
+ * 45 % en développement, 50 % en spécifique, pour les deux courses.
+ * Choix du moteur pour l'affûtage : 40 %, comme en base.
+ */
+export const LONG_RUN_SHARE: Readonly<Record<Phase, number>> = {
+  base: 0.4,
+  developpement: 0.45,
+  specifique: 0.5,
+  affutage: 0.4,
+};
+/**
+ * Hausse maximale de la sortie longue (km) par rapport à la sortie longue de la dernière
+ * semaine non allégée.
+ */
+export const LONG_RUN_MAX_GAIN_KM = 2;
 
 export const MIN_START_KM = 15;
 export const MAX_WEEKLY_INCREASE = 0.1;

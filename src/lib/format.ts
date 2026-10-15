@@ -123,6 +123,13 @@ export function formatKm(km: number): string {
   return `${formatNumber(km)} km`;
 }
 
+const NUMBER_3 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 });
+
+/** Distance officielle d'une course, sans arrondi : « 42,195 km », « 21,1 km ». */
+export function formatRaceKm(km: number): string {
+  return `${NUMBER_3.format(km)} km`;
+}
+
 /** Secondes → « m:ss » ou « h:mm:ss ». */
 export function formatClock(totalSec: number): string {
   const sec = Math.max(0, Math.round(totalSec));

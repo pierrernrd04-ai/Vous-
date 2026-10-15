@@ -36,7 +36,7 @@ import {
   withStartDate,
   type PlanFormValues,
 } from '../lib/plan-input';
-import { phaseBadge, renderPaceTable, renderPhaseChart, renderSessionCard, sessionKey } from '../lib/plan-view';
+import { phaseBadge, renderPaceTable, renderPhaseChart, renderSessionCard, sessionKey, trainingKmByWeek } from '../lib/plan-view';
 import { createStoryPanel, type StoryData } from '../lib/share-canvas';
 import { STORAGE_KEYS, isRecord, readJson, writeJson } from '../lib/storage';
 
@@ -419,6 +419,14 @@ function openWeek(index: number, scroll = true): void {
   }
 }
 
+/** « 46,5 km », ou « 17,5 km + la course » pour la semaine de course. */
+function weekKmLabel(week: Week): string {
+  const race = week.sessions.find((s) => s.type === 'course');
+  if (!race) return formatKm(week.km);
+  const training = Math.round((week.km - race.km) * 1000) / 1000;
+  return training > 0 ? `${formatKm(training)} + la course` : 'la course';
+}
+
 function renderWeek(week: Week, isCurrent: boolean, done: DoneMap, onDoneChange: () => void): HTMLDetailsElement {
   const progress = weekProgress(week, done);
   const progressEl = h('span', {
@@ -439,7 +447,7 @@ function renderWeek(week: Week, isCurrent: boolean, done: DoneMap, onDoneChange:
       'span',
       { class: 'week__main' },
       h('strong', { class: 'week__dates', text: formatRange(week.start, week.end) }),
-      h('span', { class: 'week__meta' }, `${PHASE_LABELS[week.phase] ?? week.phase} · ${formatKm(week.km)}`),
+      h('span', { class: 'week__meta' }, `${PHASE_LABELS[week.phase] ?? week.phase} · ${weekKmLabel(week)}`),
     ),
     h(
       'span',
@@ -498,7 +506,8 @@ function storyData(plan: Plan, today: string): StoryData {
   const currentIndex = currentWeekIndex(plan, today);
   const daysToRace = daysBetween(today, plan.input.raceDate);
   const daysToStart = daysBetween(today, start);
-  const peak = Math.max(...plan.weeks.map((w) => w.km));
+  const trainingKm = trainingKmByWeek(plan.weeks, plan.input.race);
+  const peak = Math.max(...trainingKm);
   const done = readDone();
   const doneKm = plan.weeks
     .flatMap((w) => w.sessions)
@@ -522,7 +531,12 @@ function storyData(plan: Plan, today: string): StoryData {
     headline,
     highlight,
     subline: `${total} semaines, du ${formatDayMonthLong(start)} au ${formatDayMonthLong(plan.input.raceDate)}`,
-    bars: plan.weeks.map((w) => ({ phase: w.phase, km: w.km, deload: w.deload, current: daysToStart <= 0 && w.index === currentIndex })),
+    bars: plan.weeks.map((w, i) => ({
+      phase: w.phase,
+      km: trainingKm[i] ?? w.km,
+      deload: w.deload,
+      current: daysToStart <= 0 && w.index === currentIndex,
+    })),
     stats: [
       daysToRace > 0 ? { value: `J-${daysToRace}`, label: 'avant le jour J' } : { value: String(total), label: 'semaines de prépa' },
       doneKm > 0 ? { value: formatKm(doneKm), label: 'déjà courus' } : { value: formatKm(peak), label: 'au plus fort' },
@@ -660,7 +674,7 @@ function renderPlan(plan: Plan, ctx: RenderContext): void {
     'section',
     { class: 'wrap plan-overview', attrs: { 'aria-labelledby': 'overview-title' } },
     h('h2', { id: 'overview-title', class: 'plan-section-title', text: 'Vue d’ensemble' }),
-    h('div', { class: 'card' }, renderPhaseChart(plan.weeks, { currentIndex, onSelect: (index) => openWeek(index) })),
+    h('div', { class: 'card' }, renderPhaseChart(plan.weeks, { currentIndex, onSelect: (index) => openWeek(index), race: plan.input.race })),
   );
 
   /* ---- Semaines ---- */

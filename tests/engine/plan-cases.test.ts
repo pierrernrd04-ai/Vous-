@@ -296,6 +296,17 @@ describe('le contrôleur d\'invariants détecte un plan altéré', () => {
     ['allure inconnue dans les consignes', (p: ReturnType<typeof clone>) => {
       p.weeks[0]!.sessions[0]!.steps.push('Finis à 3:59/km.');
     }],
+    ['sortie longue allongée de plus de 2 km', (p: ReturnType<typeof clone>) => {
+      // S9 : 15,8 km en S8, donc 17,8 km au plus ; on déplace 0,8 km d'un footing vers la
+      // sortie longue (volume et part de 45 % respectés : seule la règle des +2 km casse).
+      const week = p.weeks[8]!;
+      const sl = week.sessions.find((s) => s.type === 'sl')!;
+      const ef = week.sessions.find((s) => s.type === 'ef')!;
+      sl.km = Math.round((sl.km + 0.8) * 10) / 10;
+      ef.km = Math.round((ef.km - 0.8) * 10) / 10;
+      sl.loopKm = Math.round(sl.km * 2) / 2;
+      ef.loopKm = Math.round(ef.km * 2) / 2;
+    }],
   ] as const)('%s', (_name, corrupt) => {
     const plan = clone();
     expect(() => checkPlanInvariants(plan, BASE)).not.toThrow();

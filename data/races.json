@@ -3,7 +3,7 @@
     "slug": "semi-marathon-de-cannes",
     "name": "Semi-marathon de Cannes",
     "city": "Cannes",
-    "region": "Provence-Alpes-Côte d'Azur",
+    "region": "Provence-Alpes-Côte d’Azur",
     "kind": "semi",
     "date": "2027-02-21",
     "dateStatus": "confirmée",
@@ -20,13 +20,13 @@
     "dateStatus": "confirmée",
     "sourceUrl": "https://www.sortiraparis.com/en/news/in-paris/articles/351882-paris-marathon-2027-and-half-marathon-what-s-changing-for-the-next-edition",
     "participantsApprox": 50000,
-    "notes": "Dossards attribués par tirage au sort pour 2027 ; le parcours doit changer d'une édition à l'autre."
+    "notes": "Dossards attribués par tirage au sort pour 2027 ; le parcours doit changer d’une édition à l’autre."
   },
   {
     "slug": "marathon-du-golfe-de-saint-tropez",
     "name": "Marathon du Golfe de Saint-Tropez",
     "city": "Golfe de Saint-Tropez",
-    "region": "Provence-Alpes-Côte d'Azur",
+    "region": "Provence-Alpes-Côte d’Azur",
     "kind": "marathon",
     "date": "2027-03-14",
     "dateStatus": "confirmée",
@@ -43,7 +43,7 @@
     "dateStatus": "confirmée",
     "sourceUrl": "https://marathon-montsaintmichel.com/le-marathon-du-mont-saint-michel/",
     "participantsApprox": 1000,
-    "notes": "Retour après huit ans d'absence : de Cancale au barrage du Mont-Saint-Michel, 1 000 dossards tirés au sort."
+    "notes": "Retour après huit ans d’absence : de Cancale au barrage du Mont-Saint-Michel, 1 000 dossards tirés au sort."
   },
   {
     "slug": "semi-marathon-du-mont-saint-michel",
@@ -110,7 +110,7 @@
     "date": "2027-04-04",
     "dateStatus": "confirmée",
     "sourceUrl": "https://marathontrailpaysdeschateaux.com/2027-reglement-marathon-2027/",
-    "notes": "Départ à 9 h dans le parc du château ; parcours d'environ 21,1 km, non mesuré."
+    "notes": "Départ à 9 h dans le parc du château ; parcours d’environ 21,1 km, non mesuré."
   },
   {
     "slug": "semi-marathon-grande-course-du-grand-paris",
@@ -122,31 +122,31 @@
     "dateStatus": "estimée",
     "sourceUrl": "https://www.marathons.com/fr/divers/la-grande-course-ratp-du-grand-paris-saint-denis-2026-19-200-coureurs-sur-la-piste-du-stade-de-france_58z5",
     "participantsApprox": 10000,
-    "notes": "Édition 2026 : dimanche 5 avril, de l'hippodrome de Vincennes à la piste du Stade de France."
+    "notes": "Édition 2026 : dimanche 5 avril, de l’hippodrome de Vincennes à la piste du Stade de France."
   },
   {
     "slug": "semi-marathon-du-lac-d-annecy",
-    "name": "Semi-marathon du lac d'Annecy",
+    "name": "Semi-marathon du lac d’Annecy",
     "city": "Annecy",
     "region": "Auvergne-Rhône-Alpes",
     "kind": "semi",
     "date": "2027-04-17",
     "dateStatus": "estimée",
-    "sourceUrl": "https://reference-trail.fr/marathon-du-lac-dannecy-2026-suivi-coureur-officiel-en-direct/",
+    "sourceUrl": "https://reference-trail.fr/marathon-du-lac-dannecy-2026-resultats-et-classement-en-direct/",
     "participantsApprox": 4000,
-    "notes": "Édition 2026 : samedi 18 avril à 9 h, la veille du marathon."
+    "notes": "Édition 2026 : samedi 18 avril au matin, la veille du marathon."
   },
   {
     "slug": "marathon-du-lac-d-annecy",
-    "name": "Marathon du lac d'Annecy",
+    "name": "Marathon du lac d’Annecy",
     "city": "Annecy",
     "region": "Auvergne-Rhône-Alpes",
     "kind": "marathon",
     "date": "2027-04-18",
     "dateStatus": "estimée",
-    "sourceUrl": "https://reference-trail.fr/marathon-du-lac-dannecy-2026-suivi-coureur-officiel-en-direct/",
+    "sourceUrl": "https://reference-trail.fr/marathon-du-lac-dannecy-2026-resultats-et-classement-en-direct/",
     "participantsApprox": 5500,
-    "notes": "Édition 2026 : dimanche 19 avril à 8 h, arrivée au Pâquier ; 5 500 dossards."
+    "notes": "Édition 2026 : dimanche 19 avril à 8 h ; jauge portée à 5 500 coureurs."
   },
   {
     "slug": "marathon-de-montpellier",
@@ -174,7 +174,7 @@
     "slug": "semi-marathon-de-nice",
     "name": "Semi-marathon de Nice",
     "city": "Nice",
-    "region": "Provence-Alpes-Côte d'Azur",
+    "region": "Provence-Alpes-Côte d’Azur",
     "kind": "semi",
     "date": "2027-04-18",
     "dateStatus": "estimée",
@@ -253,13 +253,13 @@
   },
   {
     "slug": "semi-marathon-des-sables-d-olonne",
-    "name": "Semi-marathon des Sables-d'Olonne",
-    "city": "Les Sables-d'Olonne",
+    "name": "Semi-marathon des Sables-d’Olonne",
+    "city": "Les Sables-d’Olonne",
     "region": "Pays de la Loire",
     "kind": "semi",
     "date": "2027-05-16",
     "dateStatus": "estimée",
     "sourceUrl": "https://www.marathons.com/fr/10-km/semi-marathon-des-sables-d-olonne-farah-ayeh-et-margaux-sieracki-a-bon-port-record-d-affluence-avec-7000-coureurs_qlv7",
-    "notes": "Édition 2026 : dimanche 24 mai, week-end de Pentecôte, au bord de l'océan."
+    "notes": "Édition 2026 : dimanche 24 mai, week-end de Pentecôte, au bord de l’océan."
   }
 ]

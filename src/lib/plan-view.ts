@@ -3,9 +3,9 @@
  * phases (une barre par semaine). Utilisé par /gratuit/ (semaine 1) et /plan/.
  */
 import { config } from '../config';
-import type { Phase, Plan, Session, Week, WeekOverview } from '../shared/api-types';
+import type { Phase, Plan, RaceKind, Session, Week, WeekOverview } from '../shared/api-types';
 import { h } from './dom';
-import { formatDateShort, formatDayMonth, formatKm, formatMinutes, formatPace, formatRange } from './format';
+import { formatDateShort, formatDayMonth, formatKm, formatMinutes, formatRaceKm, formatPace, formatRange } from './format';
 import { icon } from './icons';
 import { PACE_LABELS, PACE_ORDER, PHASE_LABELS, PHASE_ORDER, SESSION_TYPE_LABELS } from './labels';
 import { loopUrl } from './links';
@@ -33,7 +33,8 @@ export function renderSessionCard(session: Session, options: SessionCardOptions)
     attrs: { 'aria-labelledby': titleId },
   });
 
-  const facts = [h('span', { class: 'session__km num', text: formatKm(session.km) })];
+  const km = session.type === 'course' ? formatRaceKm(session.km) : formatKm(session.km);
+  const facts = [h('span', { class: 'session__km num', text: km })];
   if (session.durationMin > 0) {
     facts.push(h('span', { class: 'session__dur num', text: `≈ ${formatMinutes(session.durationMin)}` }));
   }
@@ -120,25 +121,51 @@ export function renderPaceTable(paces: Plan['paces']): HTMLElement {
   );
 }
 
-type ChartWeek = Pick<WeekOverview, 'index' | 'start' | 'phase' | 'deload' | 'km'>;
+type ChartWeek = Pick<WeekOverview, 'index' | 'start' | 'phase' | 'deload' | 'km'> & { sessions?: Session[] };
+
+/** Distance de la séance `course` (SPEC section 2 : 42,195 / 21,1 km). */
+const RACE_SESSION_KM: Readonly<Record<RaceKind, number>> = { marathon: 42.195, semi: 21.1 };
+
+/**
+ * Volume d'entraînement de chaque semaine, course exclue, dans le même ordre.
+ * Le `km` de la semaine de course (la dernière) inclut la course et dépasse souvent le
+ * pic : graphiques et « au plus fort » ne montrent donc que l'entraînement.
+ */
+export function trainingKmByWeek(weeks: readonly ChartWeek[], race: RaceKind): number[] {
+  return weeks.map((week, i) => {
+    if (i < weeks.length - 1) return week.km;
+    const km = week.sessions
+      ? week.sessions.filter((s) => s.type !== 'course').reduce((sum, s) => sum + s.km, 0)
+      : week.km - RACE_SESSION_KM[race];
+    return Math.max(0, Math.round(km * 1000) / 1000);
+  });
+}
 
 export interface PhaseChartOptions {
   currentIndex?: number;
   /** Rend chaque barre cliquable (ex. ouvrir la semaine dans le plan). */
   onSelect?: (index: number) => void;
+  /**
+   * Course du plan : la dernière barre montre l'entraînement de la semaine, sans la course
+   * (voir `trainingKmByWeek`). Absent : les `km` sont pris tels quels.
+   */
+  race?: RaceKind;
 }
 
 /** Graphique « une barre par semaine », coloré par phase, avec légende. */
 export function renderPhaseChart(weeks: ChartWeek[], options: PhaseChartOptions = {}): HTMLElement {
-  const maxKm = Math.max(1, ...weeks.map((w) => w.km));
+  const kms = options.race ? trainingKmByWeek(weeks, options.race) : weeks.map((w) => w.km);
+  const maxKm = Math.max(1, ...kms);
   const list = h('ol', { class: 'phase-chart__bars', attrs: { 'aria-label': 'Volume de chaque semaine' } });
-  for (const week of weeks) {
+  weeks.forEach((week, i) => {
+    const km = kms[i] ?? week.km;
+    const withRace = options.race !== undefined && i === weeks.length - 1;
     const label = `Semaine ${week.index}, du ${formatDayMonth(week.start)} : ${PHASE_LABELS[week.phase] ?? week.phase}${
       week.deload ? ', allégée' : ''
-    }, ${formatKm(week.km)}`;
+    }, ${formatKm(km)}${withRace ? ' et la course' : ''}`;
     const bar = h('span', {
       class: ['phase-chart__bar', `phase--${week.phase}`, week.deload ? 'is-deload' : null],
-      style: { '--h': `${Math.max(8, Math.round((week.km / maxKm) * 100))}%` },
+      style: { '--h': `${Math.max(8, Math.round((km / maxKm) * 100))}%` },
     });
     const content = options.onSelect
       ? h(
@@ -154,7 +181,7 @@ export function renderPhaseChart(weeks: ChartWeek[], options: PhaseChartOptions 
     list.append(
       h('li', { class: ['phase-chart__item', week.index === options.currentIndex ? 'is-current' : null] }, content),
     );
-  }
+  });
   const present = PHASE_ORDER.filter((phase) => weeks.some((w) => w.phase === phase));
   return h(
     'figure',

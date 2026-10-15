@@ -1,0 +1,568 @@
+/*
+ * Pages courses · /courses/ et /courses/<slug>/ (générées par build/races-plugin.ts).
+ * Mobile d'abord (360 px). Uniquement les jetons de tokens.css ; aucune couleur en dur.
+ * Aucun style en ligne dans le HTML (CSP `style-src 'self'`).
+ */
+
+/* ---------- Accroche ---------- */
+.race-hero {
+  padding-block: var(--sp-5) var(--sp-6);
+  background: var(--grad-hero);
+  border-bottom: var(--bw) solid var(--c-line);
+}
+
+.race-hero__inner {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.race-hero h1 {
+  overflow-wrap: anywhere;
+}
+
+.race-hero__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.race-countdown {
+  font: var(--fw-black) var(--fs-sm) / 1.2 var(--f-display);
+  color: var(--c-ink);
+}
+
+.race-estimate {
+  max-width: 40rem;
+}
+
+.race-hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.race-hero__ctas .btn {
+  flex: 1 1 15rem;
+}
+
+@media (min-width: 720px) {
+  .race-hero {
+    padding-block: var(--sp-6) var(--sp-7);
+  }
+
+  .race-hero__ctas .btn {
+    flex: 0 1 auto;
+  }
+}
+
+/* ---------- Fil d'Ariane ---------- */
+.crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-2);
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-xs);
+  color: var(--c-muted);
+}
+
+.crumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.crumbs li + li::before {
+  content: "›";
+  color: var(--c-muted);
+}
+
+.crumbs a {
+  color: var(--c-ink-2);
+}
+
+.crumbs [aria-current="page"] {
+  color: var(--c-ink-2);
+  font-weight: var(--fw-bold);
+}
+
+/* ---------- Badges ---------- */
+.badge--warn {
+  color: var(--c-warn);
+  background: var(--c-warn-soft);
+}
+
+/* ---------- Bandeau ---------- */
+.course-band {
+  background: var(--c-bg-2);
+  border-block: var(--bw) solid var(--c-line);
+}
+
+/* ---------- Dates de départ ---------- */
+.start-now {
+  display: grid;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  border-color: var(--c-accent-line);
+}
+
+.start-now.is-warn {
+  border-color: var(--c-warn);
+  background: var(--c-warn-soft);
+}
+
+.start-now__title {
+  font-size: var(--fs-lg);
+}
+
+.start-now p {
+  color: var(--c-ink-2);
+}
+
+.start-options {
+  display: grid;
+  gap: var(--sp-3);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .start-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.start-option {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+}
+
+.start-option.is-recommended {
+  border-color: var(--c-accent-line);
+  box-shadow: var(--glow-soft);
+}
+
+.start-option.is-past {
+  border-style: dashed;
+}
+
+.start-option.is-past .start-option__date,
+.start-option.is-past .start-option__xmas {
+  color: var(--c-muted);
+}
+
+.start-option__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.start-option__head h3 {
+  font-size: var(--fs-xl);
+}
+
+.start-option__date strong {
+  color: var(--c-ink);
+}
+
+.start-option__hint {
+  color: var(--c-ink-2);
+  font-size: var(--fs-sm);
+}
+
+.start-option__xmas {
+  font-size: var(--fs-sm);
+  color: var(--c-accent-text);
+  font-weight: var(--fw-bold);
+}
+
+.start-option__status {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-muted);
+}
+
+.start-option__status:empty {
+  display: none;
+}
+
+/* ---------- Phases ---------- */
+.plan-strip {
+  display: flex;
+  gap: 3px;
+  margin-bottom: var(--sp-5);
+  padding: 0;
+  list-style: none;
+}
+
+.plan-strip__week {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 36px;
+  border-radius: 4px;
+  background: var(--phase-color);
+}
+
+.plan-strip__week.is-deload {
+  height: 24px;
+  margin-top: 12px;
+  opacity: 0.55;
+}
+
+.plan-strip__week.is-race {
+  background: var(--c-type-course);
+}
+
+.phase-spans {
+  display: grid;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .phase-spans {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.phase-span {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--bw) solid var(--c-line);
+  border-left: 4px solid var(--phase-color);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+}
+
+.phase-span__dates {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-ink);
+}
+
+.phase-span__text {
+  font-size: var(--fs-sm);
+  color: var(--c-ink-2);
+}
+
+.key-dates {
+  display: grid;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.key-dates > div,
+.race-facts > div {
+  display: grid;
+  gap: 2px;
+  padding-block: var(--sp-2);
+  border-bottom: var(--bw) solid var(--c-line);
+}
+
+.key-dates dt,
+.race-facts dt {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.key-dates dd,
+.race-facts dd {
+  margin: 0;
+  color: var(--c-ink);
+}
+
+@media (min-width: 560px) {
+  .key-dates > div,
+  .race-facts > div {
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: var(--sp-4);
+    align-items: baseline;
+  }
+}
+
+/* ---------- La course ---------- */
+.race-facts {
+  display: grid;
+  margin-bottom: var(--sp-3);
+}
+
+.race-facts > div:last-child {
+  border-bottom: 0;
+}
+
+.race-facts a {
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Offre ---------- */
+.offer-card {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.offer-card h2 {
+  font-size: var(--fs-2xl);
+}
+
+.offer-card__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2) var(--sp-3);
+  color: var(--c-ink-2);
+}
+
+.offer-card__amount {
+  font: var(--fw-black) var(--fs-3xl) / 1 var(--f-display);
+  color: var(--c-ink);
+}
+
+.offer-card__sentence {
+  font-weight: var(--fw-bold);
+  color: var(--c-accent-text);
+}
+
+.level-picker {
+  margin: 0;
+}
+
+/* ---------- Autres courses ---------- */
+.related {
+  display: grid;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 560px) {
+  .related {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.related__link {
+  display: grid;
+  gap: 2px;
+  min-height: var(--tap);
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.related__link:hover {
+  border-color: var(--c-accent-line);
+}
+
+.related__link span {
+  font-size: var(--fs-sm);
+  color: var(--c-ink-2);
+}
+
+/* ---------- Santé ---------- */
+.race-health-wrap {
+  padding-bottom: var(--sp-7);
+}
+
+.race-health {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: flex-start;
+  border-color: var(--c-warn);
+  background: var(--c-warn-soft);
+}
+
+.race-health .icon {
+  width: 30px;
+  height: 30px;
+  color: var(--c-warn);
+}
+
+.race-health h2 {
+  font-size: var(--fs-lg);
+  margin-bottom: var(--sp-2);
+}
+
+.race-health p {
+  color: var(--c-ink-2);
+}
+
+/* ---------- Liste des courses ---------- */
+.races-index {
+  display: grid;
+  gap: var(--sp-6);
+  padding-block: var(--sp-5) var(--sp-7);
+}
+
+.race-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.race-filter__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--tap);
+  padding: 0 var(--sp-4);
+  border: var(--bw) solid var(--c-line-strong);
+  border-radius: var(--r-pill);
+  background: var(--c-surface);
+  font-weight: var(--fw-bold);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.race-filter__btn[aria-pressed="true"] {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+  color: var(--c-accent-text);
+}
+
+.race-filter__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.race-filter__count {
+  font-size: var(--fs-xs);
+  color: var(--c-muted);
+}
+
+.race-month {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.race-month h2 {
+  font-size: var(--fs-xl);
+}
+
+.race-list {
+  display: grid;
+  gap: var(--sp-2);
+  padding: 0;
+  list-style: none;
+}
+
+.race-item__link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-3) var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.race-item__link:hover {
+  border-color: var(--c-accent-line);
+}
+
+.race-item__date {
+  display: grid;
+  justify-items: center;
+  min-width: 3.5rem;
+  padding: var(--sp-2);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  color: var(--c-ink-2);
+  text-transform: uppercase;
+}
+
+.race-item__date strong {
+  font: var(--fw-black) var(--fs-xl) / 1.05 var(--f-display);
+  color: var(--c-ink);
+}
+
+.race-item__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.race-item__meta {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--c-accent-text);
+}
+
+.race-item__name {
+  font-size: var(--fs-lg);
+  line-height: var(--lh-snug);
+}
+
+.race-item__plan {
+  font-size: var(--fs-sm);
+  color: var(--c-ink-2);
+}
+
+.race-item__badge {
+  grid-column: 2;
+  justify-self: start;
+}
+
+@media (min-width: 720px) {
+  .race-item__link {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .race-item__badge {
+    grid-column: auto;
+    justify-self: end;
+  }
+}
+
+.other-race {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+}
+
+.other-race h2 {
+  font-size: var(--fs-xl);
+}
+
+/* ---------- Impression ---------- */
+@media print {
+  .race-hero__ctas,
+  .offer-card .btn,
+  .level-picker,
+  .race-filter {
+    display: none !important;
+  }
+
+  .race-hero,
+  .course-band {
+    background: none;
+  }
+}

@@ -23,6 +23,10 @@ describe('env', () => {
     expect(parsePaymentLinkIds('')).toBeNull();
     expect(parsePaymentLinkIds(undefined)).toBeNull();
     expect(parsePaymentLinkIds('plink_a,price_b')).toBeNull();
+    // Valeurs factices des environnements locaux et e2e.
+    expect(parsePaymentLinkIds('plink_test_x')).toEqual(new Set(['plink_test_x']));
+    expect(stripeKeyMode('rk_test_fake_local')).toBe('test');
+    for (const raw of ['plink_', 'plink__x', 'plink_a-b']) expect(parsePaymentLinkIds(raw), raw).toBeNull();
   });
 
   it('readStripeConfig nomme toutes les variables fautives', () => {

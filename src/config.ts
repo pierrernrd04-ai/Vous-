@@ -24,6 +24,20 @@ export interface SiteConfig {
   traceoAppUrl: string;
 }
 
+/** Réglages de paiement modifiables au build, sans toucher au code (voir vite.config.ts). */
+export type CheckoutOverrides = Partial<
+  Pick<SiteConfig, 'paymentLinkLaunch' | 'paymentLinkRegular' | 'paypalFallbackUrl' | 'stripeEnabled'>
+>;
+
+/**
+ * Remplacé par Vite (`define`) à partir des variables `PUBLIC_*` du build ; absent sous
+ * Node (vite.config.ts, tests), d'où le `typeof`.
+ */
+declare const __CHECKOUT_OVERRIDES__: CheckoutOverrides | undefined;
+
+const buildOverrides: CheckoutOverrides =
+  typeof __CHECKOUT_OVERRIDES__ === 'object' && __CHECKOUT_OVERRIDES__ !== null ? __CHECKOUT_OVERRIDES__ : {};
+
 export const config: SiteConfig = {
   launchPriceEnd: '2026-10-18T23:59:59+02:00',
   priceLaunch: 19,
@@ -34,6 +48,7 @@ export const config: SiteConfig = {
   stripeEnabled: false,
   siteUrl: 'https://traceo-pass.pages.dev',
   traceoAppUrl: 'https://traceorun.pages.dev/app',
+  ...buildOverrides,
 };
 
 /** Constante de la SPEC (section 1). */

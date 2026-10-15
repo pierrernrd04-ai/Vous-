@@ -4,11 +4,10 @@
  */
 import { buildRaceWeek, buildTrainingWeek } from './allocation';
 import {
+  LONG_RUN_MAX_GAIN_KM,
   LONG_RUN_MAX_KM,
   LONG_RUN_MAX_MINUTES,
   LONG_RUN_SHARE,
-  LONG_RUN_SHARE_MARATHON_SPECIFIC,
-  LONG_RUN_SPECIFIC_COUNT,
   MIN_START_KM,
   MIN_WEEKS,
   NOMINAL_WEEKS,
@@ -227,7 +226,6 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
     .map((phase, k) => ({ phase, index: k + 1 }))
     .filter((w) => w.phase === 'specifique' && !deloads.has(w.index))
     .map((w) => w.index);
-  const longSpecific = new Set(input.race === 'marathon' ? specificLoadWeeks.slice(-LONG_RUN_SPECIFIC_COUNT) : []);
   const taperStart = weeks - lengths.affutage + 1;
 
   const noteCtx: NoteContext = {
@@ -241,6 +239,8 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
   };
 
   const progressByPhase = new Map<Phase, number>();
+  /** Sortie longue de la dernière semaine non allégée (hm) : base du plafond +2 km. */
+  let lastLoadLongHm: number | null = null;
   const result: Week[] = [];
   for (let index = 1; index <= weeks; index += 1) {
     const phase = phases[index - 1] ?? 'base';
@@ -249,7 +249,7 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
     const progress = progressByPhase.get(phase) ?? 0;
     const targetHm = volumes.weekHm[index - 1] ?? 0;
 
-    const drafts =
+    const drafts: DraftSession[] =
       index === weeks
         ? buildRaceWeek(ctx, {
             trainingHm: targetHm,
@@ -261,13 +261,20 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
             phase,
             deload,
             targetHm,
-            longRunShare: longSpecific.has(index) ? LONG_RUN_SHARE_MARATHON_SPECIFIC : LONG_RUN_SHARE,
-            longRunCapHm,
+            longRunShare: LONG_RUN_SHARE[phase],
+            longRunCapHm:
+              lastLoadLongHm === null
+                ? longRunCapHm
+                : Math.min(longRunCapHm, lastLoadLongHm + LONG_RUN_MAX_GAIN_KM * 10),
             progress,
             taperStep: phase === 'affutage' ? index - taperStart : 0,
             specificRank: phase === 'specifique' && !deload ? specificLoadWeeks.indexOf(index) : null,
           });
-    if (!deload) progressByPhase.set(phase, progress + 1);
+    if (!deload) {
+      progressByPhase.set(phase, progress + 1);
+      const longRun = drafts.find((d) => d.type === 'sl');
+      if (longRun) lastLoadLongHm = longRun.hm;
+    }
 
     const sessions = drafts.map((d) => toSession(d, start));
     const km = round3(sessions.reduce((acc, s) => acc + s.km, 0));

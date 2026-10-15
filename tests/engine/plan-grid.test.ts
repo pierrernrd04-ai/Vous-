@@ -80,15 +80,26 @@ describe('grille complète de la SPEC (324 plans)', () => {
     }
   });
 
-  it('les 3 dernières sorties longues du spécifique marathon dépassent 35 % (≤ 45 %)', () => {
-    for (const { input, plan } of plans.filter((p) => p.input.race === 'marathon' && p.input.weeklyKm >= 30)) {
-      for (const index of [19, 20, 21]) {
-        const week = plan.weeks[index - 1]!;
-        const sl = week.sessions.find((s) => s.type === 'sl')!;
-        // Au-delà de 35 %, sauf si la limite de 3 h de sortie longue s'applique (coureurs lents).
-        const capped = sl.km >= longRunCap(input, plan.paces.ef) - 1e-9;
-        if (!capped) expect(sl.km / week.km, `${label(input)} S${index}`).toBeGreaterThan(0.35);
-        expect(sl.km / week.km, `${label(input)} S${index}`).toBeLessThanOrEqual(0.45 + 1e-9);
+  it('sortie longue la plus longue : proche du maximum du niveau, sauf limite de 3 h', () => {
+    for (const { input, plan } of plans.filter((p) => p.input.weeklyKm >= 30 && p.input.sessions >= 4)) {
+      const longest = Math.max(...plan.weeks.flatMap((w) => w.sessions.filter((s) => s.type === 'sl').map((s) => s.km)));
+      const reachable = Math.min(longRunCap(input, plan.paces.ef), effectivePeak(input, plan.paces.ef) * 0.5);
+      expect(longest, label(input)).toBeLessThanOrEqual(longRunCap(input, plan.paces.ef) + 1e-9);
+      expect(longest, label(input)).toBeGreaterThanOrEqual(reachable - 0.5);
+    }
+  });
+
+  it('objectifs de la décision du 14/10/2026 : marathon l2 ≈ 28-30 km, semi Finisher ≈ 15-16 km', () => {
+    const longest = (p: Plan): number =>
+      Math.max(...p.weeks.flatMap((w) => w.sessions.filter((s) => s.type === 'sl').map((s) => s.km)));
+    for (const { input, plan } of plans.filter((p) => p.input.weeklyKm >= 30 && p.input.sessions >= 4)) {
+      if (input.race === 'marathon' && input.level === 'l2' && input.t10 <= 50 * 60) {
+        expect(longest(plan), label(input)).toBeGreaterThanOrEqual(27.5);
+        expect(longest(plan), label(input)).toBeLessThanOrEqual(30);
+      }
+      if (input.race === 'semi' && input.level === 'finisher') {
+        expect(longest(plan), label(input)).toBeGreaterThanOrEqual(15);
+        expect(longest(plan), label(input)).toBeLessThanOrEqual(16);
       }
     }
   });

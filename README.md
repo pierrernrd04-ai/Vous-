@@ -58,6 +58,10 @@ npm run build
 npm run e2e          # construit le site et le sert avec wrangler, puis lance Playwright
 ```
 
+Les tests e2e (`tests/e2e/`, Chromium 360 × 740) construisent le site avec de faux Payment Links (`PUBLIC_*`) pour tester la fenêtre d'achat, et signent leurs jetons avec le `TOKEN_SECRET` de `.dev.vars` s'il existe. Si un serveur tourne déjà sur le port 8788, il est réutilisé : il doit servir un `dist/` construit de la même façon. `E2E_TOKEN=<jeton>` utilise un jeton tout fait (`npm run token`), `E2E_SCREENSHOTS=1` met à jour les captures de `docs/screenshots/`.
+
+Versions App Store et Google Play : voir [`docs/STORES.md`](docs/STORES.md) (`capacitor.config.json` est prêt, Capacitor n'est pas installé).
+
 ## Déployer sur Cloudflare Pages
 
 1. Tableau de bord Cloudflare → **Workers & Pages** → **Créer** → **Pages** → **Se connecter à Git**, puis choisir ce dépôt.
@@ -93,6 +97,7 @@ Les en-têtes de sécurité (CSP stricte, `X-Content-Type-Options`, `Referrer-Po
    - l'adresse e-mail est toujours demandée par Stripe : c'est elle qui reçoit l'accès et l'activation de Traceo Premium.
 4. Récupérer l'id de chaque lien (`plink_…`, visible dans l'URL du lien dans le tableau de bord) et les mettre tous les deux dans `PAYMENT_LINK_IDS`.
 5. Dans `src/config.ts` : coller les URL publiques (`https://buy.stripe.com/…`) dans `paymentLinkLaunch` (19 €) et `paymentLinkRegular` (29 €), puis passer `stripeEnabled` à `true`. Pousser : Cloudflare redéploie.
+   Sans toucher au code, les mêmes réglages peuvent venir des variables de **build** Cloudflare Pages (type « Texte », publiques puisqu'elles finissent dans le site) : `PUBLIC_STRIPE_ENABLED=true`, `PUBLIC_PAYMENT_LINK_LAUNCH`, `PUBLIC_PAYMENT_LINK_REGULAR`, et `PUBLIC_PAYPAL_URL` pour le secours PayPal. Elles priment sur `src/config.ts`.
 
 Le site bascule seul sur le lien à 29 € après le dimanche 18 octobre 2026 à 23:59 (heure de Paris, `launchPriceEnd` dans `src/config.ts`). On peut ensuite désactiver le lien à 19 € dans Stripe, mais **garder son id** dans `PAYMENT_LINK_IDS` pour que les achats déjà payés se débloquent toujours.
 

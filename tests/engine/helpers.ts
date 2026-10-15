@@ -18,6 +18,15 @@ export const LONG_RUN_MAX_KM: Record<RaceKind, Record<Level, number>> = {
   marathon: { finisher: 28, l2: 30, l3: 32 },
   semi: { finisher: 16, l2: 18, l3: 20 },
 };
+/** Part maximale de la sortie longue dans la semaine, selon la phase (décision du 14/10/2026). */
+export const LONG_RUN_SHARE: Record<Week['phase'], number> = {
+  base: 0.4,
+  developpement: 0.45,
+  specifique: 0.5,
+  affutage: 0.4,
+};
+/** Hausse maximale d'une sortie longue par rapport à la dernière semaine non allégée (km). */
+export const LONG_RUN_MAX_GAIN_KM = 2;
 export const DELOADS: Record<RaceKind, number[]> = {
   marathon: [4, 7, 10, 14, 18],
   semi: [4, 7, 10, 14],

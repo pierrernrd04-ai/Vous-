@@ -673,6 +673,17 @@ html.has-modal {
   gap: var(--sp-3);
 }
 
+.header-nav .btn {
+  white-space: nowrap;
+}
+
+/* 360 px : le logo, le nom et le bouton d'achat tiennent sur une ligne. */
+@media (max-width: 399px) {
+  .site-header .brand__by {
+    display: none;
+  }
+}
+
 .header-link {
   display: none;
   align-items: center;
@@ -852,9 +863,12 @@ html.has-modal {
   left: 50%;
   bottom: calc(var(--sp-5) + env(safe-area-inset-bottom));
   z-index: var(--z-toast);
+  /* Sans largeur explicite, left: 50 % limiterait le message à la moitié de l'écran. */
+  width: max-content;
   max-width: calc(100% - 2 * var(--gutter));
   padding: var(--sp-3) var(--sp-5);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-md);
+  text-align: center;
   background: var(--c-ink);
   color: var(--c-bg);
   font-weight: var(--fw-bold);
@@ -1294,7 +1308,11 @@ dialog.modal {
   color: var(--c-ink-2);
   font-size: var(--fs-sm);
   font-weight: var(--fw-bold);
-  text-transform: capitalize;
+}
+
+/* « Mar. 20 oct. » : majuscule au jour seulement (les mois restent en minuscules). */
+.session__day::first-letter {
+  text-transform: uppercase;
 }
 
 .session__title {
@@ -1325,10 +1343,12 @@ dialog.modal {
 
 .session__paces li {
   display: inline-flex;
-  gap: var(--sp-2);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--sp-2);
   padding: 0.25em 0.75em;
   border: var(--bw) solid var(--c-line);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-sm);
   background: var(--c-surface-2);
   color: var(--c-ink-2);
   font-size: var(--fs-sm);
@@ -1336,6 +1356,7 @@ dialog.modal {
 
 .session__paces strong {
   color: var(--c-ink);
+  white-space: nowrap;
 }
 
 .session__steps {

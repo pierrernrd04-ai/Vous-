@@ -35,7 +35,7 @@ import {
   valuesToInput,
   type PlanFormValues,
 } from '../lib/plan-input';
-import { phaseBadge, renderPaceTable, renderPhaseChart, renderSessionCard, weekHeading } from '../lib/plan-view';
+import { phaseBadge, renderPaceTable, renderPhaseChart, renderSessionCard, trainingKmByWeek, weekHeading } from '../lib/plan-view';
 import { bindPrices } from '../lib/price-ui';
 import { createStoryPanel, type StoryData } from '../lib/share-canvas';
 import { STORAGE_KEYS, readJson, writeJson } from '../lib/storage';
@@ -198,7 +198,8 @@ function renderPreview(preview: PreviewResponse, values: PlanFormValues): void {
   const today = localTodayIso();
   const week1 = preview.week1;
   const totalWeeks = preview.overview.length;
-  const peakKm = Math.max(...preview.overview.map((w) => w.km), week1.km);
+  const trainingKm = trainingKmByWeek(preview.overview, input.race);
+  const peakKm = Math.max(...trainingKm, week1.km);
   const raceName = raceNameOf(values);
   const lockedCount = Math.max(0, totalWeeks - 1);
 
@@ -261,7 +262,7 @@ function renderPreview(preview: PreviewResponse, values: PlanFormValues): void {
     'section',
     { class: 'result__block', attrs: { 'aria-labelledby': 'overview-title' } },
     h('h3', { id: 'overview-title', text: 'Ta prépa en un coup d’œil' }),
-    h('div', { class: 'card result__chart' }, renderPhaseChart(preview.overview, { currentIndex: week1.index })),
+    h('div', { class: 'card result__chart' }, renderPhaseChart(preview.overview, { currentIndex: week1.index, race: input.race })),
     h('ol', { class: 'locked-weeks' }, later.map((week, i) => lockedWeek(week, i < 2))),
     h(
       'div',
@@ -295,7 +296,7 @@ function renderPreview(preview: PreviewResponse, values: PlanFormValues): void {
     headline,
     highlight,
     subline: `${totalWeeks} semaines, du ${formatDayMonthLong(week1.start)} au ${formatDayMonthLong(input.raceDate)}`,
-    bars: preview.overview.map((w) => ({ phase: w.phase, km: w.km, deload: w.deload, current: w.index === 1 })),
+    bars: preview.overview.map((w, i) => ({ phase: w.phase, km: trainingKm[i] ?? w.km, deload: w.deload, current: w.index === 1 })),
     stats: [
       { value: String(totalWeeks), label: 'semaines de prépa' },
       { value: formatDuration(preview.predicted.raceSec), label: 'temps estimé' },

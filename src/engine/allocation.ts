@@ -2,8 +2,10 @@
  * Répartition du volume hebdomadaire entre les séances (SPEC section 2).
  *
  * Semaine d'entraînement (volume cible K, en hm) :
- * 1. sortie longue = min(plafond du niveau, 35 % de K) — 45 % pour les 3 dernières
- *    sorties longues du spécifique marathon ;
+ * 1. sortie longue = min(plafond, part de K selon la phase) : 40 % en base, 45 % en
+ *    développement, 50 % en spécifique, 40 % en affûtage. Le plafond combine le maximum
+ *    du niveau, 3 h à l'allure EF et +2 km par rapport à la sortie longue de la dernière
+ *    semaine non allégée (calculé par `generatePlan`) ;
  * 2. séance de qualité calibrée par la phase, jamais plus longue que la sortie longue ;
  * 3. le reste est réparti entre les footings, chacun ≤ sortie longue. Si le reste ne permet
  *    pas des footings d'au moins 4 km, les footings en trop deviennent du renforcement
@@ -104,7 +106,9 @@ export interface TrainingWeekSpec {
   deload: boolean;
   /** Volume cible de la semaine (hm). */
   targetHm: number;
+  /** Part maximale de la sortie longue dans `targetHm` (selon la phase). */
   longRunShare: number;
+  /** Plafond de la sortie longue (hm) : niveau, 3 h à l'allure EF et +2 km au plus. */
   longRunCapHm: number;
   /** Semaines chargées déjà passées dans la phase (rotation des séances). */
   progress: number;

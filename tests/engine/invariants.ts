@@ -6,7 +6,9 @@ import type { Plan, PlanInput, Week } from '../../src/engine';
 import {
   DOW_NAMES,
   EPS,
+  LONG_RUN_MAX_GAIN_KM,
   LONG_RUN_MAX_KM,
+  LONG_RUN_SHARE,
   NOMINAL_WEEKS,
   PEAK_KM,
   RACE_KM,
@@ -228,10 +230,10 @@ export function checkPlanInvariants(plan: Plan, input: PlanInput): void {
     soft(weeks[i]!.km, `${ctx} affûtage décroissant`).toBeLessThan(i === n - taperLength ? refKm : weeks[i - 1]!.km);
   }
 
-  // Sorties longues
+  // Sorties longues : plafond du niveau, 3 h à l'allure EF, part selon la phase,
+  // +2 km au plus par rapport à la sortie longue de la dernière semaine non allégée.
   const cap = LONG_RUN_MAX_KM[race][input.level];
-  const specificLoads = weeks.filter((w) => w.phase === 'specifique' && !w.deload).map((w) => w.index);
-  const relaxed = new Set(race === 'marathon' ? specificLoads.slice(-3) : []);
+  let previousLoadLong: number | null = null;
   for (const week of weeks.slice(0, n - 1)) {
     const wctx = `${ctx} S${week.index}`;
     const longRuns = week.sessions.filter((s) => s.type === 'sl');
@@ -239,10 +241,13 @@ export function checkPlanInvariants(plan: Plan, input: PlanInput): void {
     const sl = longRuns[0]!;
     soft(sl.dow, wctx).toBe(input.longRunDay);
     soft(sl.km, wctx).toBeLessThanOrEqual(cap + EPS);
-    // Choix du moteur : pas plus de 3 h de sortie longue à l'allure EF.
     soft(sl.km * plan.paces.ef, `${wctx} SL ≤ 3 h`).toBeLessThanOrEqual(180 * 60 + EPS);
-    const share = relaxed.has(week.index) ? 0.45 : 0.35;
+    const share = LONG_RUN_SHARE[week.phase];
     soft(sl.km, `${wctx} SL ≤ ${share * 100} %`).toBeLessThanOrEqual(share * week.km + EPS);
+    if (previousLoadLong !== null) {
+      soft(sl.km, `${wctx} SL +2 km max`).toBeLessThanOrEqual(previousLoadLong + LONG_RUN_MAX_GAIN_KM + EPS);
+    }
+    if (!week.deload) previousLoadLong = sl.km;
     for (const s of week.sessions) {
       if (s.type === 'ef' || s.type === 'recup') soft(s.km, `${wctx} footing ≤ SL`).toBeLessThanOrEqual(sl.km + EPS);
     }

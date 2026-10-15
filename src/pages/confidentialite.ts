@@ -99,7 +99,7 @@ function clearDataBlock(): HTMLElement {
     'button',
     { class: 'btn btn--sm', attrs: { type: 'button' } },
     icon('close'),
-    'Effacer les données du site sur cet appareil',
+    'Effacer mes données sur cet appareil',
   );
   button.addEventListener('click', async () => {
     const ok = window.confirm(
