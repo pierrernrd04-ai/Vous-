@@ -70,7 +70,7 @@ Le programme ci-dessous est un repère. Ton levain peut aller plus vite ou plus 
 | **J6 à J7** | 2 rafraîchis par jour : garde 50 g + 50 g de farine + 50 g d'eau. Tu peux commencer à mélanger moitié seigle, moitié T65. | Le levain monte de plus en plus haut et de plus en plus vite après chaque repas. |
 | **J8 à J14** | Continue jusqu'à ce que le test de la leçon 1.4 soit réussi 3 fois de suite. | Comportement de plus en plus régulier. |
 
-**Ce que tu fais de ce que tu jettes** (la « défausse ») : les premiers jours, jette-la (elle n'est pas encore un levain fiable). Ensuite, garde-la au réfrigérateur dans un bocal pour des crêpes, des crackers ou des pancakes (recette en ressources).
+**Ce que tu fais de ce que tu jettes** (la « défausse ») : les premiers jours, jette-la (elle n'est pas encore un levain fiable). Ensuite, garde-la au réfrigérateur dans un bocal pour des crêpes ou des pancakes (recette en ressources).
 
 ### Leçon 1.4 — Le test : ton levain est-il prêt ?
 
@@ -725,11 +725,5 @@ Résultat et correction : ______________
 
 **Recette « anti-gaspi » de la défausse : crêpes salées au levain**
 150 g de défausse (même sortie du frigo), 1 œuf, 100 ml de lait, 50 g de farine, 1 pincée de sel. Mélange, laisse reposer 10 minutes, cuis comme des crêpes épaisses dans une poêle huilée. Garnis d'herbes, de fromage ou de légumes poêlés.
-
-**Crackers de défausse**
-150 g de défausse, 60 g de farine, 30 g d'huile d'olive, 3 g de sel, herbes ou graines. Étale très finement entre deux feuilles de papier cuisson, prédécoupe au couteau, cuis à 170 °C 20 à 30 minutes jusqu'à ce que ce soit doré et cassant.
-
-**Lexique**
-Autolyse : repos farine + eau avant le levain. Pointage : 1re fermentation, en masse. Rabats : étirer-replier la pâte pendant le pointage. Pré-façonnage : mise en boule lâche. Apprêt : 2e fermentation, après façonnage. Grigne : incision avant cuisson. Défausse : levain retiré avant un rafraîchi.
 
 Bon pain.
