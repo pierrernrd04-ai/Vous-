@@ -3,10 +3,12 @@
 // listée dans masterclasses/_commun/catalogue.tsv. Idempotent : relancer ne crée pas de doublons.
 //
 //   STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-masterclasses.mjs
-//   STRIPE_SECRET_KEY=sk_live_... ACCESS_BASE_URL=https://ton-site.tinypages.co node scripts/stripe-masterclasses.mjs
+//   STRIPE_SECRET_KEY=sk_live_... BOUTIQUE_URL=https://claude.ai/artifact/... node scripts/stripe-masterclasses.mjs
 //
-// ACCESS_BASE_URL (facultatif) : après paiement, l'acheteur est redirigé vers <ACCESS_BASE_URL>/<slug>/acces.
-// Sans elle, Stripe affiche une page de confirmation et l'accès part par e-mail (voir masterclasses/_commun/sav.md).
+// BOUTIQUE_URL (facultatif) : après paiement, l'acheteur est redirigé vers <BOUTIQUE_URL>#<NN>-<code>,
+// qui ouvre son cours (codes dans masterclasses/_commun/codes-acces.json). Sans elle, Stripe affiche
+// une page de confirmation et l'accès part par e-mail (voir masterclasses/_commun/sav.md).
+// Les URL des liens créés sont aussi écrites dans masterclasses/_commun/liens-paiement.json.
 // La clé peut être une clé restreinte avec l'écriture sur Products, Prices et Payment Links.
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -20,7 +22,9 @@ const INVOICE_FOOTER =
   'tu as reconnu renoncer à ton droit de rétractation (art. L221-28 13° du Code de la consommation).';
 
 const key = process.env.STRIPE_SECRET_KEY;
-const accessBase = (process.env.ACCESS_BASE_URL || '').replace(/\/+$/, '');
+const boutique = (process.env.BOUTIQUE_URL || '').replace(/#.*$/, '');
+const CODES = new URL('../masterclasses/_commun/codes-acces.json', import.meta.url);
+const LINKS = new URL('../masterclasses/_commun/liens-paiement.json', import.meta.url);
 if (!key || !/^(sk|rk)_(test|live)_/.test(key)) {
   console.error('STRIPE_SECRET_KEY manquante ou invalide (sk_… ou rk_…).');
   process.exit(1);
@@ -90,8 +94,9 @@ async function listMasterclassLinks() {
 }
 
 function createPaymentLink(price, mc) {
-  const afterCompletion = accessBase
-    ? { type: 'redirect', redirect: { url: `${accessBase}/${mc.slug}/acces?session_id={CHECKOUT_SESSION_ID}` } }
+  const codes = JSON.parse(readFileSync(CODES, 'utf8'));
+  const afterCompletion = boutique
+    ? { type: 'redirect', redirect: { url: `${boutique}#${mc.num}-${codes[mc.num]}` } }
     : { type: 'hosted_confirmation', hosted_confirmation: { custom_message: 'Merci ! Ton accès à la masterclass arrive par e-mail dans les minutes qui suivent. Rien reçu sous 24 h ? Réponds à l\'e-mail de reçu.' } };
   return stripe('POST', '/payment_links', {
     line_items: [{ price: price.id, quantity: 1 }],
@@ -118,6 +123,9 @@ async function main() {
     console.log(`${mc.num} ${mc.slug.padEnd(26)} ${link.url}`);
   }
   writeFileSync(OUTPUT, `${JSON.stringify(out, null, 2)}\n`);
+  const links = JSON.parse(readFileSync(LINKS, 'utf8'));
+  for (const mc of catalogue) links[mc.num] = { ...links[mc.num], stripe: out.links[mc.slug].url };
+  writeFileSync(LINKS, `${JSON.stringify(links, null, 2)}\n`);
   console.log(`\nMode ${mode} — ${catalogue.length} liens écrits dans masterclasses/_commun/payment-links.json`);
 }
 

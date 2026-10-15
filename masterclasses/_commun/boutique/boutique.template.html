@@ -1,0 +1,331 @@
+<title>Masterclasses à 49 €</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<style>
+/* Layout : vitrine du catalogue (grille de couvertures), puis vue produit avec trois onglets — page de vente publiée, espace élève, e-mails. */
+:root {
+  --bg: #f4f6f9; --surface: #ffffff; --ink: #121722; --muted: #5a6476; --line: #dfe3ea; --soft: #eef1f6;
+  --sport: #d9481f; --ia: #2a55e0; --niche: #24804f; --ph-bg: #fff1b8; --ph-fg: #6b4e00;
+  --accent: var(--ia); --on-accent: #ffffff;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e121a; --surface: #161b25; --ink: #e8ecf3; --muted: #9aa4b5; --line: #2a3140; --soft: #1d2330;
+  --sport: #ff7a52; --ia: #7d9bff; --niche: #4cc188; --ph-bg: #4a3a05; --ph-fg: #ffe28a; --on-accent: #0e121a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e121a; --surface: #161b25; --ink: #e8ecf3; --muted: #9aa4b5; --line: #2a3140; --soft: #1d2330;
+  --sport: #ff7a52; --ia: #7d9bff; --niche: #4cc188; --ph-bg: #4a3a05; --ph-fg: #ffe28a; --on-accent: #0e121a; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px }
+h1, h2, h3, h4 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0 }
+button { font: inherit; color: inherit }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.g-sport { --accent: var(--sport) } .g-ia { --accent: var(--ia) } .g-niche { --accent: var(--niche) }
+
+/* En-tête du catalogue */
+.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 32px; margin-bottom: 28px }
+.top h1 { font-size: clamp(30px, 5vw, 48px); font-weight: 800; letter-spacing: -0.02em }
+.top p { margin: 6px 0 0; color: var(--muted); max-width: 60ch }
+.filters { display: flex; flex-wrap: wrap; gap: 8px }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 14px; font-weight: 600 }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+
+/* Grille de couvertures */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px }
+.card { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; transition: transform .15s, border-color .15s }
+.card:hover { transform: translateY(-2px); border-color: var(--accent) }
+.cover { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--accent); color: var(--on-accent); padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden }
+.cover::after { content: attr(data-n); position: absolute; right: -6px; bottom: -34px; font: 800 120px/1 var(--display); opacity: .13; letter-spacing: -0.04em }
+.cover .niche { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase }
+.cover .ct { font: 700 19px/1.15 var(--display); max-width: 92%; position: relative; z-index: 1; text-wrap: balance }
+.card .meta { padding: 12px 16px 14px; display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted) }
+.card .meta b { color: var(--ink); font-variant-numeric: tabular-nums }
+
+/* Vue produit */
+.back { border: 0; background: none; cursor: pointer; color: var(--muted); font-weight: 600; padding: 0; margin-bottom: 14px }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--line) }
+.tab { border: 0; background: none; padding: 10px 14px; cursor: pointer; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -1px }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent) }
+.frame { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden }
+.bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--soft); border-bottom: 1px solid var(--line); font: 13px var(--mono); color: var(--muted); min-width: 0 }
+.bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); flex: none }
+.bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; flex: 1; min-width: 0 }
+
+/* Page de vente publiée */
+.sp { max-width: 760px; margin: 0 auto; padding: 0 22px }
+.warn { margin: 22px 0 0; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--soft); font-size: 14px; color: var(--muted) }
+.warn p { margin: 0 }
+.hero { padding: 40px 0 34px; display: grid; gap: 16px }
+.hero .kicker { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent) }
+.hero h2 { font-size: clamp(30px, 5.4vw, 46px); font-weight: 800; letter-spacing: -0.02em }
+.hero .sub { font-size: 18px; color: var(--muted); margin: 0; max-width: 62ch }
+.cta { display: inline-flex; align-items: center; gap: 10px; justify-self: start; background: var(--accent); color: var(--on-accent); border: 0; border-radius: 10px; padding: 14px 22px; font: 700 17px var(--body); cursor: pointer; box-shadow: 0 6px 18px -8px var(--accent) }
+.cta small { font-weight: 600; opacity: .85 }
+.rea { font-size: 14px; color: var(--muted) }
+.sec { padding: 30px 0; border-top: 1px solid var(--line) }
+.sec .lbl { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px }
+.md h1, .md h2, .md h3 { font-size: 24px; margin: 18px 0 10px }
+.md h4 { font-size: 18px; margin: 16px 0 8px }
+.md > :first-child { margin-top: 0 }
+.md p { margin: 0 0 12px } .md ul, .md ol { padding-left: 1.3em; margin: 0 0 14px } .md li { margin: 5px 0 }
+.md li::marker { color: var(--accent) }
+.md blockquote { margin: 0 0 14px; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--soft); border-radius: 0 8px 8px 0 }
+.md blockquote p:last-child { margin: 0 }
+.md hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0 }
+.md code { font: 0.88em var(--mono); background: var(--soft); padding: 1px 5px; border-radius: 4px }
+.md pre { background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 14px; overflow-x: auto; white-space: pre-wrap; word-break: break-word }
+.md pre code { background: none; padding: 0; font-size: 13.5px; line-height: 1.55 }
+.md .tbl { overflow-x: auto; margin: 0 0 16px }
+.md table { border-collapse: collapse; font-size: 14.5px; min-width: 100% }
+.md th, .md td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top }
+.md th { background: var(--soft); font-weight: 700 }
+mark.ph { background: var(--ph-bg); color: var(--ph-fg); padding: 2px 6px; border-radius: 4px; font-size: .92em; font-weight: 600 }
+.lk { text-decoration: underline; text-underline-offset: 2px }
+.s4 ol { list-style: none; padding: 0; counter-reset: m; display: grid; gap: 10px }
+.s4 ol > li { counter-increment: m; display: grid; grid-template-columns: 40px 1fr; gap: 12px; background: var(--soft); border-radius: 10px; padding: 12px 14px; margin: 0 }
+.s4 ol > li::before { content: counter(m, decimal-leading-zero); font: 800 20px/1.3 var(--display); color: var(--accent) }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px }
+.cols > div { background: var(--soft); border-radius: 10px; padding: 14px 16px; min-width: 0 }
+.cols > div:last-child li::marker { color: var(--muted) }
+.s8 details { border-bottom: 1px solid var(--line); padding: 12px 0 }
+.s8 summary { cursor: pointer; font-weight: 700 }
+.s8 details > :not(summary) { margin-top: 8px; color: var(--muted) }
+.s9 { text-align: left; padding-bottom: 44px }
+.s9 .md > p:last-child { font-size: 13px; color: var(--muted); margin-top: 14px }
+.s9 .cta { margin: 6px 0 4px }
+
+/* Espace élève */
+.course { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 60vh }
+.toc { border-right: 1px solid var(--line); padding: 18px 12px; background: var(--soft); min-width: 0 }
+.toc h4 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 8px 8px }
+.toc button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 14px; line-height: 1.35 }
+.toc button[aria-current="true"] { background: var(--surface); font-weight: 700; box-shadow: inset 3px 0 0 var(--accent) }
+.lesson { padding: 26px clamp(16px, 4vw, 44px) 40px; max-width: 820px; min-width: 0 }
+.lesson .md h2 { font-size: 30px; margin-bottom: 16px } .lesson .md h3 { font-size: 21px; margin-top: 28px }
+.nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; flex-wrap: wrap }
+.nav button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 14px; cursor: pointer; font-weight: 600 }
+.mail { padding: 22px clamp(16px, 4vw, 40px) 36px; max-width: 820px }
+.note { font-size: 13.5px; color: var(--muted); margin: 0 0 12px }
+@media (max-width: 760px) {
+  .course { grid-template-columns: 1fr }
+  .toc { border-right: 0; border-bottom: 1px solid var(--line); display: flex; gap: 6px; overflow-x: auto; padding: 10px }
+  .toc h4 { display: none } .toc button { flex: none; width: auto; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .sp { padding: 0 16px }
+}
+@media (prefers-reduced-motion: reduce) { .card { transition: none } .card:hover { transform: none } }
+.brand { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.top h1 { margin-top: 6px }
+.mine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface) }
+.pill { border: 1px solid var(--line); background: var(--soft); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-weight: 600; font-size: 14px }
+.access { margin-top: 40px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); display: grid; gap: 8px; max-width: 620px }
+.access h2 { font-size: 22px } .access p { margin: 0; color: var(--muted) }
+.codeform { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px }
+.codeform label { width: 100%; font-weight: 600; font-size: 14px }
+.codeform input { flex: 1 1 220px; min-width: 0; font: 15px var(--mono); padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink) }
+.err { width: 100%; color: var(--sport); font-size: 14px }
+.foot { margin-top: 36px; font-size: 13px; color: var(--muted); max-width: 80ch }
+.buy { display: grid; gap: 12px; justify-items: start }
+.consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--muted); max-width: 62ch; cursor: pointer }
+.consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent); flex: none }
+.buy.need .consent { color: var(--ink); font-weight: 600 }
+.paybtns { display: flex; flex-wrap: wrap; gap: 10px }
+a.cta { text-decoration: none }
+.cta.alt { background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: none }
+.cta[aria-disabled="true"], .cta:disabled { opacity: .45; cursor: not-allowed; box-shadow: none }
+.cta.small { padding: 11px 16px; font-size: 15px }
+.fine { margin: 0; font-size: 13px; color: var(--muted) }
+.welcome { margin-bottom: 14px; padding: 12px 14px; border-radius: 10px; background: var(--soft); font-size: 15px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center }
+.code { font: 14px var(--mono); background: var(--surface); border: 1px solid var(--line); padding: 2px 8px; border-radius: 6px; word-break: break-all }
+.copy { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 13px; font-weight: 600 }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+const DATA = /*__DATA__*/{};
+const GROUPS = { all: 'Toutes', sport: 'Sport', ia: 'IA', niche: 'Niches en vogue' };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const md = src => marked.parse(src, { gfm: true }).replace(/<table>/g, '<div class="tbl"><table>').replace(/<\/table>/g, '</table></div>');
+const inline = s => marked.parseInline(s || '');
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null') } catch (e) { return null } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} },
+};
+const state = { view: 'list', filter: 'all', id: null, lesson: 0, course: null };
+const app = document.getElementById('app');
+const find = num => DATA.items.find(x => x.num === num);
+
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decrypt(item, code) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(item.cours.salt), iterations: DATA.iterations, hash: 'SHA-256' },
+    base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(item.cours.iv) }, key, b64(item.cours.ct));
+  return new TextDecoder().decode(plain);
+}
+async function unlock(num, code) {
+  const item = find(num);
+  if (!item) throw new Error('Masterclass introuvable.');
+  const text = await decrypt(item, code).catch(() => { throw new Error('Ce code ne correspond pas à cette masterclass.') });
+  const owned = store.get('mc-acces') || {}; owned[num] = code; store.set('mc-acces', owned);
+  Object.assign(state, { view: 'course', id: num, lesson: 0, course: text });
+  render(); window.scrollTo(0, 0);
+}
+
+/* ---------- Vitrine ---------- */
+function list() {
+  const items = DATA.items.filter(d => state.filter === 'all' || d.grp === state.filter);
+  const owned = store.get('mc-acces') || {};
+  const mine = Object.keys(owned).filter(find);
+  app.innerHTML = `
+    <header class="top">
+      <div><span class="brand">Masterclasses · Pierre</span><h1>Apprends un savoir-faire concret, à ton rythme</h1>
+      <p>20 masterclasses écrites, avec des exercices et des modèles à copier. 49 € chacune, accès immédiat et à vie.</p></div>
+      <div class="filters" role="group" aria-label="Filtrer">${Object.entries(GROUPS).map(([k, v]) =>
+        `<button class="chip" data-f="${k}" aria-pressed="${state.filter === k}">${v}</button>`).join('')}</div>
+    </header>
+    ${mine.length ? `<div class="mine"><b>Tes masterclasses</b>${mine.map(n => `<button class="pill" data-open="${n}">${esc(find(n).titre)}</button>`).join('')}</div>` : ''}
+    <div class="grid">${items.map(d => `
+      <button class="card g-${d.grp}" data-id="${d.num}">
+        <div class="cover" data-n="${d.num}"><span class="niche">${esc(d.niche)}</span><span class="ct">${esc(d.titre)}</span></div>
+        <div class="meta"><span>${d.modules.length} modules</span><b>49 €</b></div>
+      </button>`).join('')}</div>
+    <section class="access" id="acces">
+      <h2>Tu as déjà acheté ?</h2>
+      <p>Après le paiement, tu arrives directement dans ta masterclass. Si tu as fermé la page, entre ton code d'accès.</p>
+      <form id="codeForm" class="codeform">
+        <label for="codeIn">Code d'accès</label>
+        <input id="codeIn" autocomplete="off" placeholder="ex. 18-AbC123…" required>
+        <button class="cta small" type="submit">Ouvrir ma masterclass</button>
+        <p class="err" id="codeErr" hidden></p>
+      </form>
+    </section>
+    <footer class="foot">Pierre Renard, entrepreneur individuel · Prix TTC, TVA non applicable, art. 293 B du CGI · Paiement sécurisé par Stripe ou PayPal · Une question : réponds simplement à l'e-mail de ton reçu de paiement.</footer>`;
+  app.querySelectorAll('.chip').forEach(b => b.onclick = () => { state.filter = b.dataset.f; list() });
+  app.querySelectorAll('.card').forEach(b => b.onclick = () => openItem(b.dataset.id));
+  app.querySelectorAll('[data-open]').forEach(b => b.onclick = () => unlock(b.dataset.open, owned[b.dataset.open]));
+  app.querySelector('#codeForm').onsubmit = async e => {
+    e.preventDefault();
+    const m = app.querySelector('#codeIn').value.trim().replace(/^#/, '').match(/^(\d\d)-([A-Za-z0-9]+)$/);
+    const err = app.querySelector('#codeErr');
+    if (!m) { err.textContent = 'Le code commence par le numéro de la masterclass, puis un tiret (ex. 18-AbC123…).'; err.hidden = false; return }
+    try { await unlock(m[1], m[2]) } catch (x) { err.textContent = x.message; err.hidden = false }
+  };
+}
+
+function openItem(id) { Object.assign(state, { view: 'item', id }); render(); window.scrollTo(0, 0) }
+
+/* ---------- Page de vente ---------- */
+function buyBlock(d, where) {
+  const has = d.stripe || d.paypal;
+  if (!has) return `<div class="buy"><button class="cta" type="button" disabled>Paiement bientôt disponible</button></div>`;
+  return `<div class="buy" data-buy>
+    <label class="consent"><input type="checkbox" id="consent-${where}"> Je demande l'accès immédiat à la masterclass et je renonce à mon droit de rétractation (art. L221-28 13° C. conso).</label>
+    <div class="paybtns">
+      ${d.stripe ? `<a class="cta" data-pay href="${esc(d.stripe)}" target="_blank" rel="noopener" aria-disabled="true">Payer 49 € par carte</a>` : ''}
+      ${d.paypal ? `<a class="cta alt" data-pay href="${esc(d.paypal)}" target="_blank" rel="noopener" aria-disabled="true">Payer avec PayPal</a>` : ''}
+    </div>
+    <p class="fine">Accès immédiat après le paiement · Accès à vie · 49 € TTC, TVA non applicable, art. 293 B du CGI</p>
+  </div>`;
+}
+
+function salesPage(d) {
+  return `<div class="sp">
+    ${d.warn ? `<div class="warn">${md(d.warn)}</div>` : ''}
+    <div class="hero">
+      <span class="kicker">Masterclass · ${esc(d.niche)}</span>
+      <h2>${inline(d.hero.title)}</h2>
+      ${d.hero.sub ? `<p class="sub">${inline(d.hero.sub)}</p>` : ''}
+      ${buyBlock(d, 'top')}
+    </div>
+    ${d.sections.map(s => `<section class="sec s${s.n}"><div class="lbl">${esc(s.name.replace(/…/g, ''))}</div><div class="md">${md(s.md.replace(/\{\{CTA\}\}/g, ''))}</div></section>`).join('')}
+    <section class="sec s9">${buyBlock(d, 'bottom')}</section>
+  </div>`;
+}
+
+function shapeSales(root) {
+  const s5 = root.querySelector('.s5 .md');
+  if (s5 && s5.querySelectorAll('ul').length >= 2) {
+    const cols = document.createElement('div'); cols.className = 'cols'; let cur = null;
+    [...s5.children].forEach(el => {
+      if (el.tagName === 'P' || /^H\d$/.test(el.tagName)) { cur = document.createElement('div'); cols.appendChild(cur) }
+      (cur || (cur = cols.appendChild(document.createElement('div')))).appendChild(el);
+    });
+    s5.replaceChildren(cols);
+  }
+  const s8 = root.querySelector('.s8 .md');
+  if (s8) {
+    const out = document.createElement('div'); let cur = null;
+    [...s8.children].forEach(el => {
+      const st = el.tagName === 'P' && el.firstChild?.nodeName === 'STRONG' ? el.firstChild : null;
+      if ((st && st.textContent.trim().endsWith('?')) || /^H[34]$/.test(el.tagName)) {
+        cur = document.createElement('details'); const sm = document.createElement('summary');
+        sm.textContent = (st || el).textContent.trim(); cur.appendChild(sm); out.appendChild(cur);
+        if (st) { st.remove(); if (el.textContent.trim()) cur.appendChild(el) }
+      } else if (cur) cur.appendChild(el); else out.appendChild(el);
+    });
+    s8.replaceChildren(out);
+  }
+  root.querySelectorAll('[data-buy]').forEach(box => {
+    const cb = box.querySelector('input[type=checkbox]');
+    const sync = () => box.querySelectorAll('[data-pay]').forEach(a => a.setAttribute('aria-disabled', String(!cb.checked)));
+    cb.onchange = sync; sync();
+    box.querySelectorAll('[data-pay]').forEach(a => a.addEventListener('click', e => {
+      if (!cb.checked) { e.preventDefault(); box.classList.add('need'); cb.focus() }
+    }));
+  });
+}
+
+/* ---------- Espace élève ---------- */
+function course() {
+  const d = find(state.id);
+  const parts = state.course.split(/^(?=## )/m);
+  const intro = parts.shift().replace(/^# .+$/m, '');
+  const L = parts.map(p => ({ title: p.match(/^## (.+)$/m)[1].replace(/\*\*/g, ''), md: p }));
+  if (L.length) L[0].md = intro + L[0].md;
+  const i = Math.min(state.lesson, L.length - 1);
+  const code = (store.get('mc-acces') || {})[d.num];
+  return `<div class="g-${d.grp}">
+    <button class="back" type="button">← Toutes les masterclasses</button>
+    <div class="welcome"><b>Bienvenue dans « ${esc(d.titre)} ».</b> Garde ce code pour revenir depuis n'importe quel appareil : <code class="code">${esc(d.num)}-${esc(code)}</code> <button class="copy" type="button" data-copy="${esc(d.num)}-${esc(code)}">Copier</button></div>
+    <div class="frame"><div class="course">
+      <nav class="toc" aria-label="Sommaire"><h4>Sommaire</h4>${L.map((l, k) => `<button data-l="${k}" aria-current="${k === i}">${esc(l.title)}</button>`).join('')}</nav>
+      <article class="lesson"><div class="md">${md(L[i].md)}</div>
+        <div class="nav">${i > 0 ? `<button data-l="${i - 1}">← ${esc(L[i - 1].title)}</button>` : '<span></span>'}
+        ${i < L.length - 1 ? `<button data-l="${i + 1}">${esc(L[i + 1].title)} →</button>` : ''}</div>
+      </article></div></div></div>`;
+}
+
+function render() {
+  if (state.view === 'list') return list();
+  if (state.view === 'course') {
+    app.innerHTML = course();
+    app.querySelector('.back').onclick = () => { state.view = 'list'; render() };
+    app.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { state.lesson = +b.dataset.l; render(); app.querySelector('.frame').scrollIntoView({ block: 'start' }) });
+    const cp = app.querySelector('.copy');
+    cp.onclick = async () => {
+      try { await navigator.clipboard.writeText(cp.dataset.copy); cp.textContent = 'Copié' }
+      catch (e) { const r = document.createRange(); r.selectNodeContents(app.querySelector('.code')); getSelection().removeAllRanges(); getSelection().addRange(r) }
+    };
+    return;
+  }
+  const d = find(state.id);
+  app.innerHTML = `<div class="g-${d.grp}"><button class="back" type="button">← Toutes les masterclasses</button><div class="frame">${salesPage(d)}</div></div>`;
+  shapeSales(app);
+  app.querySelector('.back').onclick = () => { state.view = 'list'; render() };
+}
+
+async function boot() {
+  if (!window.marked) { app.innerHTML = '<p>La page n\'a pas pu se charger. Recharge-la.</p>'; return }
+  const m = location.hash.slice(1).match(/^(\d\d)-([A-Za-z0-9]+)$/);
+  if (m) { try { await unlock(m[1], m[2]); return } catch (e) { /* code invalide : vitrine */ } }
+  render();
+}
+window.addEventListener('hashchange', boot);
+boot();
+</script>

@@ -1,0 +1,103 @@
+{
+  "_aide": "Colle ici l'URL du Payment Link Stripe (https://buy.stripe.com/...) et/ou du lien de paiement PayPal (https://www.paypal.com/ncp/payment/...) de chaque masterclass, puis relance build_boutique.py.",
+  "01": {
+    "titre": "Courir 10 km sans t'arrêter en 10 semaines",
+    "stripe": "",
+    "paypal": ""
+  },
+  "02": {
+    "titre": "Ton premier semi-marathon, étape par étape",
+    "stripe": "",
+    "paypal": ""
+  },
+  "03": {
+    "titre": "Ta première course HYROX : la méthode en 12 semaines",
+    "stripe": "",
+    "paypal": ""
+  },
+  "04": {
+    "titre": "Du bitume aux sentiers : ton premier trail",
+    "stripe": "",
+    "paypal": ""
+  },
+  "05": {
+    "titre": "Claude pour indépendants : délègue ton admin à l'IA",
+    "stripe": "",
+    "paypal": ""
+  },
+  "06": {
+    "titre": "Crée et vends ton premier produit numérique avec l'IA",
+    "stripe": "",
+    "paypal": ""
+  },
+  "07": {
+    "titre": "La méthode de prompt pro : des réponses IA utilisables du premier coup",
+    "stripe": "",
+    "paypal": ""
+  },
+  "08": {
+    "titre": "Crée ton site ou ton outil sans coder, avec l'IA",
+    "stripe": "",
+    "paypal": ""
+  },
+  "09": {
+    "titre": "L'IA pour préparer tes cours en deux fois moins de temps",
+    "stripe": "",
+    "paypal": ""
+  },
+  "10": {
+    "titre": "L'IA pour agents immobiliers : annonces, relances, comptes rendus",
+    "stripe": "",
+    "paypal": ""
+  },
+  "11": {
+    "titre": "L'IA pour artisans : devis, relances et avis clients",
+    "stripe": "",
+    "paypal": ""
+  },
+  "12": {
+    "titre": "CV, lettre et entretien : ta recherche d'emploi avec l'IA",
+    "stripe": "",
+    "paypal": ""
+  },
+  "13": {
+    "titre": "Lance et anime ton run club de quartier",
+    "stripe": "",
+    "paypal": ""
+  },
+  "14": {
+    "titre": "Padel : les bases pour progresser dès tes premiers matchs",
+    "stripe": "",
+    "paypal": ""
+  },
+  "15": {
+    "titre": "Deviens créateur UGC : ton portfolio et tes premières marques",
+    "stripe": "",
+    "paypal": ""
+  },
+  "16": {
+    "titre": "Automatise ta petite entreprise avec des agents IA",
+    "stripe": "",
+    "paypal": ""
+  },
+  "17": {
+    "titre": "Cultive tes pleurotes à la maison",
+    "stripe": "",
+    "paypal": ""
+  },
+  "18": {
+    "titre": "Ton pain au levain maison, de A à Z",
+    "stripe": "",
+    "paypal": ""
+  },
+  "19": {
+    "titre": "Entretiens et dépanne toi-même ton vélo électrique",
+    "stripe": "",
+    "paypal": ""
+  },
+  "20": {
+    "titre": "Deviens ghostwriter LinkedIn : vends l'écriture de posts",
+    "stripe": "",
+    "paypal": ""
+  }
+}

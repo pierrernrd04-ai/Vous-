@@ -1,0 +1,495 @@
+<title>Diffusion gratuite des masterclasses</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f5f0; --surface:#ffffff; --surface-2:#efece4; --text:#1f2421; --muted:#5d645f;
+  --border:#dcd7cb; --accent:#1f6f5c; --accent-soft:#e1efe9; --warn:#8a4b12; --warn-soft:#f8ecdd;
+  --code-bg:#f2efe8; --focus:#1f6f5c;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151816; --surface:#1d211f; --surface-2:#242926; --text:#e7e9e5; --muted:#a3aba5;
+    --border:#343b37; --accent:#6cc3a8; --accent-soft:#1f3a32; --warn:#e7a768; --warn-soft:#3a2b1c;
+    --code-bg:#1a1e1c; --focus:#6cc3a8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151816; --surface:#1d211f; --surface-2:#242926; --text:#e7e9e5; --muted:#a3aba5;
+  --border:#343b37; --accent:#6cc3a8; --accent-soft:#1f3a32; --warn:#e7a768; --warn-soft:#3a2b1c;
+  --code-bg:#1a1e1c; --focus:#6cc3a8;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Source Sans 3",system-ui,sans-serif; font-size:17px; line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:32px 64px;
+  overflow-wrap:break-word;
+}
+.wrap{max-width:860px; margin-inline:auto}
+h1,h2,h3{font-family:"Fraunces",Georgia,serif; font-weight:650; line-height:1.2; letter-spacing:-0.01em}
+h1{font-size:clamp(1.9rem,5vw,2.7rem); margin:0 0 .4em}
+h2{font-size:clamp(1.45rem,3.6vw,1.9rem); margin:2.6em 0 .6em; padding-top:.6em; border-top:1px solid var(--border)}
+h3{font-size:1.2rem; margin:1.8em 0 .5em; font-weight:500}
+h4{font-size:1rem; margin:1.4em 0 .4em; text-transform:uppercase; letter-spacing:.06em; color:var(--muted)}
+p,li{max-width:70ch}
+a{color:var(--accent); text-underline-offset:2px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+.lede{font-size:1.15rem; color:var(--muted); margin-top:0}
+.kicker{font-size:.85rem; text-transform:uppercase; letter-spacing:.12em; color:var(--accent); font-weight:700; margin:0 0 .6em}
+code{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.88em; background:var(--code-bg); padding:.1em .35em; border-radius:4px; word-break:break-word}
+nav.toc{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin:28px 0}
+nav.toc h2{border:0; margin:0 0 .5em; padding:0; font-size:1.1rem}
+nav.toc ol{margin:0; padding-left:1.3em; columns:2 240px; column-gap:28px}
+nav.toc li{margin:.15em 0; break-inside:avoid}
+.note{background:var(--warn-soft); border-left:4px solid var(--warn); padding:12px 16px; border-radius:0 8px 8px 0; margin:1.2em 0}
+.note strong{color:var(--warn)}
+.tip{background:var(--accent-soft); border-left:4px solid var(--accent); padding:12px 16px; border-radius:0 8px 8px 0; margin:1.2em 0}
+.rules{counter-reset:r; list-style:none; padding:0}
+.rules li{counter-increment:r; position:relative; padding:12px 14px 12px 52px; background:var(--surface); border:1px solid var(--border); border-radius:10px; margin:10px 0; max-width:none}
+.rules li::before{content:counter(r); position:absolute; left:14px; top:12px; width:26px; height:26px; border-radius:50%; background:var(--accent); color:var(--bg); font-weight:700; font-size:.9rem; display:grid; place-items:center}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin:16px 0}
+.card h3{margin-top:0}
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+.grid .card{margin:0}
+.copy{position:relative; margin:12px 0 20px}
+.copy .bar{display:flex; justify-content:space-between; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border); border-bottom:0; border-radius:10px 10px 0 0; padding:6px 8px 6px 14px; font-size:.85rem; color:var(--muted)}
+.copy pre{margin:0; background:var(--code-bg); border:1px solid var(--border); border-radius:0 0 10px 10px; padding:14px; white-space:pre-wrap; word-break:break-word; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.84rem; line-height:1.55; color:var(--text); max-width:100%; overflow-x:auto}
+button.cp{font:inherit; font-size:.85rem; font-weight:600; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:4px 12px; cursor:pointer; min-height:32px}
+button.cp:hover{border-color:var(--accent); color:var(--accent)}
+button.cp.ok{background:var(--accent); color:var(--bg); border-color:var(--accent)}
+.tbl{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:14px 0 22px; border:1px solid var(--border); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:.93rem}
+th,td{text-align:left; vertical-align:top; padding:9px 12px; border-bottom:1px solid var(--border)}
+th{background:var(--surface-2); font-weight:700; white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td input{width:70px; font:inherit; padding:3px 6px; border:1px solid var(--border); border-radius:5px; background:var(--bg); color:var(--text)}
+.muted{color:var(--muted)}
+.tag{display:inline-block; font-size:.78rem; font-weight:700; padding:1px 8px; border-radius:99px; background:var(--accent-soft); color:var(--accent); margin-right:4px}
+footer{margin-top:56px; padding-top:16px; border-top:1px solid var(--border); color:var(--muted); font-size:.9rem}
+.sr{position:absolute; left:-9999px}
+</style>
+
+<div class="wrap">
+<header>
+  <p class="kicker">Guide pratique · Pierre · 20 masterclasses à 49 €</p>
+  <h1>Diffuser ses masterclasses sans budget pub</h1>
+  <p class="lede">Forums, Pinterest, blogs gratuits et vitrines de vente : une méthode concrète, des textes prêts à copier, un planning de 14 jours et un tableau de suivi. Le lien de ta boutique est déjà inséré dans les textes : <code>https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA</code>. Ajoute un paramètre UTM par canal (partie 8) pour savoir d'où viennent tes ventes.</p>
+</header>
+
+<nav class="toc" aria-label="Sommaire">
+  <h2>Sommaire</h2>
+  <ol>
+    <li><a href="#regles">Les règles d'or</a></li>
+    <li><a href="#groupes">Les 3 groupes de niches</a></li>
+    <li><a href="#pinterest">Pinterest</a></li>
+    <li><a href="#forums">Forums et communautés</a></li>
+    <li><a href="#blogs">Blogs et plateformes d'articles</a></li>
+    <li><a href="#vitrines">Vitrines de vente gratuites</a></li>
+    <li><a href="#planning">Planning de 14 jours</a></li>
+    <li><a href="#suivi">Suivi et liens UTM</a></li>
+  </ol>
+</nav>
+
+<!-- ============ 1. RÈGLES ============ -->
+<section id="regles">
+<h2>1. Les règles d'or</h2>
+<p>Ton atout, ce n'est pas la taille de ton audience (environ 500 abonnés Instagram), c'est ta crédibilité de praticien : tu cours, tu construis Traceo, tu as écrit ces contenus. Tout ce qui suit sert à protéger cette crédibilité.</p>
+<ol class="rules">
+  <li><strong>Pas de spam.</strong> Jamais le même message copié dans dix groupes le même jour. Un post par communauté, adapté à elle, et tu restes pour répondre aux commentaires.</li>
+  <li><strong>Lis les règles de chaque communauté avant de poster.</strong> Sur Reddit : la barre latérale et le wiki du subreddit. Sur Facebook : l'onglet « À propos » du groupe. Beaucoup interdisent toute autopromotion ou la limitent à un fil dédié (souvent hebdomadaire).</li>
+  <li><strong>Demande l'accord des modérateurs</strong> avant tout message contenant un lien vers un produit payant. Un message privé poli suffit (modèle plus bas). Sans réponse, pas de lien.</li>
+  <li><strong>Donne de la valeur d'abord : la règle des 9 pour 1.</strong> Pour un message qui contient ton lien, au moins neuf messages utiles sans lien (réponses, conseils, retours d'expérience). C'est aussi la condition pour que ton compte ait l'air d'une vraie personne, parce que c'en est une.</li>
+  <li><strong>Transparence totale.</strong> Quand tu mentionnes une masterclass, dis-le clairement : « je vends cette masterclass, 49 € ». Pas de faux témoignage d'« un ami qui l'a suivie ».</li>
+  <li><strong>Jamais de faux avis, jamais de faux comptes.</strong> N'achète pas d'avis, de likes, d'abonnés ou de votes, et ne crée pas de second compte pour te recommander toi-même. C'est interdit par les plateformes, souvent détecté, et en France les faux avis relèvent des pratiques commerciales trompeuses.</li>
+  <li><strong>Rien n'est garanti.</strong> Ce guide augmente tes chances d'être vu ; il ne garantit aucune vente. Ne promets pas non plus de résultats chiffrés à tes acheteurs (« -20 min sur ton semi », « 3 000 € par mois »).</li>
+</ol>
+
+<h3>Modèle : message aux modérateurs</h3>
+<div class="copy"><div class="bar"><span>Message privé · modérateurs</span><button class="cp" type="button">Copier</button></div>
+<pre>Bonjour,
+
+Je participe au groupe depuis quelques semaines (notamment sur [SUJET]). J'ai créé une masterclass payante (49 €) sur [THÈME], et j'aimerais savoir si je peux la mentionner une fois, dans un post qui apporte d'abord un contenu gratuit et complet (par exemple : [IDÉE DE POST]).
+
+Si ce n'est pas autorisé, aucun souci, je continuerai simplement à participer sans lien. Et s'il existe un fil dédié à l'autopromotion, je l'utiliserai.
+
+Merci pour la modération du groupe,
+Pierre</pre></div>
+
+<div class="note"><strong>Transparence sur Traceo :</strong> si tu cites ton appli dans une discussion course, précise toujours que tu en es le développeur.</div>
+</section>
+
+<!-- ============ GROUPES ============ -->
+<section id="groupes">
+<h2>2. Les 3 groupes de niches</h2>
+<p>Tu ne peux pas animer 20 niches en parallèle. Regroupe-les, et concentre-toi d'abord sur celles où tu es crédible (le sport) et celles qui ont les communautés les plus actives.</p>
+<div class="grid">
+  <div class="card"><h3>Sport</h3><p class="muted">Ton terrain naturel, en lien avec Traceo.</p>
+  <p>01 Premier 10 km · 02 Premier semi · 03 Première HYROX · 04 Premier trail · 13 Run club · 14 Padel débutant</p></div>
+  <div class="card"><h3>IA</h3><p class="muted">Public large, beaucoup de bruit : il faut des exemples concrets.</p>
+  <p>05 Claude pour indépendants · 06 Produit numérique · 07 Méthode de prompt · 08 Outil sans coder · 09 Enseignants · 10 Immobilier · 11 Artisans · 12 Recherche d'emploi · 16 Agents IA PME</p></div>
+  <div class="card"><h3>Niches en vogue</h3><p class="muted">Communautés passionnées, très visuelles, idéales pour Pinterest.</p>
+  <p>15 Créateur UGC · 17 Pleurotes maison · 18 Levain maison · 19 Entretien vélo électrique · 20 Ghostwriter LinkedIn</p></div>
+</div>
+</section>
+
+<!-- ============ 3. PINTEREST ============ -->
+<section id="pinterest">
+<h2>3. Pinterest (gratuit)</h2>
+<p>Pinterest fonctionne comme un moteur de recherche visuel : une épingle bien titrée peut être trouvée pendant des mois. C'est le canal le plus adapté au levain, aux pleurotes, à la course débutant et au padel.</p>
+
+<h3>Mise en place (une fois)</h3>
+<ol>
+  <li><strong>Crée un compte professionnel gratuit</strong> (ou convertis ton compte perso dans les paramètres). Tu accèdes aux statistiques et à la programmation des épingles.</li>
+  <li><strong>Revendique ton site si possible</strong> (paramètres, « Comptes revendiqués »). Si ta boutique est sur une plateforme qui ne permet pas d'ajouter la balise de vérification, ce n'est pas bloquant : tu peux quand même épingler vers ton lien.</li>
+  <li><strong>Un tableau par niche</strong>, nommé avec le mot-clé que les gens cherchent : « Plan course à pied débutant », « Pain au levain maison », « Culture de pleurotes », « Padel débutant », « Prompts IA pour le travail », etc. Ajoute une description de 2 phrases avec mots-clés à chaque tableau.</li>
+  <li><strong>Format vertical 2:3, 1000 × 1500 px.</strong> Titre lisible sur téléphone (gros, 6 à 8 mots), fond simple, une photo ou une illustration, ton nom ou « Masterclass de Pierre » en petit en bas.</li>
+  <li><strong>Visuels avec un outil gratuit type Canva</strong> : crée 3 modèles (« liste », « avant/après », « checklist ») et décline-les. Une seule identité de couleurs et de police pour tout le compte.</li>
+  <li><strong>Titre et description avec mots-clés</strong> : reprends les <code>mots_cles</code> de chaque <code>fiche.json</code>. Écris pour un humain, pas une liste de mots.</li>
+  <li><strong>Lien de destination</strong> : <code>https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA</code> avec un paramètre UTM (voir <a href="#suivi">le suivi</a>), ou vers un article de blog gratuit qui mène lui-même à la boutique.</li>
+</ol>
+
+<div class="tip"><strong>Rythme réaliste :</strong> 3 à 5 épingles par jour, programmées en une séance de 45 min par semaine (Pinterest permet de programmer à l'avance depuis le compte professionnel). Mieux vaut 3 par jour pendant 3 mois que 30 par jour pendant une semaine. Comptes plusieurs semaines avant de voir des impressions régulières.</div>
+
+<h3>5 idées d'épingles par groupe de niches</h3>
+<div class="grid">
+  <div class="card"><h4>Sport</h4><ol>
+    <li>« Le plan marche-course pour tes 4 premières semaines » (tableau visuel)</li>
+    <li>« 5 exercices de renforcement anti-blessure du coureur »</li>
+    <li>« Route ou trail : ce qui change vraiment (avant/après) »</li>
+    <li>« Les 8 ateliers HYROX expliqués en 1 image »</li>
+    <li>« Padel : le score et les règles en 30 secondes »</li>
+  </ol></div>
+  <div class="card"><h4>IA</h4><ol>
+    <li>« La structure de prompt en 6 blocs » (schéma)</li>
+    <li>« 5 prompts pour répondre à un client mécontent »</li>
+    <li>« Relance de facture : 3 messages gradués à copier »</li>
+    <li>« Adapter son CV à une offre avec l'IA, sans mentir »</li>
+    <li>« Enseignant : préparer une séquence en 20 minutes avec l'IA »</li>
+  </ol></div>
+  <div class="card"><h4>Niches en vogue</h4><ol>
+    <li>« Créer son levain : le calendrier jour par jour »</li>
+    <li>« Planning pain au levain compatible bureau »</li>
+    <li>« Pleurotes sur marc de café : les 6 étapes »</li>
+    <li>« Vélo électrique : la routine d'entretien mensuelle »</li>
+    <li>« Portfolio UGC sans client : 4 vidéos spec à tourner »</li>
+  </ol></div>
+</div>
+
+<h3>6 épingles complètes, prêtes à copier</h3>
+<p class="muted">Titre ≤ 100 caractères, description ≤ 500 caractères. Lien : <code>https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=pinterest&amp;utm_campaign=…</code></p>
+
+<div class="copy"><div class="bar"><span>Épingle · 01 Premier 10 km</span><button class="cp" type="button">Copier</button></div>
+<pre class="pin">Courir 10 km sans s'arrêter : le plan débutant en 10 semaines
+
+Tu marches 30 minutes sans souci mais tu t'essouffles dès que tu cours ? Ce plan progressif alterne marche et course pour t'amener à 10 km sans t'arrêter, en 10 semaines et 3 séances par semaine. Inclus : renforcement simple qui protège les jambes, gestion des douleurs, préparation du jour J. Masterclass à 49 € créée par un coureur. Programme course à pied débutant, plan 10 km, commencer à courir.</pre></div>
+
+<div class="copy"><div class="bar"><span>Épingle · 04 Premier trail</span><button class="cp" type="button">Copier</button></div>
+<pre class="pin">Du bitume aux sentiers : préparer ton premier trail en 10 semaines
+
+Tu cours 1 h sur route et tu vises un premier trail de 12 à 25 km ? Apprends à monter, descendre et poser le pied, à gérer le dénivelé avec les kilomètres-effort et à choisir un matériel utile sans surinvestir. Plan de 10 semaines, renforcement du traileur, sécurité et ravitaillement. Masterclass à 49 €. Débuter le trail, plan trail débutant, passer de la route au trail.</pre></div>
+
+<div class="copy"><div class="bar"><span>Épingle · 07 Méthode de prompt pro</span><button class="cp" type="button">Copier</button></div>
+<pre class="pin">La structure de prompt en 6 blocs pour des réponses IA utilisables du premier coup
+
+Tes réponses d'IA sont vagues et tu passes plus de temps à les corriger qu'à écrire ? Cette méthode en 6 blocs (rôle, contexte, tâche, exemples, format, contraintes) rend les réponses directement utilisables, sans compétence technique. Avec itération, bibliothèque de prompts et vérification des faits. Masterclass à 49 € pour salariés, indépendants et étudiants. Prompt engineering, productivité, Claude, ChatGPT.</pre></div>
+
+<div class="copy"><div class="bar"><span>Épingle · 14 Padel débutant</span><button class="cp" type="button">Copier</button></div>
+<pre class="pin">Padel débutant : règles, placement et coups de base pour progresser vite
+
+Tu as joué moins de 20 matchs de padel ou tu viens du tennis ? Comprends le score, choisis ta raquette, maîtrise la bandeja et la sortie de vitre, et place-toi enfin correctement en double. Programme de 6 semaines d'exercices à deux, plus échauffement et prévention épaule, coude et mollets. Masterclass à 49 €. Apprendre le padel, règles du padel, placement padel.</pre></div>
+
+<div class="copy"><div class="bar"><span>Épingle · 17 Pleurotes maison</span><button class="cp" type="button">Copier</button></div>
+<pre class="pin">Cultiver des pleurotes chez soi, même en appartement (sur marc de café)
+
+Pas de jardin ? Tu peux récolter des pleurotes dans ta cuisine. Deux méthodes pas à pas : réussir un kit prêt à pousser, puis cultiver sur marc de café ou paille pasteurisée. Hygiène, contaminations, réglages d'humidité et de lumière, récolte et recettes. Masterclass à 49 € pour débutants. Culture de champignons, champignons maison, valoriser son marc de café.</pre></div>
+
+<div class="copy"><div class="bar"><span>Épingle · 18 Levain maison</span><button class="cp" type="button">Copier</button></div>
+<pre class="pin">Pain au levain maison de A à Z, avec un planning compatible avec le bureau
+
+Créer ton levain jour par jour, l'entretenir, puis réussir un pain régulier même si tu travailles en journée. Recette de base au gramme près, gestes (rabats, pointage, façonnage), cuisson et diagnostic des ratés, variantes complet, graines et seigle. Masterclass à 49 € pour débutants et boulangers amateurs. Pain au levain, levain naturel, créer son levain, pain maison.</pre></div>
+</section>
+
+<!-- ============ 4. FORUMS ============ -->
+<section id="forums">
+<h2>4. Forums et communautés</h2>
+<p>Ici, la vente vient en dernier. Tu publies un contenu complet et utile, tu réponds à tout le monde, et le lien n'arrive que si les règles le permettent et si quelqu'un le demande, ou en fin de post avec une mention claire.</p>
+
+<div class="note"><strong>À vérifier avant chaque post :</strong> beaucoup de subreddits anglophones interdisent l'autopromotion et n'acceptent que l'anglais. Sur ceux-là, contente-toi de participer et de mettre ton site sur ton profil. Les communautés francophones (Kikourou, groupes Facebook, Discord) sont tes cibles prioritaires pour un contenu en français.</div>
+
+<h3>Sport : course, trail, HYROX, run club, padel</h3>
+<h4>Où aller</h4>
+<ul>
+  <li><strong>Forum Kikourou</strong> (<a href="https://www.kikourou.net">kikourou.net</a>) : la grande communauté francophone de course et de trail. Participe d'abord aux discussions d'entraînement et de récits de course.</li>
+  <li><strong>Reddit</strong> : <a href="https://www.reddit.com/r/running/">r/running</a>, <a href="https://www.reddit.com/r/trailrunning/">r/trailrunning</a>, <a href="https://www.reddit.com/r/padel/">r/padel</a> (en anglais ; utilise-les surtout pour participer et observer les questions récurrentes).</li>
+  <li><strong>Groupes Facebook</strong>, à trouver avec la recherche : <code>course à pied débutant</code>, <code>débuter la course à pied</code>, <code>préparation semi-marathon</code>, <code>trail débutant</code>, <code>trail [ta région]</code>, <code>hyrox France</code>, <code>padel [ta ville]</code>, <code>running [ta ville]</code>.</li>
+  <li><strong>Clubs Strava</strong> : onglet Clubs, recherche <code>run club</code>, <code>[ta ville] running</code>, <code>trail</code>, <code>débutant</code>. Ne poste pas de pub dans un club ; crée plutôt ton propre club local (cohérent avec la masterclass Run club et Traceo).</li>
+  <li><strong>Discord</strong> : recherche de serveurs (découverte de serveurs ou sites d'annuaires) avec <code>running français</code>, <code>course à pied</code>, <code>hyrox</code>, <code>padel</code>.</li>
+</ul>
+<h4>Modèle de post valeur gratuite (Kikourou, groupe Facebook débutants)</h4>
+<div class="copy"><div class="bar"><span>Post · course débutant</span><button class="cp" type="button">Copier</button></div>
+<pre>Débuter la course : les 4 erreurs que je vois le plus souvent (et quoi faire à la place)
+
+Je cours depuis plusieurs années et j'accompagne pas mal d'amis qui débutent. Voilà ce qui revient tout le temps :
+
+1. Courir trop vite. Si tu ne peux pas dire une phrase complète en courant, tu vas trop vite. Ralentis jusqu'à pouvoir parler : c'est l'allure qui construit l'endurance.
+
+2. Vouloir courir sans pause dès la première sortie. Alterner marche et course n'est pas tricher. Exemple de première semaine : 1 min de course / 2 min de marche, x 8, trois fois dans la semaine.
+
+3. Augmenter trop vite. Ajoute peu de chose d'une semaine à l'autre, et prévois une semaine plus légère de temps en temps. La plupart des douleurs de débutant viennent d'une progression trop rapide.
+
+4. Oublier le renforcement. 10 minutes deux fois par semaine suffisent : squats, fentes, montées sur la pointe des pieds, gainage. Ça protège tendons et genoux.
+
+Bonus : une douleur qui augmente pendant la séance ou qui te fait boiter, on arrête et on fait le point, éventuellement avec un professionnel de santé.
+
+Si vous débutez, dites-moi où vous en êtes (temps de marche/course actuel), je vous réponds en commentaire avec une proposition de progression.</pre></div>
+<h4>Quand mettre le lien</h4>
+<p>Pas dans ce post. Réponds aux commentaires pendant 48 h. Si quelqu'un demande un plan complet, et si les règles l'autorisent, réponds :</p>
+<div class="copy"><div class="bar"><span>Réponse avec lien · transparente</span><button class="cp" type="button">Copier</button></div>
+<pre>Bonne question. Transparence : j'ai écrit une masterclass payante (49 €) avec le plan complet de 10 semaines, le renforcement et la gestion des douleurs : https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=kikourou&amp;utm_campaign=10km
+Mais tout ce que j'ai mis dans le post suffit déjà pour démarrer, et je continue de répondre ici gratuitement.</pre></div>
+
+<h3>IA : indépendants, métiers, emploi, automatisation</h3>
+<h4>Où aller</h4>
+<ul>
+  <li><strong>Reddit</strong> : <a href="https://www.reddit.com/r/ClaudeAI/">r/ClaudeAI</a>, <a href="https://www.reddit.com/r/ChatGPT/">r/ChatGPT</a>, <a href="https://www.reddit.com/r/Entrepreneur/">r/Entrepreneur</a>, <a href="https://www.reddit.com/r/freelance/">r/freelance</a> (anglophones, règles anti-promo strictes : participe, partage des méthodes, pas de lien).</li>
+  <li><strong>Groupes Facebook</strong> : <code>IA pour indépendants</code>, <code>ChatGPT français</code>, <code>freelance France</code>, <code>auto-entrepreneur</code>, <code>enseignants IA</code>, <code>profs et numérique</code>, <code>agents immobiliers</code>, <code>mandataires immobiliers</code>, <code>artisans du bâtiment</code>, <code>recherche d'emploi</code>, <code>reconversion professionnelle</code>.</li>
+  <li><strong>Discord</strong> : recherche <code>IA francophone</code>, <code>ChatGPT FR</code>, <code>no-code français</code>, <code>freelance</code>.</li>
+  <li><strong>LinkedIn</strong> : pas un forum, mais les commentaires utiles sous les posts de ta cible (artisans, agents immobiliers, enseignants) sont un très bon canal.</li>
+</ul>
+<h4>Modèle de post valeur gratuite (groupe freelances / indépendants)</h4>
+<div class="copy"><div class="bar"><span>Post · IA pour indépendants</span><button class="cp" type="button">Copier</button></div>
+<pre>Relancer une facture impayée avec l'IA sans paraître agressif : le prompt que j'utilise
+
+Les relances, c'est la tâche que tout le monde repousse. Voici la structure de prompt qui me donne un message envoyable en une minute :
+
+---
+Tu es mon assistant administratif. Je suis [MÉTIER], indépendant.
+Contexte : facture n° [X] de [MONTANT] envoyée le [DATE] à [CLIENT], échéance dépassée de [N] jours. Relation : [bonne / première mission / déjà une relance].
+Tâche : rédige un e-mail de relance de niveau [1 = rappel courtois / 2 = ferme / 3 = dernier rappel avant mise en demeure].
+Contraintes : 80 mots maximum, ton professionnel et chaleureux, rappelle le montant, la date et le moyen de paiement, propose de m'appeler en cas de problème.
+---
+
+Trois conseils :
+- Ne mets jamais de données sensibles inutiles (adresse, coordonnées bancaires complètes) dans l'IA : tu les ajoutes après.
+- Relis toujours : l'IA peut inventer une date ou un montant si tu ne les donnes pas.
+- Prépare les 3 niveaux à l'avance, tu n'auras plus qu'à remplir les crochets.
+
+Vous relancez à combien de jours, vous ? Je peux adapter le prompt à votre cas en commentaire.</pre></div>
+<h4>Quand mettre le lien</h4>
+<p>Dans un commentaire séparé, seulement si les règles l'autorisent et si on te le demande, avec la mention « je vends cette masterclass (49 €) » et le bon UTM, par exemple <code>https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=facebook&amp;utm_campaign=claude-independants</code>. Choisis la masterclass qui correspond exactement au groupe : 10 pour l'immobilier, 11 pour les artisans, 09 pour les enseignants, 12 pour l'emploi.</p>
+
+<h3>Niches en vogue : levain, pleurotes, vélo électrique, UGC, ghostwriting</h3>
+<h4>Où aller</h4>
+<ul>
+  <li><strong>Reddit</strong> : <a href="https://www.reddit.com/r/Sourdough/">r/Sourdough</a>, <a href="https://www.reddit.com/r/MushroomGrowers/">r/MushroomGrowers</a>, <a href="https://www.reddit.com/r/ebikes/">r/ebikes</a>, <a href="https://www.reddit.com/r/freelance/">r/freelance</a> (en anglais : poste tes photos et retours d'expérience, pas de lien).</li>
+  <li><strong>Groupes Facebook</strong> : <code>pain au levain</code>, <code>levain maison</code>, <code>boulangerie maison</code>, <code>culture champignons</code>, <code>pleurotes</code>, <code>vélo électrique</code>, <code>VAE entretien</code>, <code>créateurs UGC France</code>, <code>rédacteurs web freelance</code>, <code>LinkedIn ghostwriting</code>.</li>
+  <li><strong>Discord</strong> : recherche <code>boulangerie</code>, <code>UGC</code>, <code>créateurs de contenu</code>, <code>rédaction freelance</code>.</li>
+</ul>
+<h4>Modèle de post valeur gratuite (groupe pain au levain)</h4>
+<div class="copy"><div class="bar"><span>Post · levain</span><button class="cp" type="button">Copier</button></div>
+<pre>Faire du pain au levain quand on travaille de 9 h à 18 h : mon planning de semaine
+
+Beaucoup abandonnent le levain parce que les recettes supposent qu'on est à la maison toute la journée. Voilà comment je fais (à adapter à la température de ta cuisine) :
+
+Mardi soir : je rafraîchis le levain.
+Mercredi matin, avant de partir : je mélange farine et eau (autolyse), puis j'ajoute le levain et le sel. Pâte au frais si la journée est longue.
+Mercredi soir : 3 à 4 séries de rabats espacées de 30 min, puis je laisse pointer jusqu'à ce que la pâte ait nettement gonflé.
+Façonnage, banneton, frigo pour la nuit.
+Jeudi matin ou soir : cuisson directement sortie du frigo, cocotte préchauffée, 20 min couvert puis 20 à 25 min découvert.
+
+Le froid est ton allié : il te donne de la souplesse et du goût.
+
+Si votre pain s'étale ou a une mie très serrée, postez une photo de la coupe, j'essaie de vous aider à diagnostiquer.</pre></div>
+<h4>Quand mettre le lien</h4>
+<p>Uniquement après plusieurs diagnostics rendus en commentaires, et si un membre demande « tu as un guide complet ? ». Réponse transparente type : « Oui, j'ai une masterclass payante à 49 € qui reprend tout de A à Z : <code>https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=facebook&amp;utm_campaign=levain</code> ». Même logique pour les pleurotes (photo de diagnostic de contamination), le vélo électrique (routine d'entretien) et l'UGC (exemple de script).</p>
+</section>
+
+<!-- ============ 5. BLOGS ============ -->
+<section id="blogs">
+<h2>5. Blogs et plateformes d'articles gratuites</h2>
+<p>Un article reste en ligne et peut être trouvé via Google ou la plateforme pendant des mois. Chaque masterclass contient déjà 6 à 7 modules : chacun peut devenir un article gratuit.</p>
+<div class="tbl"><table>
+<thead><tr><th>Plateforme</th><th>Intérêt</th><th>Pour quelles niches</th></tr></thead>
+<tbody>
+<tr><td><a href="https://medium.com">Medium</a></td><td>Publication gratuite, lectorat existant, surtout anglophone mais du français y circule.</td><td>IA, productivité, freelance</td></tr>
+<tr><td><a href="https://substack.com">Substack</a></td><td>Newsletter gratuite : tu construis une liste d'e-mails qui t'appartient.</td><td>Une newsletter « course » ou « IA pratique »</td></tr>
+<tr><td>Articles LinkedIn</td><td>Visibles auprès de ton réseau professionnel, bons pour la crédibilité.</td><td>IA métiers, ghostwriting, UGC, agents IA PME</td></tr>
+<tr><td><a href="https://wordpress.com">WordPress.com</a> (offre gratuite)</td><td>Vrai blog, bon référencement à long terme, sous-domaine gratuit.</td><td>Toutes, surtout levain, pleurotes, vélo</td></tr>
+<tr><td><a href="https://www.blogger.com">Blogger</a></td><td>Gratuit, simple, géré par Google.</td><td>Alternative simple à WordPress.com</td></tr>
+</tbody></table></div>
+<p class="muted">Conditions et fonctionnalités à vérifier sur chaque site : elles évoluent.</p>
+
+<h3>Méthode : transformer un module en article</h3>
+<ol>
+  <li>Choisis un module qui répond à une question précise (ex. 18, module 4 : « Les plannings : faire du pain avec un emploi du temps de bureau »).</li>
+  <li>Prends le mot-clé principal dans <code>fiche.json</code> et mets-le dans le titre, le premier paragraphe et un intertitre.</li>
+  <li>Donne la méthode réellement utilisable : l'article doit se suffire à lui-même. La masterclass vend la version complète, structurée et approfondie.</li>
+  <li>Republie sur 2 plateformes maximum, en adaptant l'introduction (et en indiquant la source originale quand la plateforme le permet).</li>
+</ol>
+<div class="copy"><div class="bar"><span>Plan type d'article</span><button class="cp" type="button">Copier</button></div>
+<pre>TITRE : [Résultat concret] + [pour qui] + [mot-clé]
+
+Introduction (80-120 mots)
+- Le problème du lecteur, en une phrase qu'il pourrait dire lui-même
+- Pourquoi les conseils habituels ne marchent pas pour lui
+- Ce qu'il saura faire à la fin de l'article
+
+Partie 1 - Le principe (pourquoi ça marche)
+Partie 2 - La méthode pas à pas (3 à 6 étapes numérotées)
+Partie 3 - Un exemple concret ou un modèle à copier
+Partie 4 - Les erreurs fréquentes et comment les éviter
+Partie 5 - Quand demander l'avis d'un pro (santé, sécurité, juridique : selon le sujet)
+
+Conclusion + appel à l'action (voir ci-dessous)</pre></div>
+<div class="copy"><div class="bar"><span>Appel à l'action de fin d'article</span><button class="cp" type="button">Copier</button></div>
+<pre>Pour aller plus loin
+Cet article reprend un des modules de ma masterclass « [TITRE] ». La version complète contient [nombre] modules : [3 éléments concrets]. Elle coûte 49 €, je l'ai écrite et je la vends moi-même :
+https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=[plateforme]&amp;utm_campaign=[slug]
+
+Pas prêt à acheter ? Pas de problème : abonne-toi à ma newsletter gratuite pour recevoir les prochains articles.</pre></div>
+
+<h3>10 idées de titres d'articles</h3>
+<div class="copy"><div class="bar"><span>Titres d'articles</span><button class="cp" type="button">Copier</button></div>
+<pre>1. Courir 10 km sans s'arrêter : pourquoi la marche-course est la méthode la plus sûre (01)
+2. Allure semi-marathon : comment la trouver sans montre GPS hors de prix (02)
+3. Première HYROX : les 8 ateliers expliqués et leurs substitutions en salle (03)
+4. Descente en trail : poser le pied sans se faire peur (04)
+5. La structure de prompt en 6 blocs qui rend les réponses de l'IA utilisables (07)
+6. Enseignants : différencier un cours avec l'IA sans y passer la nuit (09)
+7. Artisans : demander et répondre aux avis Google avec l'IA, modèles inclus (11)
+8. Adapter son CV à une offre avec l'IA, sans mentir sur son parcours (12)
+9. Pain au levain : le planning de semaine quand on travaille au bureau (18)
+10. Batterie de vélo électrique : la charger et la stocker l'hiver sans l'abîmer (19)</pre></div>
+</section>
+
+<!-- ============ 6. VITRINES ============ -->
+<section id="vitrines">
+<h2>6. Vitrines de vente avec offre gratuite</h2>
+<p>Ces plateformes proposent en général une formule sans abonnement, rémunérée par des frais prélevés sur chaque vente. Elles peuvent servir de boutique principale ou de vitrine supplémentaire (certaines ont un public qui découvre des produits).</p>
+<div class="note"><strong>Conditions et frais à vérifier sur leur site, ils changent.</strong> Vérifie aussi la gestion de la TVA sur les ventes numériques en Europe, les délais de versement et les moyens de paiement acceptés.</div>
+<div class="tbl"><table>
+<thead><tr><th>Plateforme</th><th>Pour quoi</th><th>À vérifier</th></tr></thead>
+<tbody>
+<tr><td><a href="https://gumroad.com">Gumroad</a></td><td>Vente simple de produits numériques, page produit prête à l'emploi.</td><td>Frais par vente, gestion de la TVA, langue de la page de paiement</td></tr>
+<tr><td><a href="https://payhip.com">Payhip</a></td><td>Boutique de produits numériques et de cours, codes promo.</td><td>Frais selon la formule, TVA européenne</td></tr>
+<tr><td><a href="https://ko-fi.com">Ko-fi</a></td><td>Boutique et soutien de créateurs, adapté à une petite audience fidèle.</td><td>Frais sur la boutique selon la formule, prestataires de paiement</td></tr>
+<tr><td><a href="https://systeme.io">Systeme.io</a></td><td>Outil français : pages de vente, e-mails, formations, avec une formule gratuite limitée.</td><td>Limites de la formule gratuite (contacts, produits), frais de paiement</td></tr>
+</tbody></table></div>
+<p>Conseil : garde <strong>un seul lien de vente principal</strong> (<code>https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA</code>) pour que ton suivi reste simple. Si tu ouvres une vitrine supplémentaire, utilise-la comme canal mesuré à part.</p>
+</section>
+
+<!-- ============ 7. PLANNING ============ -->
+<section id="planning">
+<h2>7. Planning de 14 jours</h2>
+<p>30 à 60 minutes par jour. L'objectif des deux semaines : installer les canaux et la régularité, pas vendre à tout prix.</p>
+<div class="tbl"><table>
+<thead><tr><th>Jour</th><th>Tâche</th><th>Durée</th></tr></thead>
+<tbody>
+<tr><td>J1</td><td>Créer le compte Pinterest professionnel, revendiquer le site si possible, créer 3 tableaux (course, levain, IA). Préparer le tableau de suivi.</td><td>45 min</td></tr>
+<tr><td>J2</td><td>Créer 3 modèles d'épingles dans Canva (1000 × 1500 px). Réaliser les 6 épingles de ce guide.</td><td>60 min</td></tr>
+<tr><td>J3</td><td>Programmer les 6 épingles sur 2 jours. Rejoindre Kikourou et 3 groupes Facebook course ; lire leurs règles.</td><td>45 min</td></tr>
+<tr><td>J4</td><td>Répondre utilement à 5 discussions course (sans lien). Créer 4 nouvelles épingles.</td><td>45 min</td></tr>
+<tr><td>J5</td><td>Créer le blog (WordPress.com ou Substack). Écrire l'article 1 à partir d'un module (01 ou 18).</td><td>60 min</td></tr>
+<tr><td>J6</td><td>Publier l'article 1 avec appel à l'action et UTM. L'épingler. Rejoindre 3 groupes de niches en vogue (levain, pleurotes, vélo).</td><td>40 min</td></tr>
+<tr><td>J7</td><td>Bilan semaine 1 : remplir le tableau de suivi. Programmer 15 épingles pour la semaine suivante.</td><td>45 min</td></tr>
+<tr><td>J8</td><td>Publier le post valeur gratuite course (sans lien). Répondre aux commentaires.</td><td>40 min</td></tr>
+<tr><td>J9</td><td>Rejoindre 3 groupes IA (freelances, enseignants ou artisans). Répondre utilement à 5 questions. Message aux modérateurs si tu vises un post avec lien.</td><td>40 min</td></tr>
+<tr><td>J10</td><td>Écrire l'article 2 (IA : prompt en 6 blocs ou relances). Publier sur LinkedIn en article.</td><td>60 min</td></tr>
+<tr><td>J11</td><td>Publier le post valeur gratuite levain. Répondre aux commentaires du post course.</td><td>35 min</td></tr>
+<tr><td>J12</td><td>Publier le post IA dans le groupe le plus actif. Créer 5 épingles IA.</td><td>45 min</td></tr>
+<tr><td>J13</td><td>Répondre à tous les commentaires. Mettre le lien uniquement là où c'est demandé et autorisé.</td><td>30 min</td></tr>
+<tr><td>J14</td><td>Bilan : clics et ventes par canal. Garder les 2 canaux qui marchent le mieux, alléger les autres. Programmer 3 à 5 épingles par jour pour la semaine suivante.</td><td>50 min</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- ============ 8. SUIVI ============ -->
+<section id="suivi">
+<h2>8. Suivi : liens UTM et tableau de mesure</h2>
+<h3>Les liens UTM, en bref</h3>
+<p>Un lien UTM est ton lien normal suivi de paramètres qui indiquent d'où vient le visiteur. Ils ne changent rien pour l'acheteur, mais ton outil de statistiques (ou celui de ta plateforme de vente, si elle les lit : à vérifier) peut alors compter les visites et les ventes par canal.</p>
+<ul>
+  <li><code>utm_source</code> : le site d'où vient le clic (pinterest, kikourou, facebook, reddit, medium, substack, linkedin).</li>
+  <li><code>utm_medium</code> (facultatif) : le type de canal (epingle, forum, article, newsletter).</li>
+  <li><code>utm_campaign</code> : la masterclass concernée (reprends le slug : levain, 10km, padel, prompt…).</li>
+</ul>
+<p>Si ton lien contient déjà un <code>?</code>, ajoute les paramètres avec <code>&amp;</code> au lieu de <code>?</code>. Écris tout en minuscules, sans accents ni espaces.</p>
+<div class="copy"><div class="bar"><span>Exemples de liens UTM</span><button class="cp" type="button">Copier</button></div>
+<pre>https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=pinterest&amp;utm_campaign=levain
+https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=pinterest&amp;utm_medium=epingle&amp;utm_campaign=premier-10km
+https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=kikourou&amp;utm_medium=forum&amp;utm_campaign=premier-trail
+https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=facebook&amp;utm_medium=groupe&amp;utm_campaign=ia-artisans
+https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=medium&amp;utm_medium=article&amp;utm_campaign=methode-prompt-pro
+https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=substack&amp;utm_medium=newsletter&amp;utm_campaign=champignons-maison
+https://claude.ai/artifact/FxstdiBRKYcney7HcPsadA?utm_source=linkedin&amp;utm_medium=article&amp;utm_campaign=ghostwriter-linkedin</pre></div>
+<div class="tip">Si ta boutique ne remonte pas les UTM dans ses statistiques, utilise un raccourcisseur de liens qui compte les clics (un lien court par canal), et note à la main d'où viennent les acheteurs quand ils te le disent.</div>
+
+<h3>Tableau de suivi hebdomadaire</h3>
+<p class="muted">Les cases sont modifiables pour un brouillon rapide, mais rien n'est enregistré : recopie tes chiffres dans un tableur.</p>
+<div class="tbl"><table>
+<thead><tr><th>Canal</th><th>Publications</th><th>Impressions / vues</th><th>Clics</th><th>Ventes</th><th>Taux clic → vente</th><th>Décision</th></tr></thead>
+<tbody>
+<tr><td>Pinterest</td><td><input aria-label="Publications Pinterest"></td><td><input aria-label="Vues Pinterest"></td><td><input aria-label="Clics Pinterest"></td><td><input aria-label="Ventes Pinterest"></td><td class="muted">ventes ÷ clics</td><td><input aria-label="Décision Pinterest"></td></tr>
+<tr><td>Kikourou</td><td><input aria-label="Publications Kikourou"></td><td><input aria-label="Vues Kikourou"></td><td><input aria-label="Clics Kikourou"></td><td><input aria-label="Ventes Kikourou"></td><td class="muted">ventes ÷ clics</td><td><input aria-label="Décision Kikourou"></td></tr>
+<tr><td>Groupes Facebook</td><td><input aria-label="Publications Facebook"></td><td><input aria-label="Vues Facebook"></td><td><input aria-label="Clics Facebook"></td><td><input aria-label="Ventes Facebook"></td><td class="muted">ventes ÷ clics</td><td><input aria-label="Décision Facebook"></td></tr>
+<tr><td>Reddit</td><td><input aria-label="Publications Reddit"></td><td><input aria-label="Vues Reddit"></td><td><input aria-label="Clics Reddit"></td><td><input aria-label="Ventes Reddit"></td><td class="muted">ventes ÷ clics</td><td><input aria-label="Décision Reddit"></td></tr>
+<tr><td>Blog / Medium</td><td><input aria-label="Publications blog"></td><td><input aria-label="Vues blog"></td><td><input aria-label="Clics blog"></td><td><input aria-label="Ventes blog"></td><td class="muted">ventes ÷ clics</td><td><input aria-label="Décision blog"></td></tr>
+<tr><td>Substack</td><td><input aria-label="Publications Substack"></td><td><input aria-label="Vues Substack"></td><td><input aria-label="Clics Substack"></td><td><input aria-label="Ventes Substack"></td><td class="muted">ventes ÷ clics</td><td><input aria-label="Décision Substack"></td></tr>
+<tr><td>LinkedIn</td><td><input aria-label="Publications LinkedIn"></td><td><input aria-label="Vues LinkedIn"></td><td><input aria-label="Clics LinkedIn"></td><td><input aria-label="Ventes LinkedIn"></td><td class="muted">ventes ÷ clics</td><td><input aria-label="Décision LinkedIn"></td></tr>
+<tr><td>Instagram (500 abonnés)</td><td><input aria-label="Publications Instagram"></td><td><input aria-label="Vues Instagram"></td><td><input aria-label="Clics Instagram"></td><td><input aria-label="Ventes Instagram"></td><td class="muted">ventes ÷ clics</td><td><input aria-label="Décision Instagram"></td></tr>
+</tbody></table></div>
+<h3>Quoi en conclure</h3>
+<ul>
+  <li><strong>Beaucoup de vues, peu de clics</strong> : le titre ou le visuel n'accroche pas, ou le public n'est pas le bon.</li>
+  <li><strong>Beaucoup de clics, aucune vente</strong> : la page de vente ou le prix ne convainc pas ce public ; relis <code>page-de-vente.md</code> avec les questions posées en commentaires.</li>
+  <li><strong>Peu de tout</strong> après 4 à 6 semaines : change de communauté ou de niche plutôt que de publier plus fort.</li>
+  <li>Note aussi les questions qu'on te pose : ce sont tes prochains articles, épingles et améliorations de masterclass.</li>
+</ul>
+</section>
+
+<footer>
+  Guide de travail pour Pierre. Aucun résultat de vente n'est garanti ; les règles des plateformes et communautés priment toujours sur ce guide.
+</footer>
+</div>
+
+<script>
+(function(){
+  function selectText(el){
+    try{
+      var r=document.createRange(); r.selectNodeContents(el);
+      var s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      return true;
+    }catch(e){ return false; }
+  }
+  function flash(btn,label){
+    btn.textContent=label; btn.classList.add('ok');
+    setTimeout(function(){ btn.textContent='Copier'; btn.classList.remove('ok'); },1800);
+  }
+  document.querySelectorAll('.copy').forEach(function(box){
+    var btn=box.querySelector('button.cp'); var pre=box.querySelector('pre');
+    if(!btn||!pre) return;
+    btn.addEventListener('click',function(){
+      var text=pre.innerText;
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(function(){ flash(btn,'Copié'); },function(){
+            selectText(pre); flash(btn,'Sélectionné : Ctrl+C');
+          });
+        }else{
+          selectText(pre); flash(btn,'Sélectionné : Ctrl+C');
+        }
+      }catch(e){
+        selectText(pre); flash(btn,'Sélectionné : Ctrl+C');
+      }
+    });
+  });
+})();
+</script>
