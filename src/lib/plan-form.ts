@@ -14,6 +14,7 @@ import {
   RACE_NAME_MAX,
   WEEKLY_KM_MAX,
   WEEKLY_KM_MIN,
+  planReferenceDate,
   validateValues,
   type FieldErrors,
   type FieldName,
@@ -117,7 +118,7 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
     attrs: {
       type: 'date',
       name: 'raceDate',
-      min: addDaysIso(today, MIN_PLAN_WEEKS * 7),
+      min: addDaysIso(planReferenceDate(today, options.initial.startDate), MIN_PLAN_WEEKS * 7),
       max: addDaysIso(today, MAX_DAYS_AHEAD),
       'aria-describedby': `${id('date-hint')} ${id('date-error')}`,
     },
@@ -144,7 +145,7 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
       { class: 'field' },
       h('label', { attrs: { for: id('date') }, text: 'Date de la course' }),
       dateInput,
-      h('p', { id: id('date-hint'), class: 'hint', text: 'Au moins 8 semaines à partir d’aujourd’hui.' }),
+      h('p', { id: id('date-hint'), class: 'hint', text: 'Au moins 8 semaines de préparation avant le jour J.' }),
       dateError,
     ),
     h(
@@ -289,6 +290,8 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
   const readNumber = (input: HTMLInputElement): number => (input.value.trim() === '' ? Number.NaN : Number(input.value));
 
   let currentLevel: Level = options.initial.level;
+  // Date de départ mémorisée du plan complet : non saisie, mais conservée telle quelle.
+  let currentStartDate: string | undefined = options.initial.startDate;
 
   const getValues = (): PlanFormValues => {
     const presetValue = (checkedValue(preset.inputs) as RaceChoice | undefined) ?? 'marathon';
@@ -297,7 +300,7 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
     const minutes = readNumber(minInput);
     const seconds = secInput.value.trim() === '' ? 0 : readNumber(secInput);
     const validParts = Number.isInteger(minutes) && Number.isInteger(seconds) && seconds >= 0 && seconds < 60;
-    return {
+    const values: PlanFormValues = {
       preset: presetValue,
       race,
       raceDate: dateInput.value,
@@ -308,6 +311,8 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
       sessions: Number(checkedValue(sessions.inputs) ?? '4') as 3 | 4 | 5,
       longRunDay: (checkedValue(longRun.inputs) as 'sat' | 'sun' | undefined) ?? 'sun',
     };
+    if (currentStartDate) values.startDate = currentStartDate;
+    return values;
   };
 
   const syncRace = () => {
@@ -322,6 +327,8 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
     dateInput.value = values.preset === 'autre' ? values.raceDate : '';
     nameInput.value = values.preset === 'autre' ? values.raceName : '';
     currentLevel = values.level;
+    currentStartDate = values.startDate;
+    dateInput.min = addDaysIso(planReferenceDate(today, values.startDate), MIN_PLAN_WEEKS * 7);
     if (Number.isFinite(values.t10)) {
       minInput.value = String(Math.floor(values.t10 / 60));
       secInput.value = String(Math.round(values.t10 % 60)).padStart(2, '0');

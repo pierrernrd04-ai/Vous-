@@ -5,7 +5,7 @@
  */
 import { readTokenPayloadUnverified, type TokenPayload } from '../shared/token';
 import { extractToken, mailtoUrl, supportEmail } from './links';
-import { STORAGE_KEYS, readString, removeItem, writeString } from './storage';
+import { STORAGE_KEYS, clearOfflinePlanCache, readString, removeItem, writeString } from './storage';
 
 /** Jeton présent dans le fragment de l'URL (`#t=…`), sinon `null`. */
 export function tokenFromHash(hash: string = location.hash): string | null {
@@ -30,6 +30,7 @@ export function clearToken(): void {
   removeItem(STORAGE_KEYS.token);
   removeItem(STORAGE_KEYS.ref);
   removeItem(STORAGE_KEYS.lastPlan);
+  void clearOfflinePlanCache();
 }
 
 /** Contenu du jeton, pour affichage uniquement (signature non vérifiée). */

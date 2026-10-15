@@ -13,7 +13,7 @@ export const STORAGE_KEYS = {
   token: 'token',
   /** Référence client du jeton (`w1-marathon-l2`…). */
   ref: 'ref',
-  /** Paramètres du plan (PlanInput sans startDate). */
+  /** Réglages du plan complet (PlanFormValues, avec le lundi de départ `startDate` une fois le plan reçu). */
   settings: 'settings',
   /** Dernières valeurs du formulaire gratuit. */
   freeForm: 'free-form',
@@ -65,6 +65,40 @@ export function removeItem(key: StorageKey): void {
     backend()?.removeItem(PREFIX + key);
   } catch {
     // Rien à faire : le stockage est indisponible.
+  }
+}
+
+/**
+ * Efface toutes les données du site sur cet appareil (clés `j24:`).
+ * @returns le nombre d'éléments effacés.
+ */
+export function clearAllSiteData(): number {
+  try {
+    const storage = backend();
+    if (!storage) return 0;
+    const keys: string[] = [];
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      if (key?.startsWith(PREFIX)) keys.push(key);
+    }
+    for (const key of keys) storage.removeItem(key);
+    return keys.length;
+  } catch {
+    return 0;
+  }
+}
+
+/** Préfixe des caches du service worker qui gardent une copie du plan (public/sw.js). */
+export const OFFLINE_PLAN_CACHE_PREFIX = 'j24-api';
+
+/** Supprime la copie hors ligne du plan gardée par le service worker (au mieux, sans erreur). */
+export async function clearOfflinePlanCache(): Promise<void> {
+  try {
+    if (typeof caches === 'undefined') return;
+    const names = await caches.keys();
+    await Promise.all(names.filter((name) => name.startsWith(OFFLINE_PLAN_CACHE_PREFIX)).map((name) => caches.delete(name)));
+  } catch {
+    // Cache Storage indisponible : rien à effacer.
   }
 }
 

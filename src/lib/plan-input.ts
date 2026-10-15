@@ -28,6 +28,13 @@ export interface PlanFormValues {
   weeklyKm: number;
   sessions: 3 | 4 | 5;
   longRunDay: 'sat' | 'sun';
+  /**
+   * Lundi de départ mémorisé (plan complet uniquement). Le moteur démarre le plan
+   * au premier lundi à partir de `startDate`, sinon à partir d'aujourd'hui : sans
+   * cette date, le même réglage donnerait un plan décalé la semaine suivante.
+   * Le formulaire ne la saisit pas ; /plan/ la fixe à `weeks[0].start`.
+   */
+  startDate?: string;
 }
 
 export const T10_MIN_SEC = 1800;
@@ -57,11 +64,12 @@ function cleanName(name: string): string {
   return name.replace(/\s+/g, ' ').trim().slice(0, RACE_NAME_MAX);
 }
 
-/** Valeurs du formulaire → entrée de l'API. */
+/** Valeurs du formulaire → entrée de l'API (`startDate` transmise si elle est valide). */
 export function valuesToInput(values: PlanFormValues): PlanInput {
+  let input: PlanInput;
   if (values.preset !== 'autre') {
     const preset = RACE_PRESETS[values.preset];
-    return {
+    input = {
       race: preset.race,
       raceDate: preset.date,
       raceName: preset.name,
@@ -71,19 +79,59 @@ export function valuesToInput(values: PlanFormValues): PlanInput {
       sessions: values.sessions,
       longRunDay: values.longRunDay,
     };
+  } else {
+    input = {
+      race: values.race,
+      raceDate: values.raceDate,
+      level: values.level,
+      t10: Math.round(values.t10),
+      weeklyKm: Math.round(values.weeklyKm),
+      sessions: values.sessions,
+      longRunDay: values.longRunDay,
+    };
+    const name = cleanName(values.raceName);
+    if (name) input.raceName = name;
   }
-  const input: PlanInput = {
-    race: values.race,
-    raceDate: values.raceDate,
-    level: values.level,
-    t10: Math.round(values.t10),
-    weeklyKm: Math.round(values.weeklyKm),
-    sessions: values.sessions,
-    longRunDay: values.longRunDay,
-  };
-  const name = cleanName(values.raceName);
-  if (name) input.raceName = name;
+  if (values.startDate && parseIsoDate(values.startDate)) input.startDate = values.startDate;
   return input;
+}
+
+/* ---------------- Date de départ du plan complet ---------------- */
+
+/** Copie des valeurs avec `startDate` posée (si valide) ou retirée. */
+export function withStartDate(values: PlanFormValues, startDate: string | null | undefined): PlanFormValues {
+  const next: PlanFormValues = { ...values };
+  if (startDate && parseIsoDate(startDate)) next.startDate = startDate;
+  else delete next.startDate;
+  return next;
+}
+
+/** Même course (préréglage, distance et date) : le calendrier du plan est inchangé. */
+export function sameRace(a: PlanFormValues, b: PlanFormValues): boolean {
+  return a.preset === b.preset && a.race === b.race && effectiveRaceDate(a) === effectiveRaceDate(b);
+}
+
+/**
+ * Date de départ à garder quand les réglages du plan changent :
+ * - même course : la date mémorisée est conservée, le calendrier ne bouge pas ;
+ * - autre course alors que le plan a déjà commencé : conservée aussi (les semaines
+ *   passées et les cases « fait » restent à leur place) ;
+ * - autre course avant le début du plan : oubliée, le nouveau plan part du prochain lundi.
+ */
+export function carryStartDate(next: PlanFormValues, previous: PlanFormValues | null, today: string): PlanFormValues {
+  const anchor = previous?.startDate;
+  if (!previous || !anchor || !parseIsoDate(anchor)) return withStartDate(next, null);
+  if (sameRace(next, previous)) return withStartDate(next, anchor);
+  return withStartDate(next, anchor <= today ? anchor : null);
+}
+
+/**
+ * Date à partir de laquelle se mesurent les 8 semaines minimales : la date de départ
+ * mémorisée si le plan a déjà commencé (changer d'objectif en cours de prépa reste
+ * possible), sinon aujourd'hui.
+ */
+export function planReferenceDate(today: string, startDate?: string | null): string {
+  return startDate && parseIsoDate(startDate) && startDate < today ? startDate : today;
 }
 
 /** Entrée (même partielle) → valeurs du formulaire. */
@@ -149,7 +197,10 @@ export function effectiveRaceDate(values: PlanFormValues): string {
   return values.preset === 'autre' ? values.raceDate : RACE_PRESETS[values.preset].date;
 }
 
-/** Validation de saisie ; objet vide si tout est bon. */
+/**
+ * Validation de saisie ; objet vide si tout est bon. Les 8 semaines minimales se
+ * comptent depuis `planReferenceDate` (date de départ mémorisée d'un plan commencé).
+ */
 export function validateValues(values: PlanFormValues, today: string = localTodayIso()): FieldErrors {
   const errors: FieldErrors = {};
 
@@ -175,7 +226,7 @@ export function validateValues(values: PlanFormValues, today: string = localToda
     }
   }
   if (!errors.raceDate && parseIsoDate(raceDate)) {
-    const days = daysBetween(today, raceDate);
+    const days = daysBetween(planReferenceDate(today, values.startDate), raceDate);
     const field: FieldName = values.preset === 'autre' ? 'raceDate' : 'preset';
     if (days < MIN_PLAN_WEEKS * 7) {
       errors[field] =
@@ -201,6 +252,7 @@ export function isPlanFormValues(v: unknown): v is PlanFormValues {
     typeof v.t10 === 'number' &&
     typeof v.weeklyKm === 'number' &&
     (v.sessions === 3 || v.sessions === 4 || v.sessions === 5) &&
-    (v.longRunDay === 'sat' || v.longRunDay === 'sun')
+    (v.longRunDay === 'sat' || v.longRunDay === 'sun') &&
+    (v.startDate === undefined || (typeof v.startDate === 'string' && parseIsoDate(v.startDate) !== null))
   );
 }

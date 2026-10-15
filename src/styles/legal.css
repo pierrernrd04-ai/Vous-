@@ -1,0 +1,300 @@
+/*
+ * Pages légales : CGV, mentions légales, confidentialité, rétractation.
+ * Lecture confortable sur mobile (360 px), sommaire, listes de définitions,
+ * encadrés de textes réglementaires, formulaire de rétractation, impression.
+ */
+
+.legal-page {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.legal-page > h1 {
+  font-size: var(--fs-3xl);
+  line-height: var(--lh-tight);
+}
+
+.legal-page > h1:focus {
+  outline: none;
+}
+
+.legal-updated {
+  font-size: var(--fs-sm);
+}
+
+.legal-intro {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.legal-intro p {
+  max-width: var(--max-text);
+}
+
+/* ---------- Sommaire ---------- */
+.legal-toc {
+  margin-top: var(--sp-2);
+  padding: var(--sp-4) var(--sp-5);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+}
+
+.legal-toc__title {
+  margin-bottom: var(--sp-2);
+  font: var(--fw-black) var(--fs-xs) / 1.2 var(--f-body);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.legal-toc ol {
+  display: grid;
+  gap: var(--sp-1) var(--sp-5);
+  padding-left: 1.4em;
+  color: var(--c-muted);
+  font-size: var(--fs-sm);
+}
+
+.legal-toc a {
+  display: inline-block;
+  padding-block: var(--sp-1);
+  color: var(--c-ink-2);
+}
+
+.legal-toc a:hover {
+  color: var(--c-accent-text);
+}
+
+@media (min-width: 720px) {
+  .legal-toc ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Sections ---------- */
+.legal {
+  max-width: none;
+}
+
+.legal__section {
+  scroll-margin-top: calc(var(--nav-h) + var(--sp-4));
+  padding-top: var(--sp-5);
+  border-top: var(--bw) solid var(--c-line);
+}
+
+.legal__section + .legal__section {
+  margin-top: var(--sp-6);
+}
+
+.legal__section > * + * {
+  margin-top: var(--sp-3);
+}
+
+.legal__section > h2 {
+  margin-top: 0;
+  font-size: var(--fs-xl);
+  line-height: var(--lh-snug);
+}
+
+.legal__section > h3 {
+  margin-top: var(--sp-5);
+  font-size: var(--fs-lg);
+}
+
+.legal__section p,
+.legal__section li {
+  max-width: var(--max-text);
+}
+
+.legal__section ul,
+.legal__section ol {
+  display: grid;
+  gap: var(--sp-2);
+  padding-left: 1.3em;
+}
+
+.legal__section strong {
+  color: var(--c-ink);
+}
+
+/* ---------- Listes libellé / valeur ---------- */
+.legal-dl {
+  display: grid;
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  overflow: hidden;
+}
+
+.legal-dl__row {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.legal-dl__row + .legal-dl__row {
+  border-top: var(--bw) solid var(--c-line);
+}
+
+.legal-dl dt {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.legal-dl dd {
+  color: var(--c-ink);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 560px) {
+  .legal-dl__row {
+    grid-template-columns: 10rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--sp-4);
+  }
+}
+
+/* ---------- Encadré (textes réglementaires reproduits mot pour mot) ---------- */
+.legal-box {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border: var(--bw) solid var(--c-line);
+  border-left: 4px solid var(--c-accent-2);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Fiches des traitements (confidentialité) ---------- */
+.legal-cards {
+  display: grid;
+  gap: var(--sp-3);
+  padding: 0 !important;
+  list-style: none;
+}
+
+.legal-card {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border: var(--bw) solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+}
+
+.legal-card h3 {
+  font-size: var(--fs-md);
+}
+
+.legal-card dl {
+  display: grid;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+
+.legal-card dt {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+.legal-card dd {
+  color: var(--c-ink-2);
+}
+
+@media (min-width: 720px) {
+  .legal-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Actions (effacement local, impression…) ---------- */
+.legal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: center;
+}
+
+/* ---------- Formulaire de rétractation ---------- */
+.withdraw {
+  display: grid;
+  gap: var(--sp-5);
+}
+
+.withdraw__form,
+.withdraw__fields {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.withdraw__row {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+@media (min-width: 560px) {
+  .withdraw__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.withdraw__preview {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.withdraw__text {
+  margin: 0;
+  padding: var(--sp-4);
+  border: var(--bw) dashed var(--c-line-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  color: var(--c-ink);
+  font: var(--fs-sm) / var(--lh-body) var(--f-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.withdraw__status:empty {
+  display: none;
+}
+
+/* ---------- Impression ---------- */
+@media print {
+  .legal-toc,
+  .legal-actions,
+  .withdraw__fields,
+  .withdraw__status,
+  .withdraw > .muted {
+    display: none !important;
+  }
+
+  .withdraw {
+    padding: 0;
+    border: 0;
+  }
+
+  .legal__section {
+    break-inside: auto;
+  }
+
+  .legal-box,
+  .legal-dl,
+  .withdraw__text {
+    break-inside: avoid;
+  }
+
+  mark.todo {
+    border-color: #000;
+    color: #000;
+    background: none;
+  }
+}

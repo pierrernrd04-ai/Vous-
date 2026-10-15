@@ -27,7 +27,15 @@ import { createInstallButton, mountIosInstallBanner } from '../lib/install-banne
 import { PHASE_LABELS, levelLabel } from '../lib/labels';
 import { extractToken, personalPlanUrl } from '../lib/links';
 import { createPlanForm } from '../lib/plan-form';
-import { DEFAULT_VALUES, inputToValues, isPlanFormValues, valuesToInput, type PlanFormValues } from '../lib/plan-input';
+import {
+  DEFAULT_VALUES,
+  carryStartDate,
+  inputToValues,
+  isPlanFormValues,
+  valuesToInput,
+  withStartDate,
+  type PlanFormValues,
+} from '../lib/plan-input';
 import { phaseBadge, renderPaceTable, renderPhaseChart, renderSessionCard, sessionKey } from '../lib/plan-view';
 import { createStoryPanel, type StoryData } from '../lib/share-canvas';
 import { STORAGE_KEYS, isRecord, readJson, writeJson } from '../lib/storage';
@@ -339,7 +347,8 @@ function renderSetup(token: string, values: PlanFormValues): void {
     idPrefix: 'setup',
     initial: values,
     submitLabel: 'Générer mon plan',
-    onSubmit: (next) => {
+    onSubmit: (submitted) => {
+      const next = carryStartDate(submitted, values, localTodayIso());
       writeJson(STORAGE_KEYS.settings, next);
       void loadPlan(token, next);
     },
@@ -694,7 +703,8 @@ function renderPlan(plan: Plan, ctx: RenderContext): void {
     idPrefix: 'plan',
     initial: ctx.values,
     submitLabel: 'Mettre à jour mon plan',
-    onSubmit: (next) => {
+    onSubmit: (submitted) => {
+      const next = carryStartDate(submitted, ctx.values, localTodayIso());
       writeJson(STORAGE_KEYS.settings, next);
       void loadPlan(ctx.token, next, { keepPosition: true });
     },
@@ -822,6 +832,19 @@ function sameInput(a: Plan['input'], b: Plan['input']): boolean {
   );
 }
 
+/**
+ * Le moteur démarre le plan au premier lundi à partir de `startDate` (sinon d'aujourd'hui) :
+ * dès qu'un plan est reçu pour ces réglages, on mémorise son premier lundi comme `startDate`
+ * pour que le même réglage redonne exactement le même calendrier les jours suivants.
+ */
+function settleStartDate(values: PlanFormValues, plan: Plan, trusted: boolean): PlanFormValues {
+  const start = plan.weeks[0]?.start;
+  if (!trusted || !start || values.startDate === start) return values;
+  const next = withStartDate(values, start);
+  writeJson(STORAGE_KEYS.settings, next);
+  return next;
+}
+
 async function loadPlan(token: string, values: PlanFormValues, options: { keepPosition?: boolean } = {}): Promise<void> {
   const firstRender = !app.querySelector('.plan-hero');
   if (firstRender || !options.keepPosition) renderLoading();
@@ -831,11 +854,14 @@ async function loadPlan(token: string, values: PlanFormValues, options: { keepPo
   const result = await postPlan(token, input);
 
   if (result.ok) {
-    if (!result.fromCache) writeJson(STORAGE_KEYS.lastPlan, { savedAt: new Date().toISOString(), plan: result.data } satisfies LastPlan);
-    renderPlan(result.data, {
+    const plan = result.data;
+    const matches = sameInput(plan.input, input);
+    if (!result.fromCache) writeJson(STORAGE_KEYS.lastPlan, { savedAt: new Date().toISOString(), plan } satisfies LastPlan);
+    const settled = settleStartDate(values, plan, !result.fromCache || matches);
+    renderPlan(plan, {
       token,
-      values,
-      offline: result.fromCache ? { savedAt: new Date().toISOString(), settingsDiffer: !sameInput(result.data.input, input) } : null,
+      values: settled,
+      offline: result.fromCache ? { savedAt: new Date().toISOString(), settingsDiffer: !matches } : null,
     });
     if (!firstRender && options.keepPosition) {
       toast('Plan mis à jour.');
