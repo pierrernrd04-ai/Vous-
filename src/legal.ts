@@ -2,8 +2,9 @@
  * Identité légale de l'éditeur et de l'hébergeur (mentions légales, CGV,
  * confidentialité, rétractation). SPEC section 4.
  *
- * Toute valeur égale à `TO_COMPLETE` déclenche un avertissement au build
- * (voir vite.config.ts) : à renseigner avant la mise en vente.
+ * Toute valeur égale à `TO_COMPLETE` déclenche un avertissement au build, et fait échouer
+ * le build dès qu'un vrai moyen de paiement est activé (voir vite.config.ts) : à renseigner
+ * avant la mise en vente.
  * Importé aussi par vite.config.ts : pas d'API navigateur au niveau module.
  */
 
@@ -56,7 +57,8 @@ export const legal: LegalIdentity = {
   host: {
     name: 'Cloudflare, Inc.',
     address: '101 Townsend St, San Francisco, CA 94107, USA',
-    phone: TO_COMPLETE,
+    // Numéro professionnel déclaré par Cloudflare, Inc. auprès de la SEC.
+    phone: '+1 888 993 5273',
     website: 'https://www.cloudflare.com',
   },
   mediator: {

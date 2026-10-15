@@ -18,6 +18,8 @@ export interface WorkoutContext {
   sessions: 3 | 4 | 5;
   longRunDay: 'sat' | 'sun';
   raceName?: string;
+  /** Coureur qui court peu (< 15 km / semaine) : pas de vrai fartlek les deux premières semaines. */
+  beginner?: boolean;
 }
 
 /** Séance avant datation (le jour est un index 0 = lundi … 6 = dimanche). */
@@ -326,11 +328,19 @@ function shortBlocsPattern(ctx: WorkoutContext, meters: number, recSec: number, 
  * le budget (+20 %) : un petit volume hebdomadaire ne reçoit pas des blocs démesurés.
  */
 function fitLevel(make: (level: number) => RepPattern, level: number, budgetM: number): RepPattern {
+  return fitLevelWithIndex(make, level, budgetM).pattern;
+}
+
+function fitLevelWithIndex(
+  make: (level: number) => RepPattern,
+  level: number,
+  budgetM: number,
+): { pattern: RepPattern; level: number } {
   for (let l = level; l > 0; l -= 1) {
     const pattern = make(l);
-    if (mainMeters(pattern, pattern.nMin) <= budgetM * 1.2) return pattern;
+    if (mainMeters(pattern, pattern.nMin) <= budgetM * 1.2) return { pattern, level: l };
   }
-  return make(0);
+  return { pattern: make(0), level: 0 };
 }
 
 export interface QualityChoice {
@@ -346,13 +356,22 @@ function tinyFartlekPattern(ctx: WorkoutContext): RepPattern {
   return { ...fartlekPattern(ctx, 0), fast: { sec: 30 }, rec: { sec: 30 }, nMin: 6, nMax: 8, nFloor: 4 };
 }
 
+export interface QualityOptions {
+  /** La sortie longue de la semaine contient déjà des blocs à allure course. */
+  longRunRacePace?: boolean;
+  /** Index de la semaine dans le plan (1-based). */
+  weekIndex?: number;
+}
+
 /**
  * Séance de qualité de la semaine.
- * - base : fartlek et côtes en alternance ;
+ * - base : fartlek et côtes en alternance (petit fartlek de 30 s les deux premières semaines
+ *   d'un coureur qui court peu) ;
  * - développement : fractionné à allure 10 km et seuil en alternance ;
- * - spécifique : blocs à allure course ;
+ * - spécifique : blocs à allure course, qui progressent au fil des semaines ; blocs courts
+ *   quand la sortie longue de la semaine contient déjà de l'allure course ;
  * - affûtage : blocs courts à allure course ;
- * - semaine allégée : version courte de la séance de la phase.
+ * - semaine allégée : version plus courte que la séance de la phase.
  * `progress` = nombre de semaines chargées déjà passées dans la phase.
  */
 export function selectQuality(
@@ -362,6 +381,7 @@ export function selectQuality(
   progress: number,
   taperStep: number,
   weekHm: number,
+  options: QualityOptions = {},
 ): QualityChoice {
   const level = Math.floor(progress / 2);
   const budget = (share: number): number => weekHm * 100 * share;
@@ -385,8 +405,14 @@ export function selectQuality(
               { ...seuilPattern(ctx, 0), fast: { sec: 360 }, nMin: 2, nMax: 2 },
               tiny,
             ]
-          : [{ ...blocsPattern(ctx, 0), nMin: 2, nMax: 2 }, shortBlocsPattern(ctx, 2000, 120, 2, 2), shortBlocs];
+          : ctx.race === 'marathon'
+            ? // Strictement plus court que la plus petite séance chargée (2 × 3 km).
+              [shortBlocsPattern(ctx, 2000, 120, 2, 2), shortBlocs]
+            : [{ ...blocsPattern(ctx, 0), nMin: 2, nMax: 2 }, shortBlocs];
     return { patterns, kind: 'deload', mainShare: 0.07 };
+  }
+  if (phase === 'base' && ctx.beginner && (options.weekIndex ?? 99) <= 2) {
+    return { patterns: [tiny], kind: 'standard', mainShare: 0.08 };
   }
   if (phase === 'base') {
     const make = progress % 2 === 0 ? fartlekPattern : cotesPattern;
@@ -403,9 +429,19 @@ export function selectQuality(
     };
   }
   const share = ctx.race === 'marathon' ? 0.17 : 0.15;
-  const first = fitLevel((l) => blocsPattern(ctx, l), progress, budget(share));
+  if (options.longRunRacePace) {
+    // La sortie longue porte déjà des blocs à allure course : le jeudi reste court
+    // (jamais deux grosses séances à allure course dans la même semaine).
+    const blocks = shortBlocsPattern(ctx, 1000, 90, 3, 5);
+    return { patterns: [blocks, shortBlocs], kind: 'standard', mainShare: Math.min(share, 0.1) };
+  }
+  const fitted = fitLevelWithIndex((l) => blocsPattern(ctx, l), progress, budget(share));
+  // Petit volume : le niveau reste bloqué, on progresse alors en ajoutant une répétition.
+  const target = Math.min(progress, 3);
+  const extra = fitted.level < target && progress >= 2 ? 1 : 0;
+  const first: RepPattern = { ...fitted.pattern, nMin: Math.min(fitted.pattern.nMax, fitted.pattern.nMin + extra) };
   return {
-    patterns: [first, blocsPattern(ctx, 0), shortBlocsPattern(ctx, 2000, 120, 2, 3), shortBlocs],
+    patterns: [first, fitted.pattern, blocsPattern(ctx, 0), shortBlocsPattern(ctx, 2000, 120, 2, 3), shortBlocs],
     kind: 'standard',
     mainShare: share,
   };
@@ -640,12 +676,18 @@ function fuelingSteps(durationMin: number): string[] {
   return steps;
 }
 
+/** La sortie longue de cette semaine contient-elle des blocs (marathon) ou un final (semi) à allure course ? */
+export function longRunHasRacePace(ctx: WorkoutContext, hm: number, opts: LongRunOptions): boolean {
+  const withRacePace = opts.phase === 'specifique' && !opts.deload && opts.specificRank !== null && opts.specificRank % 2 === 0;
+  return withRacePace && hm >= (ctx.race === 'marathon' ? 160 : 100);
+}
+
 export function renderLongRun(ctx: WorkoutContext, hm: number, dowIdx: number, opts: LongRunOptions): DraftSession {
   const ef = efPace(ctx);
   const course = coursePace(ctx);
-  const withRacePace = opts.phase === 'specifique' && !opts.deload && opts.specificRank !== null && opts.specificRank % 2 === 0;
+  const withRacePace = longRunHasRacePace(ctx, hm, opts);
 
-  if (withRacePace && ctx.race === 'marathon' && hm >= 160) {
+  if (withRacePace && ctx.race === 'marathon') {
     const blockHm = hm >= 240 ? 50 : hm >= 190 ? 40 : 30;
     const blocks = 2;
     const recHm = 10;
@@ -672,7 +714,7 @@ export function renderLongRun(ctx: WorkoutContext, hm: number, dowIdx: number, o
     };
   }
 
-  if (withRacePace && ctx.race === 'semi' && hm >= 100) {
+  if (withRacePace && ctx.race === 'semi') {
     const finishHm = hm >= 150 ? 40 : 30;
     const efHm = hm - finishHm;
     const durationMin = Math.round(
@@ -833,9 +875,11 @@ export function renderRaceWeekRun(
   hm: number,
   dowIdx: number,
   daysBeforeRace: number,
+  extraStep?: string,
 ): DraftSession {
   const ef = efPace(ctx);
   const recup = recupPace(ctx);
+  const extra = extraStep ? [extraStep] : [];
   if (role === 'rw_footing') {
     return {
       dowIdx,
@@ -847,6 +891,7 @@ export function renderRaceWeekRun(
       steps: [
         runLine(hm, ef, 'en endurance fondamentale'),
         'Termine par 4 lignes droites d\'environ 80 m, relâché, retour en marchant.',
+        ...extra,
       ],
     };
   }
@@ -858,7 +903,7 @@ export function renderRaceWeekRun(
       hm,
       durationMin: minutesForHm(hm, recup.secPerKm),
       paces: [recup],
-      steps: [runLine(hm, recup, 'en récupération'), 'Aucune intensité : on fait juste tourner les jambes.'],
+      steps: [runLine(hm, recup, 'en récupération'), 'Aucune intensité : on fait juste tourner les jambes.', ...extra],
     };
   }
   const steps = [
@@ -870,6 +915,7 @@ export function renderRaceWeekRun(
   } else {
     steps.push('Demain, repos complet : hydrate-toi bien et prépare tes affaires de course.');
   }
+  steps.push(...extra);
   return {
     dowIdx,
     type: 'ef',

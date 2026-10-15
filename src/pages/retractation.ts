@@ -1,9 +1,10 @@
 /**
- * Droit de rétractation (/retractation/) : principe des 14 jours (art. L221-18),
- * exception du contenu numérique fourni immédiatement (art. L221-28 13°), cas où
- * le droit est conservé, marche à suivre, remboursement (art. L221-24), modèle
- * officiel de formulaire (annexe à l'art. R221-1) et formulaire en ligne qui
- * prépare l'e-mail de rétractation (avec copie et impression en secours).
+ * Droit de rétractation (/retractation/) : fonction de rétractation en ligne « Renoncer au
+ * contrat ici » (art. L221-21 et D221-5, en vigueur depuis le 19/06/2026), principe des
+ * 14 jours (art. L221-18), exception du contenu numérique fourni immédiatement
+ * (art. L221-28 13°), cas où le droit est conservé, marche à suivre, remboursement
+ * (art. L221-24), modèle officiel de formulaire (annexe à l'art. R221-1) et formulaire
+ * qui prépare l'e-mail de rétractation (avec copie et impression en secours).
  */
 import { legal, isToComplete, TO_COMPLETE } from '../legal';
 import { storedToken, tokenInfo } from '../lib/access';
@@ -14,6 +15,7 @@ import { daysBetween, formatDate, localTodayIso, parseIsoDate } from '../lib/for
 import { icon } from '../lib/icons';
 import { defRow, editorName, legalEmail, legalValue, renderLegalPage } from '../lib/legal-ui';
 import { mailtoUrl, supportEmail } from '../lib/links';
+import { postWithdrawal } from '../lib/api';
 
 bootPage();
 
@@ -307,6 +309,175 @@ function withdrawalForm(): HTMLElement {
 }
 
 /* ================================================================== */
+/* Fonction de rétractation en ligne                                   */
+/* ================================================================== */
+
+/**
+ * « Renoncer au contrat ici » : nom et prénom, éléments qui identifient la commande, adresse
+ * de l'accusé de réception, puis « Confirmer la rétractation ». La déclaration part au
+ * vendeur avec sa date et son heure ; un accusé de réception reprenant son contenu est
+ * envoyé par e-mail et affiché ici. Les erreurs ne s'affichent qu'à l'envoi (pas de
+ * décalage de la page pendant la saisie).
+ */
+function onlineWithdrawal(): HTMLElement {
+  const initial = prefill();
+  const name = textField('rn-name', 'Nom et prénom', { type: 'text', autocomplete: 'name', required: true });
+  const purchase = textField('rn-purchase', 'E-mail utilisé pour l’achat', {
+    type: 'email',
+    autocomplete: 'email',
+    inputmode: 'email',
+    required: true,
+  });
+  const reference = textField(
+    'rn-ref',
+    'Référence de la commande',
+    { type: 'text', autocomplete: 'off', spellcheck: false },
+    'Sur ton reçu Stripe ou PayPal. Elle accélère le remboursement.',
+    true,
+  );
+  const ack = textField(
+    'rn-ack',
+    'Adresse e-mail où recevoir l’accusé de réception',
+    { type: 'email', autocomplete: 'email', inputmode: 'email', required: true },
+  );
+  purchase.input.value = initial.email ?? '';
+  ack.input.value = initial.email ?? '';
+  reference.input.value = initial.reference ?? '';
+
+  const summary = h('div', { class: 'notice notice--danger', attrs: { role: 'alert', hidden: true, tabindex: -1 } });
+  const submit = h('button', { class: 'btn btn--primary btn--lg', attrs: { type: 'submit' }, text: 'Confirmer la rétractation' });
+  const form = h(
+    'form',
+    { class: 'withdraw__form', attrs: { novalidate: true, 'aria-describedby': 'rn-intro' } },
+    summary,
+    h('div', { class: 'withdraw__row' }, name.field, purchase.field),
+    h('div', { class: 'withdraw__row' }, reference.field, ack.field),
+    h('div', { class: 'legal-actions' }, submit),
+  );
+  const box = h(
+    'div',
+    { class: 'withdraw card', attrs: { id: 'renoncer-form' } },
+    h('p', {
+      id: 'rn-intro',
+      class: 'muted',
+      text: 'Gratuit, pendant tout le délai de rétractation. Indique tes nom et prénom, l’e-mail et la référence de ta commande, et l’adresse où recevoir l’accusé de réception, puis confirme.',
+    }),
+    form,
+  );
+
+  const fieldErrors = (): { input: HTMLInputElement; error: HTMLElement; message: string }[] => {
+    const out: { input: HTMLInputElement; error: HTMLElement; message: string }[] = [];
+    if (name.input.value.trim().length < 2) out.push({ ...name, message: 'Indique tes nom et prénom.' });
+    if (!isLikelyEmail(purchase.input.value)) out.push({ ...purchase, message: 'Indique l’adresse e-mail utilisée pour l’achat.' });
+    if (!isLikelyEmail(ack.input.value)) out.push({ ...ack, message: 'Indique l’adresse e-mail où recevoir l’accusé de réception.' });
+    return out;
+  };
+  const clearErrors = () => {
+    for (const f of [name, purchase, reference, ack]) {
+      f.error.hidden = true;
+      f.error.textContent = '';
+      f.input.setAttribute('aria-invalid', 'false');
+    }
+    summary.hidden = true;
+  };
+  const showSummary = (messages: string[]) => {
+    summary.replaceChildren(
+      h('strong', { text: messages.length === 1 ? 'Un point à corriger :' : `${messages.length} points à corriger :` }),
+      h('ul', {}, messages.map((m) => h('li', { text: m }))),
+    );
+    summary.hidden = false;
+    announce(messages.join(' '), 'assertive');
+  };
+
+  const showAcknowledgement = (data: { reference: string; receivedAtLabel: string; declaration: string; acknowledgementSent: boolean }, ackEmail: string) => {
+    const copy = h('button', { class: 'btn', attrs: { type: 'button' } }, icon('copy'), 'Copier l’accusé');
+    const ackText = `Rétractation reçue le ${data.receivedAtLabel} (heure de Paris), référence ${data.reference} :\n« ${data.declaration} »`;
+    copy.addEventListener('click', async () => {
+      const ok = await copyText(ackText);
+      toast(ok ? 'Accusé copié.' : 'Copie impossible : sélectionne le texte à la main.', ok ? 'ok' : 'error');
+    });
+    const heading = h('h3', { text: 'Rétractation enregistrée', attrs: { tabindex: -1 } });
+    box.replaceChildren(
+      h(
+        'div',
+        { class: 'state state--compact' },
+        h('span', { class: 'state__icon' }, icon('check')),
+        heading,
+        p(`Reçue le ${data.receivedAtLabel} (heure de Paris), référence `, h('strong', { text: data.reference }), ' :'),
+        h('blockquote', { class: 'legal-box' }, p(`« ${data.declaration} »`)),
+        p(
+          data.acknowledgementSent
+            ? `Un accusé de réception reprenant cette déclaration vient de partir à ${ackEmail}. Tu es remboursé au plus tard 14 jours après cette date, avec le moyen de paiement utilisé, sans frais.`
+            : 'L’accusé de réception n’a pas pu partir par e-mail : garde cette page (imprime-la ou copie le texte), elle prouve la date de ta rétractation. Tu es remboursé au plus tard 14 jours après cette date, sans frais.',
+        ),
+        h(
+          'div',
+          { class: 'legal-actions' },
+          copy,
+          h('button', { class: 'btn btn--ghost', attrs: { type: 'button' }, on: { click: () => window.print() } }, icon('printer'), 'Imprimer'),
+        ),
+      ),
+    );
+    heading.focus();
+    announce(`Rétractation enregistrée, référence ${data.reference}.`);
+  };
+
+  form.addEventListener('input', () => {
+    if (!summary.hidden) clearErrors();
+  });
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearErrors();
+    const errors = fieldErrors();
+    if (errors.length > 0) {
+      for (const e of errors) {
+        e.error.textContent = e.message;
+        e.error.hidden = false;
+        e.input.setAttribute('aria-invalid', 'true');
+      }
+      showSummary(errors.map((e) => e.message));
+      errors[0]?.input.focus();
+      return;
+    }
+    submit.setAttribute('aria-disabled', 'true');
+    submit.textContent = 'Envoi…';
+    const ackEmail = ack.input.value.trim();
+    const result = await postWithdrawal({
+      name: name.input.value,
+      purchaseEmail: purchase.input.value,
+      ackEmail,
+      ...(reference.input.value.trim() ? { orderRef: reference.input.value.trim() } : {}),
+    });
+    submit.removeAttribute('aria-disabled');
+    submit.textContent = 'Confirmer la rétractation';
+    if (result.ok) {
+      showAcknowledgement(result.data, ackEmail);
+      return;
+    }
+    if (result.code === 'invalid_input') {
+      showSummary(result.details.length > 0 ? result.details : [result.message]);
+      summary.focus();
+      return;
+    }
+    const fallback =
+      result.code === 'rate_limited'
+        ? result.message
+        : 'La fonction en ligne est indisponible pour l’instant. Envoie ta rétractation par e-mail ou par courrier avec le formulaire plus bas : elle reste valable si tu l’envoies avant la fin du délai.';
+    summary.replaceChildren(
+      h('strong', { text: 'Envoi impossible. ' }),
+      fallback,
+      ' ',
+      h('a', { attrs: { href: '#formulaire' }, text: 'Aller au formulaire e-mail' }),
+    );
+    summary.hidden = false;
+    summary.focus();
+    announce(fallback, 'assertive');
+  });
+
+  return box;
+}
+
+/* ================================================================== */
 /* Page                                                                */
 /* ================================================================== */
 
@@ -319,6 +490,11 @@ renderLegalPage(must('#contenu'), {
     ),
   ],
   sections: [
+    {
+      id: 'renoncer',
+      title: 'Renoncer au contrat ici',
+      body: [onlineWithdrawal()],
+    },
     {
       id: 'principe',
       title: '1. Le principe : 14 jours',
@@ -333,12 +509,12 @@ renderLegalPage(must('#contenu'), {
       title: '2. L’exception du contenu numérique',
       body: [
         p(
-          'Selon l’article L221-28 13° du code de la consommation, le droit de rétractation ne peut pas être exercé pour un contenu numérique non fourni sur un support matériel dont l’exécution a commencé après ton accord préalable exprès et ta renonciation expresse à ce droit.',
+          'Selon l’article L221-28 13° du code de la consommation, le droit de rétractation ne peut plus être exercé pour un contenu numérique fourni sans support matériel lorsque trois conditions sont réunies : tu as donné ton accord préalable et exprès pour que l’exécution commence avant la fin du délai de rétractation, tu as reconnu que tu perdais ainsi ton droit de rétractation, et le vendeur t’a confirmé cet accord sur un support durable (reçu ou e-mail), conformément à l’article L221-13.',
         ),
         p('C’est le cas du Pass J-24 : au moment de payer, tu coches la case suivante (elle n’est jamais cochée d’avance) :'),
         h('blockquote', { class: 'legal-box' }, p(h('em', { text: `« ${WAIVER_TEXT} »` }))),
         p(
-          'Ton plan est alors accessible tout de suite et tu ne peux plus te rétracter. La confirmation de commande envoyée par e-mail reprend cet accord.',
+          'Ton plan est alors accessible tout de suite et tu ne peux plus te rétracter. Le reçu ou l’e-mail de confirmation envoyé après ton paiement confirme cet accord : garde-le. Si tu ne l’as pas reçu, écris au support.',
         ),
       ],
     },
@@ -349,10 +525,11 @@ renderLegalPage(must('#contenu'), {
         p('Tu conserves ton droit de rétractation pendant 14 jours si tu n’as pas donné cet accord, par exemple :'),
         ul(
           ['tu as payé sans passer par la fenêtre d’achat du site, donc sans cocher la case ;'],
-          ['après le paiement, tu as refusé de cocher la case affichée avant l’ouverture de ton plan.'],
+          ['après le paiement, tu as refusé de cocher la case affichée avant l’ouverture de ton plan ;'],
+          ['tu n’as pas reçu la confirmation de ton accord sur un support durable (reçu ou e-mail).'],
         ),
         p(
-          'Dans ce cas, ton plan ne s’ouvre pas tant que tu ne demandes pas l’accès immédiat : tu peux te rétracter, ou attendre la fin du délai pour recevoir ton accès.',
+          'Dans ces cas, tu n’as rien à payer pour le contenu déjà utilisé. Si tu n’as pas demandé l’accès immédiat, ton plan ne s’ouvre pas : tu peux te rétracter, ou attendre la fin du délai pour recevoir ton accès.',
         ),
       ],
     },
@@ -361,7 +538,9 @@ renderLegalPage(must('#contenu'), {
       title: '4. Comment te rétracter',
       body: [
         p(
-          'Avant la fin du délai de 14 jours, informe le vendeur de ta décision par une déclaration sans ambiguïté (article L221-21) : le formulaire ci-dessous, ou un simple message qui dit clairement que tu te rétractes.',
+          'Avant la fin du délai de 14 jours, informe le vendeur de ta décision (article L221-21). Le plus simple : la fonction « ',
+          h('a', { attrs: { href: '#renoncer' }, text: 'Renoncer au contrat ici' }),
+          ' », en haut de cette page et en bas de chaque page du site. Tu reçois aussitôt un accusé de réception par e-mail. Tu peux aussi utiliser le formulaire ci-dessous ou envoyer toute autre déclaration dénuée d’ambiguïté :',
         ),
         h(
           'dl',
@@ -380,7 +559,7 @@ renderLegalPage(must('#contenu'), {
       title: '5. Remboursement',
       body: [
         p(
-          'Tu es remboursé de la totalité de la somme payée au plus tard 14 jours après la réception de ta décision (article L221-24), avec le même moyen de paiement que celui utilisé pour l’achat, sauf accord exprès de ta part pour un autre moyen, et sans aucun frais. Ton lien d’accès est alors désactivé.',
+          'Tu es remboursé de la totalité de la somme payée au plus tard 14 jours après la réception de ta décision (article L221-24), avec le même moyen de paiement que celui utilisé pour l’achat, sauf accord exprès de ta part pour un autre moyen, et sans aucun frais. Après le remboursement, ton lien d’accès est désactivé : tu t’abstiens d’utiliser le plan et de le rendre accessible à d’autres personnes.',
         ),
       ],
     },

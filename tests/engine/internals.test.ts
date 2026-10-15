@@ -144,7 +144,9 @@ describe('semaines allégées', () => {
             expect(d - previous, ctx).toBeLessThanOrEqual(6);
             previous = d;
           }
-          if (christmas !== null && christmas >= 2 && christmas <= weeks - taper) expect(deloads, ctx).toContain(christmas);
+          // Noël imposé seulement entre S3 et l'avant-dernière semaine chargée (revue du 15/10/2026).
+          if (christmas !== null && christmas >= 3 && christmas <= weeks - taper - 1) expect(deloads, ctx).toContain(christmas);
+          expect(deloads[0] ?? 3, ctx).toBeGreaterThanOrEqual(3);
           if (christmas === null) {
             // Sans contrainte de Noël, l'écart reste de 3 à 4 semaines (au plus 5 avant l'affûtage).
             deloads.forEach((d, i) => expect(d - (deloads[i - 1] ?? 0), ctx).toBeGreaterThanOrEqual(3));

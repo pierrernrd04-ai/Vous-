@@ -18,6 +18,29 @@ export interface Env {
   PAYMENT_LINK_IDS?: string;
   /** URL publique du site, sans barre finale (ex. https://traceo-pass.pages.dev). */
   SITE_URL?: string;
+  /**
+   * Accès désactivés (remboursement, rétractation, litige) : ids de session `cs_…` ou
+   * `paypal:<id>`, séparés par des virgules. Vérifiés par /api/plan et /api/unlock.
+   */
+  REVOKED_SIDS?: string;
+  /**
+   * Stockage KV (binding `RECORDS`) des déclarations de rétractation et des accords d'accès
+   * immédiat (preuve, art. L221-7 C. conso). Facultatif, mais requis pour la fonction de
+   * rétractation en ligne si l'envoi d'e-mails n'est pas configuré.
+   */
+  RECORDS?: KvStore;
+  /** Clé API de l'envoi d'e-mails (Resend, https://resend.com). */
+  MAIL_API_KEY?: string;
+  /** Expéditeur des e-mails, ex. « Pass J-24 · Traceo <support@exemple.fr> » (domaine vérifié). */
+  MAIL_FROM?: string;
+  /** Adresse du vendeur qui reçoit une copie de chaque rétractation (défaut : e-mail de src/legal.ts). */
+  SELLER_EMAIL?: string;
+}
+
+/** Sous-ensemble de l'API KV de Cloudflare utilisé ici (simulable dans les tests). */
+export interface KvStore {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
 /** Sous-ensemble structurel de l'`EventContext` passé par Cloudflare Pages. */

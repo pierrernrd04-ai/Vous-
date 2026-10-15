@@ -205,12 +205,47 @@ describe('date libre', () => {
     expect(raceWeek.sessions.map((s) => s.dow)).toEqual(['mon', 'tue', 'wed']);
   });
 
-  it('Noël en S2 d\'un plan de 16 semaines : semaine allégée', () => {
+  it('Noël en S2 d\'un plan de 16 semaines : pas d\'allégement après une seule semaine, un conseil à la place', () => {
     const plan = generatePlan(BASE, '2026-12-14');
     expect(plan.weeks).toHaveLength(16);
     expect(plan.weeks[1]!.start).toBe('2026-12-21');
-    expect(plan.weeks[1]!.deload).toBe(true);
+    expect(plan.weeks[1]!.deload).toBe(false);
+    expect(plan.weeks[1]!.note).toMatch(/Noël/);
     checkPlanInvariants(plan, BASE);
+  });
+
+  it('Noël en S3 d\'un plan de 17 semaines : semaine allégée', () => {
+    const plan = generatePlan(BASE, '2026-12-07');
+    expect(plan.weeks).toHaveLength(17);
+    expect(plan.weeks[2]!.start).toBe('2026-12-21');
+    expect(plan.weeks[2]!.deload).toBe(true);
+    checkPlanInvariants(plan, BASE);
+  });
+
+  it.each([
+    ['lundi', '2027-04-05'],
+    ['mardi', '2027-04-06'],
+    ['mercredi', '2027-04-07'],
+    ['jeudi', '2027-04-08'],
+    ['vendredi', '2027-04-09'],
+  ])('course un %s : ni sortie longue à 5 jours ou moins, ni grosse séance la veille', (_day, raceDate) => {
+    for (const race of RACES)
+      for (const level of LEVELS)
+        for (const sessions of SESSIONS)
+          for (const longRunDay of LONG_RUN_DAYS) {
+            const input: PlanInput = { ...BASE, race, level, sessions, longRunDay, raceDate, t10: 40 * 60, weeklyKm: 50 };
+            const plan = generatePlan(input, TODAY);
+            checkPlanInvariants(plan, input);
+            const raceDay = dayNumber(raceDate);
+            for (const s of plan.weeks.flatMap((w) => w.sessions)) {
+              const gap = raceDay - dayNumber(s.date);
+              if (s.type === 'sl') expect(gap, `${label(input)} ${s.date}`).toBeGreaterThan(5);
+              if (gap === 1) {
+                expect(s.durationMin, `${label(input)} veille`).toBeLessThanOrEqual(30);
+                expect(s.km, `${label(input)} veille`).toBeLessThanOrEqual(5);
+              }
+            }
+          }
   });
 
   it('balayage de 500 dates libres (jour, durée, profil quelconques)', () => {
@@ -350,14 +385,26 @@ describe('aperçu gratuit (previewPlan)', () => {
     expect(JSON.stringify(preview.overview)).not.toMatch(/sessions|steps/);
   });
 
-  it('le volume de la semaine 1 vaut max(weeklyKm, 15)', () => {
-    expect(previewPlan({ ...BASE, weeklyKm: 0 }, TODAY).week1.km).toBe(15);
+  it('le volume de la semaine 1 vaut max(weeklyKm, min(15 km, 90 min à l\'allure EF))', () => {
+    // T10 = 50 min : EF 6:32/km, 90 min ≈ 13,8 km → 13,5 km ; T10 = 40 min : 15 km.
+    expect(previewPlan({ ...BASE, weeklyKm: 0 }, TODAY).week1.km).toBe(13.5);
+    expect(previewPlan({ ...BASE, weeklyKm: 0, t10: 40 * 60 }, TODAY).week1.km).toBe(15);
+    expect(previewPlan({ ...BASE, weeklyKm: 0, t10: 90 * 60, level: 'finisher' }, TODAY).week1.km).toBe(7.5);
     expect(previewPlan({ ...BASE, weeklyKm: 22.5 }, TODAY).week1.km).toBe(22.5);
     expect(previewPlan({ ...BASE, weeklyKm: 100 }, TODAY).week1.km).toBe(58);
   });
 
+  it('coureur qui court peu : pas de vrai fartlek les deux premières semaines', () => {
+    const plan = generatePlan({ ...BASE, weeklyKm: 5 }, TODAY);
+    for (const week of plan.weeks.slice(0, 2)) {
+      const q = week.sessions.find((s) => s.type === 'qualite')!;
+      expect(q.title).toMatch(/30\u00a0s$/);
+    }
+  });
+
   it('note de semaine 1 pour un volume faible ou supérieur au pic', () => {
     expect(previewPlan({ ...BASE, weeklyKm: 5 }, TODAY).week1.note).toMatch(/Tu cours peu/);
+    expect(previewPlan({ ...BASE, weeklyKm: 0 }, TODAY).week1.note).toMatch(/Tu ne cours pas en ce moment.*course et marche.*médecin/);
     expect(previewPlan({ ...BASE, weeklyKm: 100 }, TODAY).week1.note).toMatch(/plafonné à 58\u00a0km/);
   });
 

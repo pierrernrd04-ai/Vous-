@@ -46,7 +46,8 @@ const PROCESSINGS: Processing[] = [
   {
     title: 'Achat et accès au plan',
     data: [
-      'Ton adresse e-mail, la référence, la date et le montant du paiement, la course et le niveau choisis, ton lien personnel (il contient ton e-mail, la référence du paiement et sa date d’expiration). Tes données bancaires sont saisies chez Stripe ou PayPal : le vendeur n’y a jamais accès.',
+      'Ton adresse e-mail, ton nom (titulaire de la carte), ton pays et, si Stripe la demande, ton adresse de facturation, l’e-mail de ton compte Traceo si tu l’indiques, la référence, la date et le montant du paiement, la course et le niveau choisis, ton lien personnel (il contient ton e-mail, la référence du paiement et sa date d’expiration). Tes données bancaires sont saisies chez Stripe ou PayPal : le vendeur n’y a jamais accès.',
+      ' Ces données sont nécessaires pour conclure et exécuter le contrat : sans adresse e-mail, le paiement et l’envoi de ton accès sont impossibles. Les réponses au formulaire servent uniquement au calcul du plan ; l’e-mail de ton compte Traceo est facultatif.',
     ],
     purpose: ['Encaisser le paiement, t’ouvrir l’accès au plan, te renvoyer ton lien si tu le perds, tenir la comptabilité.'],
     basis: ['Exécution du contrat (art. 6.1.b) et obligations comptables et fiscales (art. 6.1.c).'],
@@ -60,6 +61,17 @@ const PROCESSINGS: Processing[] = [
     purpose: [`Activer Traceo Premium sur ton compte jusqu’au ${premiumUntil}.`],
     basis: ['Exécution du contrat (art. 6.1.b).'],
     retention: ['Jusqu’à la fin de l’avantage, puis archivage avec les données de commande.'],
+  },
+  {
+    title: 'Preuve de l’accès immédiat et rétractation en ligne',
+    data: [
+      'Pour l’accord d’accès immédiat : la référence de la commande, ton e-mail, la date et l’heure de l’accord et la version du texte de la case. Pour la fonction « Renoncer au contrat ici » : tes nom et prénom, l’e-mail et la référence de la commande, l’adresse de l’accusé de réception, la date et l’heure de la déclaration.',
+    ],
+    purpose: [
+      'Te confirmer ton accord ou ta rétractation par e-mail (support durable), prouver ces démarches (art. L221-7 du code de la consommation) et traiter le remboursement.',
+    ],
+    basis: ['Obligations légales (art. 6.1.c du RGPD).'],
+    retention: ['5 ans (délai de prescription, art. 2224 du code civil).'],
   },
   {
     title: 'Support, réclamations, rétractation',
@@ -231,6 +243,12 @@ renderLegalPage(must('#contenu'), {
             ext('https://www.paypal.com/fr/legalhub/privacy-full', 'Sa politique de confidentialité'),
             '.',
           ],
+          [
+            h('strong', { text: 'Resend, Inc.' }),
+            ' (États-Unis) : envoi des e-mails de confirmation de commande et des accusés de réception de rétractation. ',
+            ext('https://resend.com/legal/privacy-policy', 'Sa politique de confidentialité'),
+            '.',
+          ],
         ),
         p(
           'Le bouton « Générer ma boucle de X km » ouvre l’application Traceo dans un nouvel onglet, avec seulement la distance dans l’adresse. Traceo applique alors ses propres règles de confidentialité.',
@@ -242,7 +260,7 @@ renderLegalPage(must('#contenu'), {
       title: '6. Transferts hors de l’Union européenne',
       body: [
         p(
-          'Certains prestataires (Cloudflare, Stripe, PayPal) peuvent traiter des données hors de l’Union européenne, notamment aux États-Unis. Ces transferts sont encadrés par la décision d’adéquation de la Commission européenne du 10 juillet 2023 (cadre de protection des données UE–États-Unis) pour les entreprises certifiées et, à défaut, par les clauses contractuelles types de la Commission européenne.',
+          'Certains prestataires (Cloudflare, Stripe, PayPal, Resend) peuvent traiter des données hors de l’Union européenne, notamment aux États-Unis. Ces transferts sont encadrés par la décision d’adéquation de la Commission européenne du 10 juillet 2023 (cadre de protection des données UE–États-Unis) pour les entreprises certifiées et, à défaut, par les clauses contractuelles types de la Commission européenne.',
         ),
       ],
     },

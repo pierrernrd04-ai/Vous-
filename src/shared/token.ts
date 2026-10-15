@@ -16,6 +16,12 @@ export const TOKEN_VERSION = 1;
 /** Fin de validité de tous les jetons : 30/06/2027 23:59:59, heure de Paris. */
 export const TOKEN_EXPIRES_AT = '2027-06-30T23:59:59+02:00';
 
+/**
+ * Dernière date de course acceptée pour le plan payant : le jour où l'accès prend fin
+ * (le plan reste ouvert jusqu'au jour J inclus). Appliquée par les formulaires et l'API.
+ */
+export const LAST_RACE_DATE = TOKEN_EXPIRES_AT.slice(0, 10);
+
 /** `TOKEN_EXPIRES_AT` en secondes Unix (valeur de `exp`). */
 export const TOKEN_EXP_SEC = Math.floor(Date.parse(TOKEN_EXPIRES_AT) / 1000);
 

@@ -671,6 +671,7 @@ function renderFooter(): string {
             <li><a href="/mentions-legales/">Mentions légales</a></li>
             <li><a href="/confidentialite/">Confidentialité</a></li>
             <li><a href="/retractation/">Rétractation</a></li>
+            <li><a href="/retractation/#renoncer">Renoncer au contrat ici</a></li>
             <li><a data-support-email hidden href="/mentions-legales/">Contact</a></li>
           </ul>
         </nav>
@@ -1257,7 +1258,7 @@ ${groups}
 
         <section class="card card--accent other-race" aria-labelledby="autre-title">
           <h2 id="autre-title">${t('Ta course n’est pas dans la liste ?')}</h2>
-          <p>${t(`Le plan se cale sur n’importe quelle date, à au moins ${ctx.deps.minWeeks} semaines : choisis « Autre course » et indique sa date.`)}</p>
+          <p>${t(`Le plan se cale sur la date de ta course, jusqu’au 30 juin 2027 et à au moins ${ctx.deps.minWeeks} semaines : choisis « Autre course » et indique sa date.`)}</p>
           <a class="btn btn--primary btn--lg" href="/gratuit/">Voir ma semaine 1 gratuite ${ICON_ARROW}</a>
         </section>
 

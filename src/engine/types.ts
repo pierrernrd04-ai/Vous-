@@ -98,9 +98,15 @@ export interface PaceComputation {
   paces: Plan['paces'];
   predicted: Plan['predicted'];
   /**
+   * Niveau réellement suivi pour les volumes : le niveau choisi, ou le plus haut niveau
+   * atteignable quand l'objectif choisi est irréaliste au vu du T10 (revue du 15/10/2026).
+   */
+  effectiveLevel: Level;
+  /**
    * Présente quand l'allure course n'est pas celle de l'objectif du niveau :
-   * objectif irréaliste au vu du T10 (on garde alors l'allure prédite), ou
-   * objectif très en deçà du potentiel (allure plafonnée à prédiction + 5 %).
+   * objectif irréaliste au vu du T10 (le plan suit alors le plus haut niveau atteignable),
+   * objectif très en deçà du potentiel (allure plafonnée à prédiction + 5 %), ou prépa
+   * prudente (sortie longue limitée : 5 % de marge en plus).
    * Texte en français à afficher (repris dans la note de la semaine 1).
    */
   note?: string;

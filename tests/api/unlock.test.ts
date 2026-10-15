@@ -21,7 +21,7 @@ import {
 } from './helpers';
 
 const LIVE_ID = 'cs_live_a1B2c3D4e5F6g7H8i9J0kLmNoPqRsTuVwXyZ0123456789abcdefghijklmn';
-const TEST_ID = 'cs_test_a1B2c3D4e5F6g7H8i9J0';
+const TEST_ID = 'cs_test_a1B2c3D4e5F6g7H8i9J0kLmNoPqRsTuVwXyZ0123';
 /** Texte présent dans les corps Stripe simulés : ne doit jamais ressortir de l'API. */
 const STRIPE_SECRET_MARKER = 'DETAIL_INTERNE_STRIPE';
 
@@ -372,5 +372,34 @@ describe('/api/unlock — autres méthodes', () => {
   it('onRequest aiguille aussi GET vers le même traitement', async () => {
     fetchMock.mockResolvedValueOnce(stripeJson(checkoutSession()));
     expect((await call(onRequest, unlockRequest(LIVE_ID))).status).toBe(200);
+  });
+});
+
+describe('GET /api/unlock — accès désactivés et case Stripe', () => {
+  it('session listée dans REVOKED_SIDS : 402 sans appeler Stripe', async () => {
+    const env: Env = { ...BASE_ENV, REVOKED_SIDS: `cs_live_autre, ${LIVE_ID}` };
+    const response = await call(onRequestGet, unlockRequest(LIVE_ID), env);
+    const body = await expectApiError(response, 402, 'not_paid');
+    expect(body.message).toMatch(/remboursé/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('case « conditions » cochée sur Stripe : référence w1- même sans client_reference_id w1-', async () => {
+    fetchMock.mockResolvedValueOnce(
+      stripeJson(checkoutSession({ client_reference_id: null, consent: { terms_of_service: 'accepted', promotions: null } })),
+    );
+    const response = await call(onRequestGet, unlockRequest(LIVE_ID));
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as UnlockResponse;
+    expect(body.ref).toBe('w1-stripe');
+    const payload = await verifyToken(body.token, TEST_SECRET);
+    expect(payload?.ref).toBe('w1-stripe');
+  });
+
+  it('case non cochée : la référence reste celle du lien', async () => {
+    fetchMock.mockResolvedValueOnce(stripeJson(checkoutSession({ client_reference_id: 'x-semi-l2', consent: null })));
+    const response = await call(onRequestGet, unlockRequest(LIVE_ID));
+    const body = (await response.json()) as UnlockResponse;
+    expect(body.ref).toBe('x-semi-l2');
   });
 });

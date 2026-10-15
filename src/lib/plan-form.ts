@@ -8,6 +8,12 @@ import type { Level, RaceKind } from '../shared/api-types';
 import { announce, h } from './dom';
 import { addDaysIso, formatDateShort, localTodayIso } from './format';
 import { LEVELS, RACE_PRESETS, levelHint, levelLabel } from './labels';
+import { LAST_RACE_DATE } from '../shared/token';
+
+/** La plus ancienne de deux dates ISO (yyyy-mm-dd). */
+function minIso(a: string, b: string): string {
+  return a <= b ? a : b;
+}
 import {
   MAX_DAYS_AHEAD,
   MIN_PLAN_WEEKS,
@@ -102,7 +108,7 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
     [
       { value: 'marathon', label: 'Marathon', hint: `${formatDateShort(RACE_PRESETS.marathon.date)} 2027 · Paris` },
       { value: 'semi', label: 'Semi-marathon', hint: `${formatDateShort(RACE_PRESETS.semi.date)} 2027 · Paris` },
-      { value: 'autre', label: 'Autre course', hint: 'Date libre, au printemps ou plus tard' },
+      { value: 'autre', label: 'Autre course', hint: 'Date libre, jusqu’au 30 juin 2027' },
     ],
     'choices--cards',
     id('preset-error'),
@@ -119,7 +125,7 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
       type: 'date',
       name: 'raceDate',
       min: addDaysIso(planReferenceDate(today, options.initial.startDate), MIN_PLAN_WEEKS * 7),
-      max: addDaysIso(today, MAX_DAYS_AHEAD),
+      max: minIso(addDaysIso(today, MAX_DAYS_AHEAD), LAST_RACE_DATE),
       'aria-describedby': `${id('date-hint')} ${id('date-error')}`,
     },
   });
@@ -145,7 +151,7 @@ export function createPlanForm(options: PlanFormOptions): PlanFormHandle {
       { class: 'field' },
       h('label', { attrs: { for: id('date') }, text: 'Date de la course' }),
       dateInput,
-      h('p', { id: id('date-hint'), class: 'hint', text: 'Au moins 8 semaines de préparation avant le jour J.' }),
+      h('p', { id: id('date-hint'), class: 'hint', text: 'Au moins 8 semaines de préparation avant le jour J, et au plus tard le 30 juin 2027 (fin de l’accès au plan).' }),
       dateError,
     ),
     h(

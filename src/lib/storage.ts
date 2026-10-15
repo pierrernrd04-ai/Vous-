@@ -21,6 +21,8 @@ export const STORAGE_KEYS = {
   done: 'done',
   /** Horodatage ISO de l'acceptation de la renonciation au droit de rétractation. */
   waiver: 'waiver',
+  /** Commandes (id de session) dont l'accord d'accès immédiat a été transmis au serveur. */
+  waiverSent: 'waiver-sent',
   /** Bandeau d'installation refermé (horodatage). */
   installDismissed: 'install-dismissed',
   /** Dernier plan reçu (secours hors ligne). */

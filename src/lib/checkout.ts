@@ -17,6 +17,7 @@ import { formatDate } from './format';
 import { icon } from './icons';
 import { isLevel, isRaceKind } from './labels';
 import { supportEmail } from './links';
+import { WAIVER_TEXT } from '../shared/legal-texts';
 import { priceInfo } from './price';
 import { STORAGE_KEYS, isRecord, readJson, readString, writeJson, writeString } from './storage';
 
@@ -28,8 +29,7 @@ import { STORAGE_KEYS, isRecord, readJson, readString, writeJson, writeString } 
 export const WAIVER_REF_PREFIX = 'w1-';
 
 /** Texte exact de la case de renonciation (SPEC section 4). */
-export const WAIVER_TEXT =
-  "Je demande l'accès immédiat au contenu numérique et je reconnais perdre mon droit de rétractation (art. L221-28 13° C. conso)";
+export { WAIVER_TEXT };
 
 /** Mention imposée pour le paiement PayPal de secours. */
 export const PAYPAL_DELAY_TEXT = 'accès envoyé par e-mail sous 2 h (8 h-22 h)';
@@ -176,6 +176,20 @@ export function recordWaiver(now: Date = new Date()): void {
 
 export function hasRecordedWaiver(): boolean {
   return readString(STORAGE_KEYS.waiver) !== null;
+}
+
+/**
+ * Transmet au serveur l'accord d'accès immédiat lié à ce jeton (une fois par commande et par
+ * appareil) : il l'enregistre et le confirme par e-mail, sur support durable. Sans réseau ou
+ * sans service configuré, rien n'est bloqué : le droit de rétractation reste alors acquis.
+ */
+export function confirmWaiverOnServer(token: string, sid: string, send: (token: string) => Promise<{ ok: boolean }>): void {
+  const sent = readString(STORAGE_KEYS.waiverSent) ?? '';
+  const list = sent.split(',').filter(Boolean);
+  if (!sid || list.includes(sid)) return;
+  void send(token).then((result) => {
+    if (result.ok) writeString(STORAGE_KEYS.waiverSent, [...list.slice(-9), sid].join(','));
+  });
 }
 
 /* ================================================================== */

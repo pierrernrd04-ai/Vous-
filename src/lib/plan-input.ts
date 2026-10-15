@@ -10,6 +10,7 @@ import type { Level, PlanInput, RaceKind } from '../shared/api-types';
 import { daysBetween, localTodayIso, parseIsoDate } from './format';
 import { RACE_PRESETS, isLevel, isRaceKind } from './labels';
 import { isRecord } from './storage';
+import { LAST_RACE_DATE } from '../shared/token';
 
 export type RaceChoice = RaceKind | 'autre';
 
@@ -233,6 +234,8 @@ export function validateValues(values: PlanFormValues, today: string = localToda
         values.preset === 'autre'
           ? 'Ta course est dans moins de 8 semaines : c’est trop court pour un plan complet. Choisis une date plus lointaine.'
           : 'Cette course est dans moins de 8 semaines : c’est trop court pour un plan complet. Choisis « Autre course ».';
+    } else if (raceDate > LAST_RACE_DATE) {
+      errors[field] = 'Ton accès au plan est valable jusqu’au 30 juin 2027 : choisis une course au plus tard à cette date.';
     } else if (days > MAX_DAYS_AHEAD) {
       errors[field] = 'Choisis une course dans les 18 prochains mois.';
     }

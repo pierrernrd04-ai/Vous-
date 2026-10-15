@@ -41,22 +41,50 @@ describe('computePaces', () => {
     }
   });
 
-  it('objectif atteignable : allure de l\'objectif (sub-4h30 avec 60 min au 10 km)', () => {
+  it('objectif atteignable : allure de l\'objectif (moins de 4 h 30 avec 60 min au 10 km)', () => {
     const result = computePaces({ race: 'marathon', level: 'l2', t10: 3600 });
     expect(result.paces.allure_course).toBe(Math.round(16200 / MARATHON));
+    expect(result.effectiveLevel).toBe('l2');
     expect(result.note).toBeUndefined();
   });
 
   it.each([
-    ['marathon', 'l3', 3600, 'sub-4h'],
-    ['semi', 'l2', 3600, 'sub-2h'],
-    ['semi', 'l3', 3000, 'sub-1h45'],
-  ] as const)('objectif irréaliste (%s %s, T10 = %i s) : allure prédite et note', (race, level, t10, goal) => {
-    const km = race === 'marathon' ? MARATHON : SEMI;
-    const result = computePaces({ race, level, t10 });
-    expect(result.paces.allure_course).toBe(Math.round(riegel(t10, km) / km));
-    expect(result.note).toMatch(new RegExp(`objectif ${goal} est trop ambitieux`));
-    expect(result.note).toMatch(/\d:\d\d\/km/);
+    ['marathon', 'l3', 3600, 'moins de 4 h', 'l2'],
+    ['marathon', 'l3', 4500, 'moins de 4 h', 'finisher'],
+    ['semi', 'l2', 3600, 'moins de 2 h', 'finisher'],
+    ['semi', 'l3', 3000, 'moins de 1 h 45', 'l2'],
+  ] as const)(
+    'objectif irréaliste (%s %s, T10 = %i s) : le plan suit le plus haut niveau atteignable, avec une note',
+    (race, level, t10, goal, followed) => {
+      const km = race === 'marathon' ? MARATHON : SEMI;
+      const result = computePaces({ race, level, t10 });
+      expect(result.effectiveLevel).toBe(followed);
+      const ceiling = Math.round((riegel(t10, km) / km) * 1.05);
+      if (followed === 'finisher') {
+        // Jamais plus rapide que ce que recevrait le même coureur en Finisher.
+        expect(result.paces.allure_course).toBe(ceiling);
+        expect(result.paces.allure_course).toBe(computePaces({ race, level: 'finisher', t10 }).paces.allure_course);
+      } else {
+        expect(result.paces.allure_course).toBe(computePaces({ race, level: followed, t10 }).paces.allure_course);
+        expect(result.paces.allure_course).toBeLessThanOrEqual(ceiling);
+      }
+      const note = (result.note ?? '').replace(/\u00a0/g, ' ');
+      expect(note).toMatch(new RegExp(`objectif « ${goal} » est trop ambitieux`));
+      expect(note).toMatch(followed === 'finisher' ? /suit donc le niveau Finisher/ : /suit donc le niveau « moins de/);
+      expect(note).toMatch(/\d:\d\d\/km/);
+    },
+  );
+
+  it('prépa prudente : 5 % de marge en plus sur l\'allure course, avec une note', () => {
+    const normal = computePaces({ race: 'marathon', level: 'l2', t10: 3000 });
+    const cautious = computePaces({ race: 'marathon', level: 'l2', t10: 3000 }, { cautious: { longestLongRunKm: 19.2 } });
+    const predictedPace = riegel(3000, MARATHON) / MARATHON;
+    expect(cautious.paces.allure_course).toBe(Math.round(predictedPace * 1.05 * 1.05));
+    expect(cautious.paces.allure_course).toBeGreaterThan(normal.paces.allure_course);
+    expect(cautious.paces.ef).toBe(normal.paces.ef);
+    expect(cautious.note).toMatch(/19,2/);
+    expect(cautious.note).toMatch(/prudence/);
+    expect(cautious.note).not.toMatch(/largement/);
   });
 
   it('objectif bien en deçà du potentiel : allure plafonnée à prédiction + 5 %, avec une note', () => {
@@ -89,6 +117,20 @@ describe('computePaces', () => {
     );
     expect(plan.weeks[0]!.note).toMatch(/trop ambitieux/);
     expect(plan.paces).toEqual(computePaces({ race: 'marathon', level: 'l3', t10: 3600 }).paces);
+  });
+
+  it('prépa courte (9 semaines, sortie longue < 26 km) : marge de prudence et note, sans « largement à ta portée »', () => {
+    const plan = generatePlan(
+      { race: 'marathon', raceDate: '2027-04-04', level: 'l2', t10: 3000, weeklyKm: 30, sessions: 4, longRunDay: 'sun', startDate: '2027-02-01' },
+      TODAY,
+    );
+    const longest = Math.max(...plan.weeks.flatMap((w) => w.sessions.filter((s) => s.type === 'sl').map((s) => s.km)));
+    expect(longest).toBeLessThan(26);
+    expect(plan.paces.allure_course).toBe(Math.round((riegel(3000, MARATHON) / MARATHON) * 1.05 * 1.05));
+    expect(plan.weeks[0]!.note).toMatch(/prudence/);
+    expect(plan.weeks[0]!.note).not.toMatch(/largement/);
+    const raceDay = plan.weeks[plan.weeks.length - 1]!.sessions.at(-1)!;
+    expect(raceDay.paces[0]!.secPerKm).toBe(plan.paces.allure_course);
   });
 
   it('entrée invalide : PlanError INVALID_INPUT', () => {

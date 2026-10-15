@@ -56,7 +56,13 @@ test('formulaire → semaine 1 affichée, 4 séances datées, semaines suivantes
   await expect(preview.locator('.pace-table')).toBeVisible();
 
   // « Au plus fort » : le pic d'entraînement, pas la semaine de course (course comprise).
-  await expect(preview.locator('.result__head .stat').nth(3)).toContainText(/^48\s?km/);
+  // Pic Finisher : au plus 48 km, et moins pour les coureurs plus lents (plafond en durée).
+  const peakText = normalize(await preview.locator('.result__head .stat').nth(3).textContent());
+  const peakMatch = peakText.match(/^(\d+(?:,\d)?)\s?km/);
+  expect(peakMatch, peakText).not.toBeNull();
+  const peakKm = Number(peakMatch![1]!.replace(',', '.'));
+  expect(peakKm).toBeGreaterThanOrEqual(30);
+  expect(peakKm).toBeLessThanOrEqual(48);
   await preview.locator('#week1-title').evaluate((el) => {
     el.scrollIntoView({ block: 'start', behavior: 'instant' });
     window.scrollBy({ top: -76, behavior: 'instant' });

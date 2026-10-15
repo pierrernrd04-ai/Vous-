@@ -66,7 +66,7 @@ renderLegalPage(must('#contenu'), {
           'Le Pass J-24 est un contenu numérique, fourni sans support matériel : un programme de préparation au marathon ou au semi-marathon, généré automatiquement à partir des informations que tu indiques (course, date, objectif, temps sur 10 km, kilométrage, séances par semaine, jour de sortie longue). Il comprend :',
         ),
         ul(
-          ['le plan complet daté : marathon en 24 semaines, semi en 20 semaines, ou toute autre date de course située à au moins 8 semaines ;'],
+          ['le plan complet daté : marathon en 24 semaines, semi en 20 semaines, ou toute autre course située au moins 8 semaines après ta commande et au plus tard le 30 juin 2027, date de fin de l’accès ;'],
           ['3 niveaux d’objectif, modifiables à tout moment, avec recalcul du plan ;'],
           ['pour chaque séance, un bouton « Générer ma boucle de X km » qui ouvre l’application Traceo avec la bonne distance ;'],
           ['l’export des séances au format agenda (.ics), une version imprimable (PDF via l’impression du navigateur) et une image story 1080 × 1920 ;'],
@@ -110,7 +110,13 @@ renderLegalPage(must('#contenu'), {
           h('li', { text: 'tu reçois ton accès (voir l’article 6).' }),
         ),
         p(
-          'Le contrat est conclu à la validation du paiement. La confirmation de la commande (reçu de paiement), qui reprend ta demande d’accès immédiat et ta renonciation au droit de rétractation, t’est envoyée par e-mail : c’est la confirmation sur support durable prévue par l’article L221-13 du code de la consommation. Garde-la.',
+          'Avant de payer, la fenêtre d’achat puis la page de paiement récapitulent le produit, sa durée d’accès et son prix total. Tant que tu n’as pas validé le paiement, tu peux corriger ton adresse e-mail, revenir en arrière ou fermer la fenêtre sans être engagé. Le contrat est conclu en français.',
+        ),
+        p(
+          'Le contrat est conclu à la validation du paiement. Tu reçois ensuite par e-mail un reçu (Stripe) ou un message de confirmation (PayPal) qui récapitule ta commande et confirme ta demande d’accès immédiat et ta reconnaissance de la perte du droit de rétractation : c’est la confirmation sur support durable prévue à l’article L221-13 du code de la consommation. Garde-le.',
+        ),
+        p(
+          'Le vendeur conserve la preuve de ta commande (référence, date, montant, accord pour l’accès immédiat) pendant 10 ans ; tu peux en obtenir une copie, avec la version des présentes conditions en vigueur à la date de ta commande, en écrivant au support.',
         ),
       ],
     },
@@ -141,15 +147,20 @@ renderLegalPage(must('#contenu'), {
       title: '7. Droit de rétractation',
       body: [
         p(
-          'En principe, le consommateur dispose de 14 jours pour se rétracter d’un contrat conclu à distance (article L221-18 du code de la consommation). Toutefois, selon l’article L221-28 13° du même code, ce droit ne peut pas être exercé pour la fourniture d’un contenu numérique non fourni sur un support matériel dont l’exécution a commencé après ton accord préalable exprès et ta renonciation expresse à ce droit.',
+          'En principe, le consommateur dispose de 14 jours pour se rétracter d’un contrat conclu à distance (article L221-18 du code de la consommation). Toutefois, selon l’article L221-28 13° du même code, ce droit ne peut plus être exercé pour un contenu numérique fourni sans support matériel lorsque trois conditions sont réunies : tu as donné ton accord préalable et exprès pour que l’exécution commence avant la fin du délai de rétractation, tu as reconnu que tu perdais ainsi ton droit de rétractation, et le vendeur t’a confirmé cet accord sur un support durable (reçu ou e-mail), conformément à l’article L221-13.',
         ),
         p(
-          'Le Pass J-24 est fourni immédiatement : en cochant la case lors de la commande, tu demandes cet accès immédiat et tu reconnais perdre ton droit de rétractation. Tu ne peux donc plus te rétracter une fois l’accès ouvert.',
+          'Le Pass J-24 est fourni immédiatement : en cochant la case lors de la commande, tu demandes cet accès immédiat et tu reconnais perdre ton droit de rétractation ; le reçu ou l’e-mail de confirmation te le confirme. Tu ne peux donc plus te rétracter une fois l’accès ouvert.',
         ),
         p(
-          'Si tu n’as pas donné cet accord (par exemple si tu as payé sans passer par la case, ou si tu as refusé de la cocher ensuite), tu conserves ton droit de rétractation pendant 14 jours à compter de la conclusion du contrat. La marche à suivre et le formulaire sont sur la page ',
+          'Si tu n’as pas donné cet accord (par exemple si tu as payé sans passer par la case, ou si tu as refusé de la cocher ensuite), ou si tu n’as pas reçu la confirmation de ton accord sur un support durable, tu conserves ton droit de rétractation pendant 14 jours à compter de la conclusion du contrat. Dans ces cas, tu n’as rien à payer pour le contenu déjà utilisé. Le remboursement intervient au plus tard 14 jours après réception de ta décision, avec le même moyen de paiement, sans frais.',
+        ),
+        p(
+          'Pour te rétracter, le plus simple est la fonction « ',
+          h('a', { attrs: { href: '/retractation/#renoncer' }, text: 'Renoncer au contrat ici' }),
+          ' », gratuite, en bas de chaque page du site et en haut de la page ',
           h('a', { attrs: { href: '/retractation/' }, text: 'Rétractation' }),
-          '. Le remboursement intervient au plus tard 14 jours après réception de ta décision, avec le même moyen de paiement, sans frais.',
+          ' : indique tes nom et prénom, l’e-mail et la référence de ta commande, et l’adresse où recevoir l’accusé de réception, puis clique sur « Confirmer la rétractation ». Tu reçois par e-mail un accusé de réception qui reprend ta déclaration, avec sa date et son heure d’envoi. Tu peux aussi utiliser le formulaire type ou toute autre déclaration dénuée d’ambiguïté.',
         ),
       ],
     },
@@ -184,10 +195,13 @@ renderLegalPage(must('#contenu'), {
             'Le consommateur a également droit à une réduction du prix ou à la résolution du contrat lorsque le défaut de conformité est si grave qu’il justifie que la réduction du prix ou la résolution du contrat soit immédiate. Le consommateur n’est alors pas tenu de demander la mise en conformité du contenu numérique au préalable.',
           ),
           p(
+            'Dans les cas où le défaut de conformité est mineur, le consommateur n’a droit à l’annulation du contrat que si le contrat ne prévoit pas le paiement d’un prix.',
+          ),
+          p(
             'Toute période d’indisponibilité du contenu numérique en vue de sa remise en conformité suspend la garantie qui restait à courir jusqu’à la fourniture du contenu numérique de nouveau conforme.',
           ),
           p(
-            'Ces droits résultent de l’application des articles L224-25-1 et suivants du code de la consommation. Le professionnel qui fait obstacle de mauvaise foi à la mise en œuvre de la garantie légale de conformité encourt une amende civile d’un montant maximal de 300 000 euros, qui peut être porté jusqu’à 10 % du chiffre d’affaires moyen annuel (article L242-18-1 du code de la consommation).',
+            'Les droits mentionnés ci-dessus résultent de l’application des articles L. 224-25-1 à L. 224-25-31 du code de la consommation. Le professionnel qui fait obstacle de mauvaise foi à la mise en œuvre de la garantie légale de conformité encourt une amende civile d’un montant maximal de 300 000 euros, qui peut être porté jusqu’à 10 % du chiffre d’affaires moyen annuel (article L242-18-1 du code de la consommation).',
           ),
           p(
             'Le consommateur bénéficie également de la garantie légale des vices cachés en application des articles 1641 à 1649 du code civil, pendant une durée de deux ans à compter de la découverte du défaut. Cette garantie donne droit à une réduction de prix si le contenu numérique est conservé ou à un remboursement intégral contre renonciation au contenu numérique.',
@@ -206,7 +220,7 @@ renderLegalPage(must('#contenu'), {
           'Les boucles proposées par Traceo sont générées automatiquement à partir de données cartographiques : vérifie toujours que le parcours est praticable et sûr, et respecte le code de la route.',
         ),
         p(
-          'Le vendeur est responsable de la bonne exécution du contrat dans les conditions prévues par la loi. Sa responsabilité ne peut être engagée en cas d’usage du programme contraire à ces recommandations, ou si l’inexécution est due à toi, à un tiers ou à un cas de force majeure.',
+          'Le vendeur est responsable de plein droit de la bonne exécution du contrat (article L221-15 du code de la consommation). Il ne peut s’exonérer de tout ou partie de sa responsabilité qu’en prouvant que l’inexécution ou la mauvaise exécution est imputable à toi (par exemple si tu poursuis le programme malgré une douleur ou une contre-indication médicale), au fait imprévisible et insurmontable d’un tiers au contrat, ou à un cas de force majeure.',
         ),
       ],
     },

@@ -64,7 +64,7 @@ describe('validateInput', () => {
     ['raceName', 42, /nom de la course doit être un texte/],
     ['raceName', 'x'.repeat(81), /80 caractères/],
     ['raceName', 'Semi\nde Paris', /caractères non autorisés/],
-    ['level', 'expert', /Choisis un niveau : Finisher, sub-2h ou sub-1h45/],
+    ['level', 'expert', /Choisis un niveau : Finisher, moins de 2 h ou moins de 1 h 45/],
     ['t10', 1799, /entre 30 min et 1 h 30/],
     ['t10', 5401, /entre 30 min et 1 h 30/],
     ['t10', '3000', /entre 30 min et 1 h 30/],
@@ -90,7 +90,7 @@ describe('validateInput', () => {
   });
 
   it('nomme les niveaux de la course choisie', () => {
-    expect(errorsFor({ ...VALID, race: 'marathon', level: 'x' })[0]).toBe('Choisis un niveau : Finisher, sub-4h30 ou sub-4h.');
+    expect(errorsFor({ ...VALID, race: 'marathon', level: 'x' })[0]).toBe('Choisis un niveau : Finisher, moins de 4 h 30 ou moins de 4 h.');
     expect(errorsFor({ ...VALID, race: 'x', level: 'x' })).toContain('Choisis un niveau : Finisher, l2 ou l3.');
   });
 
@@ -105,7 +105,7 @@ describe('validateInput', () => {
     const result = validateInput({ ...VALID, sessions: 9 });
     expect(!result.ok && result.errors[0]).toBe('Choisis 3, 4 ou 5 séances par semaine.');
     const level = validateInput({ ...VALID, level: 'x' });
-    expect(!level.ok && level.errors[0]).toBe('Choisis un niveau\u00a0: Finisher, sub-2h ou sub-1h45.');
+    expect(!level.ok && level.errors[0]).toBe('Choisis un niveau\u00a0: Finisher, moins de 2\u00a0h ou moins de 1\u00a0h 45.');
   });
 
   it('messages en français, phrases complètes', () => {

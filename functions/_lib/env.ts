@@ -62,3 +62,24 @@ export function readStripeConfig(env: Env): ConfigResult<StripeConfig> {
   if (!stripeMode || !tokenSecret || !paymentLinkIds) return { ok: false, invalid };
   return { ok: true, config: { stripeKey, stripeMode, tokenSecret, paymentLinkIds } };
 }
+
+/** Longueur maximale d'un id dans `REVOKED_SIDS` (même borne que `sid` dans le jeton). */
+const MAX_REVOKED_SID_LENGTH = 300;
+
+/**
+ * Ids désactivés de `REVOKED_SIDS` (séparés par des virgules ou des retours à la ligne,
+ * espaces tolérés). Les entrées vides ou démesurées sont ignorées.
+ */
+export function parseRevokedSids(raw: string | undefined): ReadonlySet<string> {
+  return new Set(
+    (raw ?? '')
+      .split(/[,\n]/)
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0 && id.length <= MAX_REVOKED_SID_LENGTH),
+  );
+}
+
+/** Vrai si l'accès lié à cette session (ou à ce paiement PayPal) a été désactivé. */
+export function isRevokedSid(env: Env, sid: string): boolean {
+  return parseRevokedSids(env.REVOKED_SIDS).has(sid.trim());
+}

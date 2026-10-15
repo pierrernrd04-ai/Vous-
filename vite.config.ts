@@ -120,7 +120,24 @@ function siteUrlInHtml(siteUrl: string): Plugin {
   };
 }
 
-/** Avertit au build si des informations obligatoires manquent avant la mise en vente. */
+/**
+ * Vrai si un vrai moyen de paiement est activé : Stripe avec au moins un Payment Link réel
+ * (les liens de test Stripe contiennent `/test_`), ou PayPal.
+ */
+function sellsForReal(effective: SiteConfig): boolean {
+  const isTestLink = (url: string): boolean => url.includes('/test_');
+  const stripeLinks = [effective.paymentLinkLaunch, effective.paymentLinkRegular].filter((url) => url.length > 0);
+  const realStripe = effective.stripeEnabled && stripeLinks.some((url) => !isTestLink(url));
+  const paypal = !effective.stripeEnabled && effective.paypalFallbackUrl.length > 0;
+  return realStripe || paypal;
+}
+
+/**
+ * Vérifie au build les informations obligatoires avant la mise en vente. Mentions
+ * manquantes : simple avertissement tant que rien n'est vendu (aperçu, tests), mais le
+ * build échoue dès qu'un vrai moyen de paiement est activé (art. L111-1, L221-5, L616-1
+ * du code de la consommation, art. 1-1 LCEN).
+ */
 function launchChecklist(): Plugin {
   return {
     name: 'traceo:launch-checklist',
@@ -128,6 +145,12 @@ function launchChecklist(): Plugin {
     configResolved(resolved) {
       const warnings: string[] = [];
       const legalMissing = missingLegalFields();
+      if (legalMissing.length > 0 && sellsForReal(config)) {
+        throw new Error(
+          `Mentions légales incomplètes alors que le paiement est activé : ${legalMissing.join(', ')}. ` +
+            'Renseigne src/legal.ts (adresse, e-mail, téléphone, SIREN, médiateur) avant toute vente.',
+        );
+      }
       if (legalMissing.length > 0) {
         warnings.push(`src/legal.ts : valeurs « À COMPLÉTER » → ${legalMissing.join(', ')}`);
       }

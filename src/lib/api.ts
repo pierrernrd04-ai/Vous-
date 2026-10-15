@@ -14,7 +14,10 @@ import {
   type PreviewResponse,
   type Session,
   type UnlockResponse,
+  type WaiverResponse,
   type Week,
+  type WithdrawalRequest,
+  type WithdrawalResponse,
 } from '../shared/api-types';
 import { planInputToSearchParams } from '../shared/query';
 
@@ -202,5 +205,38 @@ export function postPlan(token: string, input: PlanInput): Promise<ApiResult<Pla
       cache: 'no-store',
     },
     isPlan,
+  );
+}
+
+function isWithdrawalResponse(v: unknown): v is WithdrawalResponse {
+  return (
+    isObj(v) &&
+    isStr(v.reference) &&
+    isStr(v.receivedAt) &&
+    isStr(v.receivedAtLabel) &&
+    isStr(v.declaration) &&
+    typeof v.acknowledgementSent === 'boolean'
+  );
+}
+
+function isWaiverResponse(v: unknown): v is WaiverResponse {
+  return isObj(v) && typeof v.recorded === 'boolean' && typeof v.confirmationSent === 'boolean';
+}
+
+/** Fonction de rétractation en ligne (« Confirmer la rétractation »). */
+export function postWithdrawal(request: WithdrawalRequest): Promise<ApiResult<WithdrawalResponse>> {
+  return request_(API_ROUTES.retractation, request, isWithdrawalResponse);
+}
+
+/** Transmet l'accord d'accès immédiat (preuve et confirmation par e-mail). */
+export function postWaiver(token: string): Promise<ApiResult<WaiverResponse>> {
+  return request_(API_ROUTES.waiver, { token }, isWaiverResponse);
+}
+
+function request_<T>(url: string, body: unknown, guard: (v: unknown) => v is T): Promise<ApiResult<T>> {
+  return request(
+    url,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' },
+    guard,
   );
 }

@@ -6,10 +6,10 @@
  * d'ouvrir le plan.
  */
 import { STRIPE_SESSION_ID_RE, type UnlockResponse } from '../shared/api-types';
-import { storeToken, storedToken, supportMailto, tokenInfo } from '../lib/access';
-import { unlock, type ApiFailure } from '../lib/api';
+import { storeToken, storedToken, supportMailto } from '../lib/access';
+import { postWaiver, unlock, type ApiFailure } from '../lib/api';
 import { bootPage } from '../lib/boot';
-import { createWaiverField, hasRecordedWaiver, hasWaiverRef, recordWaiver } from '../lib/checkout';
+import { confirmWaiverOnServer, createWaiverField, hasRecordedWaiver, hasWaiverRef, recordWaiver } from '../lib/checkout';
 import { announce, copyText, h, must, toast } from '../lib/dom';
 import { icon } from '../lib/icons';
 import { createInstallButton, mountIosInstallBanner } from '../lib/install-banner';
@@ -163,7 +163,7 @@ function linkSection(data: UnlockResponse): HTMLElement {
       { class: 'merci__actions' },
       h('a', { class: 'btn btn--primary btn--lg', attrs: { href: planHref } }, 'Ouvrir mon plan', icon('arrowRight')),
       install.button,
-      h('a', { class: 'btn btn--ghost', attrs: { href: mailHref } }, icon('mail'), 'M’envoyer le lien par e-mail'),
+      h('a', { class: 'btn btn--ghost', attrs: { href: mailHref } }, icon('mail'), 'M’envoyer le lien'),
     ),
     install.help,
   );
@@ -211,13 +211,13 @@ function waiverSection(onConfirm: () => void): HTMLElement {
   );
 }
 
-function renderSuccess(data: UnlockResponse, alreadyStored: boolean): void {
+function renderSuccess(data: UnlockResponse): void {
   const container = h('div', { class: 'merci__ok' });
   const intro = h(
     'div',
     { class: 'state merci__hello' },
     h('span', { class: 'state__icon' }, icon('check')),
-    h('p', { class: 'eyebrow', text: alreadyStored ? 'Accès enregistré' : 'Paiement confirmé' }),
+    h('p', { class: 'eyebrow', text: 'Paiement confirmé' }),
     h('h1', { text: 'Merci ! Ton plan est prêt.' }),
     data.email
       ? h(
@@ -256,8 +256,11 @@ function renderSuccess(data: UnlockResponse, alreadyStored: boolean): void {
     container.replaceChildren(
       intro,
       waiverSection(() => {
+        confirmWaiverOnServer(data.token, sessionId, postWaiver);
         showLink();
-        root.querySelector<HTMLElement>('#link-title')?.focus();
+        const title = root.querySelector<HTMLElement>('#link-title');
+        title?.setAttribute('tabindex', '-1');
+        title?.focus();
         announce('Merci. Ton lien personnel est affiché.');
       }),
       health,
@@ -282,7 +285,10 @@ async function run(): Promise<void> {
     const result = await unlock(sessionId);
     if (result.ok) {
       storeToken(result.data.token, result.data.ref);
-      renderSuccess(result.data, false);
+      // Accord donné avant le paiement (case de la fenêtre d'achat ou de la page Stripe) :
+      // il est enregistré et confirmé par e-mail, sur support durable.
+      if (hasWaiverRef(result.data.ref)) confirmWaiverOnServer(result.data.token, sessionId, postWaiver);
+      renderSuccess(result.data);
       return;
     }
     last = result;
@@ -294,15 +300,35 @@ async function run(): Promise<void> {
   }
 }
 
+/**
+ * Sans `session_id` mais avec un accès enregistré : écran neutre. Le contenu du jeton n'est
+ * pas vérifié ici (seul /api/plan le fait), il n'est donc pas présenté comme un achat confirmé.
+ */
+function renderStoredAccess(): void {
+  root.replaceChildren(
+    h(
+      'div',
+      { class: 'state' },
+      h('span', { class: 'state__icon' }, icon('lock')),
+      h('h1', { text: 'Ton accès est enregistré sur cet appareil' }),
+      h('p', {
+        text: 'Ouvre ton plan : ton accès est vérifié à chaque ouverture. Ton lien personnel se trouve ensuite dans « Ton accès », en bas de la page du plan.',
+      }),
+      h(
+        'div',
+        { class: 'cluster' },
+        h('a', { class: 'btn btn--primary btn--lg', attrs: { href: '/plan/' } }, 'Ouvrir mon plan', icon('arrowRight')),
+      ),
+      supportBlock(''),
+    ),
+  );
+  focusHeading();
+}
+
 function start(): void {
   if (!sessionId) {
-    const token = storedToken();
-    const info = token ? tokenInfo(token) : null;
-    if (token && info) {
-      renderSuccess({ token, email: info.sub, ref: info.ref }, true);
-    } else {
-      renderMissing();
-    }
+    if (storedToken()) renderStoredAccess();
+    else renderMissing();
     return;
   }
   if (!STRIPE_SESSION_ID_RE.test(sessionId)) {

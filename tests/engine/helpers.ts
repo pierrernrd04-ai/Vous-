@@ -95,19 +95,56 @@ export function lastSession(plan: Plan) {
 
 const floorHalf = (km: number): number => Math.floor(km * 2 + 1e-9) / 2;
 
-/** Sortie longue maximale : plafond de la SPEC, et 3 h à l'allure EF (choix du moteur). */
+/** Budget de temps hebdomadaire au pic (minutes à l'allure EF), revue du 15/10/2026. */
+export const WEEKLY_MAX_MINUTES: Record<RaceKind, Record<Level, number>> = {
+  marathon: { finisher: 330, l2: 390, l3: 450 },
+  semi: { finisher: 270, l2: 300, l3: 330 },
+};
+const GOAL_SEC: Record<RaceKind, Record<'l2' | 'l3', number>> = {
+  marathon: { l2: 4.5 * 3600, l3: 4 * 3600 },
+  semi: { l2: 2 * 3600, l3: 1.75 * 3600 },
+};
+const RIEGEL_KM: Record<RaceKind, number> = { marathon: 42.195, semi: 21.0975 };
+
+/**
+ * Niveau suivi pour les volumes : le niveau choisi, ou le plus haut niveau atteignable si
+ * l'objectif est plus rapide que la prédiction améliorée de 3 % (ou, au marathon, que le seuil).
+ */
+export function effectiveLevel(input: Pick<PlanInput, 'race' | 'level' | 't10'>): Level {
+  const tooFast = (level: Level): boolean => {
+    if (level === 'finisher') return false;
+    const km = RIEGEL_KM[input.race];
+    const predicted = input.t10 * (km / 10) ** 1.06;
+    const goal = GOAL_SEC[input.race][level];
+    const seuil = Math.round((input.t10 / 10) * 1.06);
+    return goal < predicted * 0.97 || (input.race === 'marathon' && Math.round(goal / km) <= seuil);
+  };
+  const order: Level[] = input.level === 'l3' ? ['l3', 'l2', 'finisher'] : input.level === 'l2' ? ['l2', 'finisher'] : ['finisher'];
+  return order.find((l) => !tooFast(l)) ?? 'finisher';
+}
+
+/** Sortie longue maximale : plafond de la SPEC (niveau suivi), et 3 h à l'allure EF (choix du moteur). */
 export function longRunCap(input: PlanInput, ef: number): number {
-  return Math.min(LONG_RUN_MAX_KM[input.race][input.level], Math.floor((180 * 60 * 10) / ef) / 10);
+  return Math.min(LONG_RUN_MAX_KM[input.race][effectiveLevel(input)], Math.floor((180 * 60 * 10) / ef) / 10);
 }
 
 /**
- * Volume au pic effectif (choix du moteur, toujours ≤ pic de la SPEC) : -15 % avec 3 séances,
- * et au plus 90 % de « séances × sortie longue maximale » (coureurs très lents).
+ * Volume au pic effectif (toujours ≤ pic de la SPEC) : pic du niveau suivi, borné par son budget
+ * de temps à l'allure EF, -15 % avec 3 séances, et au plus 90 % de « séances × sortie longue
+ * maximale » (coureurs très lents).
  */
 export function effectivePeak(input: PlanInput, ef: number): number {
-  const peak = PEAK_KM[input.race][input.level];
+  const level = effectiveLevel(input);
+  const byTime = floorHalf(Math.floor((WEEKLY_MAX_MINUTES[input.race][level] * 60 * 10) / ef + 1e-9) / 10);
+  const peak = Math.min(PEAK_KM[input.race][level], byTime);
   const bySessions = input.sessions === 3 ? floorHalf(peak * 0.85) : peak;
   return Math.min(bySessions, floorHalf(input.sessions * longRunCap(input, ef) * 0.9));
+}
+
+/** Volume de la semaine 1 : max(weeklyKm, min(15 km, 90 min à l'allure EF)), plafonné au pic effectif. */
+export function expectedStartKm(input: PlanInput, ef: number): number {
+  const floor = Math.min(15, floorHalf(Math.floor((90 * 60 * 10) / ef + 1e-9) / 10));
+  return Math.min(floorHalf(Math.max(input.weeklyKm, floor)), effectivePeak(input, ef));
 }
 
 /** Collecte toutes les valeurs numériques et textuelles d'un objet (contrôle NaN / undefined). */

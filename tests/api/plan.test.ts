@@ -135,6 +135,44 @@ describe('POST /api/plan — jeton (401)', () => {
   });
 });
 
+describe('POST /api/plan — jeton de test et accès désactivés (401)', () => {
+  const testToken = () =>
+    signToken(buildTokenPayload({ email: 'a@b.fr', sid: 'cs_test_a1FakePreviewSession', nowSec: NOW_SEC }), TEST_SECRET);
+
+  it('jeton émis pour un paiement de test : refusé avec une clé réelle', async () => {
+    const response = await call(onRequestPost, planRequest({ token: await testToken(), input: SAMPLE_INPUT }));
+    const body = await expectApiError(response, 401, 'invalid_token');
+    expect(body.message).toMatch(/paiement de test/);
+    expect(engine.generatePlan).not.toHaveBeenCalled();
+  });
+
+  it('jeton émis pour un paiement de test : refusé sans clé Stripe (site PayPal seul)', async () => {
+    const { STRIPE_KEY: _ignored, ...env } = BASE_ENV;
+    const response = await call(onRequestPost, planRequest({ token: await testToken(), input: SAMPLE_INPUT }), env);
+    await expectApiError(response, 401, 'invalid_token');
+  });
+
+  it('jeton émis pour un paiement de test : accepté sur un déploiement de test', async () => {
+    const env = { ...BASE_ENV, STRIPE_KEY: 'rk_test_previewKey' };
+    const response = await call(onRequestPost, planRequest({ token: await testToken(), input: SAMPLE_INPUT }), env);
+    expect(response.status).toBe(200);
+  });
+
+  it('accès désactivé par REVOKED_SIDS (remboursement) : refusé', async () => {
+    const env = { ...BASE_ENV, REVOKED_SIDS: ' cs_live_zzz , cs_live_abc,paypal:9XY' };
+    const response = await call(onRequestPost, planRequest({ token: await validToken(), input: SAMPLE_INPUT }), env);
+    const body = await expectApiError(response, 401, 'invalid_token');
+    expect(body.message).toMatch(/désactivé/);
+    expect(engine.generatePlan).not.toHaveBeenCalled();
+  });
+
+  it('REVOKED_SIDS sans cet achat : accès conservé', async () => {
+    const env = { ...BASE_ENV, REVOKED_SIDS: 'cs_live_autre' };
+    const response = await call(onRequestPost, planRequest({ token: await validToken(), input: SAMPLE_INPUT }), env);
+    expect(response.status).toBe(200);
+  });
+});
+
 describe('POST /api/plan — entrée (422)', () => {
   it('renvoie les erreurs de validation du moteur', async () => {
     const errors = [

@@ -18,6 +18,7 @@ import {
   dayNumber,
   dowIdx,
   effectivePeak,
+  expectedStartKm,
   isoOf,
   label,
   trainingKm,
@@ -183,8 +184,15 @@ export function checkPlanInvariants(plan: Plan, input: PlanInput): void {
     soft(trainingKm(week), `${ctx} S${week.index} ≤ pic`).toBeLessThanOrEqual(peak + EPS);
     soft(trainingKm(week), `${ctx} S${week.index} ≤ pic effectif`).toBeLessThanOrEqual(effectivePeak(input, plan.paces.ef) + EPS);
   }
-  const expectedStart = Math.min(Math.floor(Math.max(input.weeklyKm, 15) * 2) / 2, effectivePeak(input, plan.paces.ef));
-  soft(weeks[0]!.km, `${ctx} S1`).toBeCloseTo(expectedStart, 6);
+  const expectedStart = expectedStartKm(input, plan.paces.ef);
+  if (input.sessions === 3) {
+    // Avec 3 séances, une semaine de base pleine (sortie longue 40 %, footing ≤ 1 h 30, qualité
+    // ≤ 30 %) peut tenir moins que le volume actuel : elle est alors un peu réduite.
+    soft(weeks[0]!.km, `${ctx} S1`).toBeLessThanOrEqual(expectedStart + EPS);
+    soft(weeks[0]!.km, `${ctx} S1`).toBeGreaterThanOrEqual(expectedStart * 0.9 - 0.5);
+  } else {
+    soft(weeks[0]!.km, `${ctx} S1`).toBeCloseTo(expectedStart, 6);
+  }
 
   // +10 % maximum par rapport à la dernière semaine non allégée
   let lastLoad = trainingKm(weeks[0]!);
@@ -214,12 +222,28 @@ export function checkPlanInvariants(plan: Plan, input: PlanInput): void {
   const deloadCount = weeks.filter((w) => w.deload).length;
   soft(deloadCount, `${ctx} au moins une semaine allégée`).toBeGreaterThanOrEqual(1);
 
+  // Avant une course en semaine : aucune sortie longue à 5 jours ou moins de la course
+  // (l'avant-dernière semaine perd alors sa sortie longue et peut être plus légère que prévu).
+  const raceDayNumber = dayNumber(input.raceDate);
+  const softened = weeks[n - 2]!.sessions.some(
+    (s) => raceDayNumber - dayNumber(s.date) <= 5 && s.dow === input.longRunDay,
+  );
+  for (const s of all) {
+    const gap = raceDayNumber - dayNumber(s.date);
+    if (s.type === 'sl') soft(gap, `${ctx} ${s.date} sortie longue trop proche de la course`).toBeGreaterThan(5);
+    if (gap === 1) soft(s.durationMin, `${ctx} ${s.date} veille de course ≤ 30 min`).toBeLessThanOrEqual(30);
+  }
+
   // Affûtage
   const ref = taperReference(plan);
   const refKm = trainingKm(ref);
   TAPER[race].forEach((factor, k) => {
     const week = weeks[n - taperLength + k]!;
-    soft(Math.abs(week.km - refKm * factor), `${ctx} affûtage S${week.index}`).toBeLessThanOrEqual(0.25 + EPS);
+    soft(week.km, `${ctx} affûtage S${week.index}`).toBeLessThanOrEqual(refKm * factor + 0.25 + EPS);
+    if (softened && week.index === n - 1) return;
+    // Quand la sortie longue raccourcie et les footings plafonnés ne suffisent pas à remplir la
+    // semaine, le surplus est abandonné : l'affûtage peut être un peu plus marqué, jamais moins.
+    soft(week.km, `${ctx} affûtage S${week.index}`).toBeGreaterThanOrEqual(refKm * factor * 0.85 - 0.25);
   });
   const raceWeek = weeks[n - 1]!;
   const raceWeekTraining = trainingKm(raceWeek);
@@ -234,11 +258,25 @@ export function checkPlanInvariants(plan: Plan, input: PlanInput): void {
   // +2 km au plus par rapport à la sortie longue de la dernière semaine non allégée.
   const cap = LONG_RUN_MAX_KM[race][input.level];
   let previousLoadLong: number | null = null;
+  let peakLong = 0;
   for (const week of weeks.slice(0, n - 1)) {
     const wctx = `${ctx} S${week.index}`;
     const longRuns = week.sessions.filter((s) => s.type === 'sl');
+    if (softened && week.index === n - 1) {
+      soft(longRuns, `${wctx} (avant-course)`).toHaveLength(0);
+      continue;
+    }
     soft(longRuns, wctx).toHaveLength(1);
     const sl = longRuns[0]!;
+    // Semaine allégée et affûtage : la sortie longue raccourcit vraiment (revue du 15/10/2026).
+    if (week.deload && previousLoadLong !== null && previousLoadLong >= 8) {
+      soft(sl.km, `${wctx} SL allégée < SL chargée`).toBeLessThan(previousLoadLong);
+      soft(sl.km, `${wctx} SL allégée ≤ 75 %`).toBeLessThanOrEqual(previousLoadLong * 0.75 + 0.5);
+    }
+    if (week.phase === 'affutage' && peakLong > 0) {
+      soft(sl.km, `${wctx} SL d'affûtage ≤ 75 % du pic`).toBeLessThanOrEqual(peakLong * 0.75 + EPS);
+    }
+    if (!week.deload && week.phase !== 'affutage') peakLong = Math.max(peakLong, sl.km);
     soft(sl.dow, wctx).toBe(input.longRunDay);
     soft(sl.km, wctx).toBeLessThanOrEqual(cap + EPS);
     soft(sl.km * plan.paces.ef, `${wctx} SL ≤ 3 h`).toBeLessThanOrEqual(180 * 60 + EPS);
@@ -249,9 +287,18 @@ export function checkPlanInvariants(plan: Plan, input: PlanInput): void {
     }
     if (!week.deload) previousLoadLong = sl.km;
     for (const s of week.sessions) {
-      if (s.type === 'ef' || s.type === 'recup') soft(s.km, `${wctx} footing ≤ SL`).toBeLessThanOrEqual(sl.km + EPS);
+      if (s.type === 'ef' || s.type === 'recup') {
+        soft(s.km, `${wctx} footing ≤ 75 % SL`).toBeLessThanOrEqual(sl.km * 0.75 + EPS);
+        // Temps de course du footing (hors lignes droites et renforcement) ≤ 90 min.
+        soft(s.km * plan.paces.ef, `${wctx} footing ≤ 90 min`).toBeLessThanOrEqual(90 * 60 + 60);
+      }
     }
+    const weekMinutes = week.sessions.reduce((a, s) => a + s.durationMin, 0);
+    soft(weekMinutes, `${wctx} semaine ≤ 8 h`).toBeLessThanOrEqual(8 * 60);
     const qualities = week.sessions.filter((s) => s.type === 'qualite');
+    if (qualities[0] && trainingKm(week) >= 15) {
+      soft(qualities[0].km, `${wctx} qualité ≤ 40 % de la semaine`).toBeLessThanOrEqual(trainingKm(week) * 0.4 + EPS);
+    }
     soft(qualities, wctx).toHaveLength(1);
     soft(qualities[0]!.dow, wctx).toBe('thu');
     soft(qualities[0]!.km, `${wctx} qualité ≤ SL`).toBeLessThanOrEqual(sl.km + EPS);
@@ -267,14 +314,18 @@ export function checkPlanInvariants(plan: Plan, input: PlanInput): void {
     soft([...days].sort(), `${ctx} S${week.index} jours`).toEqual([...expected].sort());
   }
 
-  // Noël : semaine allégée si hors affûtage (et pas S1) pour une durée non nominale
+  // Noël : semaine allégée pour une durée non nominale, entre S3 et l'avant-dernière semaine
+  // chargée (revue du 15/10/2026 : jamais après une seule semaine, jamais juste avant l'affûtage).
   if (n !== NOMINAL_WEEKS[race]) {
-    weeks.forEach((week, i) => {
-      if (containsChristmas(week) && i >= 1 && week.phase !== 'affutage') {
+    const lastLoadIndex = n - taperLength;
+    weeks.forEach((week) => {
+      if (containsChristmas(week) && week.index >= 3 && week.index <= lastLoadIndex - 1) {
         soft(week.deload, `${ctx} S${week.index} Noël`).toBe(true);
       }
     });
   }
+  const firstDeload = weeks.find((w) => w.deload);
+  if (firstDeload) soft(firstDeload.index, `${ctx} première semaine allégée`).toBeGreaterThanOrEqual(3);
 
   // Les allures citées dans les consignes sont celles du plan (min:ss/km)
   const fmt = (sec: number): string => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}/km`;

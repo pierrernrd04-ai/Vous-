@@ -2,16 +2,21 @@
  * Assemblage du plan complet et de l'aperçu gratuit (SPEC section 2).
  * Déterministe : même entrée et même `today` → même sortie.
  */
-import { buildRaceWeek, buildTrainingWeek } from './allocation';
+import { buildRaceWeek, buildTrainingWeek, softenBeforeRace } from './allocation';
 import {
+  BEGINNER_WEEKLY_KM,
+  DELOAD_LONG_RUN_FACTOR,
   LONG_RUN_MAX_GAIN_KM,
   LONG_RUN_MAX_KM,
   LONG_RUN_MAX_MINUTES,
   LONG_RUN_SHARE,
-  MIN_START_KM,
+  MAX_WEEKLY_INCREASE,
   MIN_WEEKS,
   NOMINAL_WEEKS,
+  SHORT_PREP_CAP_SHARE,
+  SHORT_PREP_LONG_RUN_KM,
   TAPER_FACTORS,
+  TAPER_LONG_RUN_FACTORS,
 } from './constants';
 import {
   DOWS,
@@ -26,9 +31,21 @@ import {
 } from './dates';
 import { formatDecimal, frenchTypography } from './format';
 import { computePaces } from './paces';
-import { deloadWeeks, effectivePeakHm, phaseLengths, phaseOf, weeklyVolumes } from './structure';
+import {
+  christmasDeloadIndex,
+  deloadTargetHm,
+  deloadWeeks,
+  effectivePeakHm,
+  floorHalfKmHm,
+  phaseLengths,
+  phaseOf,
+  raceWeekTargetHm,
+  startFloorKm,
+  taperTargetHm,
+  weeklyVolumes,
+} from './structure';
 import { PlanError } from './types';
-import type { Phase, Plan, PlanInput, PlanPreview, RaceKind, Session, Week } from './types';
+import type { PaceComputation, Phase, Plan, PlanInput, PlanPreview, RaceKind, Session, Week } from './types';
 import { validateInput } from './validate';
 import type { DraftSession, WorkoutContext } from './workouts';
 
@@ -85,9 +102,10 @@ interface NoteContext {
   startMonday: number;
   paceNote: string | undefined;
   peakHm: number;
+  startHm: number;
 }
 
-function firstWeekNotes(ctx: NoteContext): string[] {
+function firstWeekNotes(ctx: NoteContext, firstWeekKm: number): string[] {
   const { input } = ctx;
   const notes: string[] = [];
   const nominal = NOMINAL_WEEKS[input.race];
@@ -103,10 +121,27 @@ function firstWeekNotes(ctx: NoteContext): string[] {
     );
   }
   if (ctx.paceNote) notes.push(ctx.paceNote);
-  if (input.weeklyKm < MIN_START_KM) {
+  if (input.weeklyKm <= 0) {
     notes.push(
-      `Tu cours peu en ce moment : cette première semaine compte ${MIN_START_KM} km, à courir très tranquillement. ` +
+      `Tu ne cours pas en ce moment : cette première semaine compte ${formatDecimal(ctx.startHm / 10)} km, en alternant course et marche ` +
+        '(par exemple 2 min de course, 1 min de marche). ' +
+        (input.race === 'marathon'
+          ? 'Un marathon demande une vraie base : si tu n\'as jamais couru 10 km d\'affilée, vise plutôt une course plus courte cette saison. '
+          : '') +
+        'Demande l\'avis de ton médecin avant de commencer.',
+    );
+  } else if (input.weeklyKm * 10 < ctx.startHm) {
+    notes.push(
+      `Tu cours peu en ce moment : cette première semaine compte ${formatDecimal(ctx.startHm / 10)} km, à courir très tranquillement. ` +
         'N\'hésite pas à alterner course et marche au début.',
+    );
+  } else if (input.weeklyKm < BEGINNER_WEEKLY_KM) {
+    notes.push('Tu cours peu en ce moment : cours ces premières semaines très tranquillement, et n\'hésite pas à alterner course et marche.');
+  } else if (input.weeklyKm * 10 <= ctx.peakHm && firstWeekKm < input.weeklyKm - 0.5) {
+    notes.push(
+      `Ta première semaine compte ${formatDecimal(firstWeekKm)} km, un peu moins que ton volume actuel : avec ${input.sessions} séances, ` +
+        'chaque séance reste dans sa part de la semaine (sortie longue à 40 % au plus, footings de 1 h 30 au plus). ' +
+        'Le volume remonte ensuite progressivement.',
     );
   } else if (input.weeklyKm * 10 > ctx.peakHm) {
     notes.push(
@@ -123,6 +158,9 @@ const CHRISTMAS_NOTE =
   'Semaine de Noël : si tu dois sacrifier une séance, garde la sortie longue et la séance du jeudi, et laisse tomber un footing sans regret.';
 const RACE_WEEK_NOTE =
   'Semaine de course ! Footings courts, un rappel d\'allure et beaucoup de repos. Mange normalement, hydrate-toi et fais confiance à ton entraînement.';
+const EARLY_DELOAD_NOTE = 'Semaine allégée : environ 25 % de volume en moins pour bien démarrer.';
+const PRE_RACE_NOTE =
+  'Ta course a lieu en début de semaine prochaine : pas de sortie longue dans les derniers jours, seulement des footings courts pour arriver frais.';
 
 /* ------------------------------------------------------------------ */
 /* Calendrier                                                         */
@@ -185,8 +223,42 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
   }
 
   const calendar = resolveCalendar(input, todayDay);
+  const firstPass = computePaces(input);
+  let built = buildWeeks(input, calendar, firstPass);
+  // Prépa prudente : la plus longue sortie reste sous le seuil de confiance → marge de plus
+  // sur l'allure course. Les volumes ne dépendent que de l'allure EF : seules les allures
+  // course et les textes changent au second passage.
+  // Seuil : 26 km (marathon) / 14 km (semi), ou 90 % de la sortie longue maximale du coureur
+  // (3 h à l'allure EF, maximum du niveau) si elle est plus courte : un coureur lent qui
+  // atteint sa limite des 3 h n'est pas en prépa courte.
+  const threshold = Math.min(SHORT_PREP_LONG_RUN_KM[input.race], (built.longRunCapHm / 10) * SHORT_PREP_CAP_SHARE);
+  let paceInfo = firstPass;
+  if (built.longestLongRunHm / 10 < threshold - 1e-9) {
+    paceInfo = computePaces(input, { cautious: { longestLongRunKm: built.longestLongRunHm / 10 } });
+    built = buildWeeks(input, calendar, paceInfo);
+  }
+
+  return {
+    input,
+    weeks: built.weeks,
+    paces: paceInfo.paces,
+    predicted: paceInfo.predicted,
+    totalKm: round3(built.weeks.reduce((acc, w) => acc + w.km, 0)),
+  };
+}
+
+interface BuiltWeeks {
+  weeks: Week[];
+  /** Plus longue sortie longue du plan (hm). */
+  longestLongRunHm: number;
+  /** Sortie longue maximale du coureur (hm) : maximum du niveau suivi et 3 h à l'allure EF. */
+  longRunCapHm: number;
+}
+
+function buildWeeks(input: PlanInput, calendar: Calendar, paceInfo: PaceComputation): BuiltWeeks {
   const { startMonday, weeks } = calendar;
   const raceDay = requireDay(input.raceDate);
+  const level = paceInfo.effectiveLevel;
 
   const lengths = phaseLengths(input.race, weeks);
   const weekStart = (index: number): number => startMonday + (index - 1) * 7;
@@ -195,12 +267,12 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
     if (containsChristmas(weekStart(i), weekStart(i) + 6)) christmasIndex = i;
   }
   const deloads = new Set(deloadWeeks(input.race, weeks, christmasIndex));
-  const paceInfo = computePaces(input);
+  const christmasDeload = christmasDeloadIndex(input.race, weeks, christmasIndex);
   const longRunCapHm = Math.min(
-    LONG_RUN_MAX_KM[input.race][input.level] * 10,
+    LONG_RUN_MAX_KM[input.race][level] * 10,
     Math.floor((LONG_RUN_MAX_MINUTES * 60 * 10) / paceInfo.paces.ef),
   );
-  const peakHm = effectivePeakHm(input.race, input.level, input.sessions, longRunCapHm);
+  const peakHm = effectivePeakHm(input.race, level, input.sessions, longRunCapHm, paceInfo.paces.ef);
   const specificStart = lengths.base + lengths.developpement + 1;
   const volumes = weeklyVolumes({
     race: input.race,
@@ -209,14 +281,16 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
     peakHm,
     deloads: [...deloads],
     specificStart,
+    startFloorKm: startFloorKm(paceInfo.paces.ef),
   });
 
   const ctx: WorkoutContext = {
     race: input.race,
-    level: input.level,
+    level,
     paces: paceInfo.paces,
     sessions: input.sessions,
     longRunDay: input.longRunDay,
+    beginner: input.weeklyKm < BEGINNER_WEEKLY_KM,
     ...(input.raceName !== undefined ? { raceName: input.raceName } : {}),
   };
 
@@ -227,6 +301,8 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
     .filter((w) => w.phase === 'specifique' && !deloads.has(w.index))
     .map((w) => w.index);
   const taperStart = weeks - lengths.affutage + 1;
+  const lastLoad = taperStart - 1;
+  const raceDowIdx = dowIndex(raceDay);
 
   const noteCtx: NoteContext = {
     input,
@@ -236,44 +312,79 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
     startMonday,
     paceNote: paceInfo.note,
     peakHm,
+    startHm: volumes.startHm,
   };
 
   const progressByPhase = new Map<Phase, number>();
   /** Sortie longue de la dernière semaine non allégée (hm) : base du plafond +2 km. */
   let lastLoadLongHm: number | null = null;
+  /** Plus longue sortie longue des semaines chargées (hm) : base de l'affûtage. */
+  let peakLongHm = 0;
+  /** Volume réel de la dernière semaine chargée (hm) : base des +10 %, de l'allégement et de l'affûtage. */
+  let lastLoadHm: number | null = null;
+  let longestLongRunHm = 0;
   const result: Week[] = [];
   for (let index = 1; index <= weeks; index += 1) {
     const phase = phases[index - 1] ?? 'base';
     const deload = deloads.has(index);
     const start = weekStart(index);
     const progress = progressByPhase.get(phase) ?? 0;
-    const targetHm = volumes.weekHm[index - 1] ?? 0;
+    const taperStep = phase === 'affutage' ? index - taperStart : 0;
+    const ideal = volumes.weekHm[index - 1] ?? 0;
+    // Les cibles suivent le volume réellement prévu la semaine précédente (une semaine peut
+    // être un peu plus courte que sa cible quand les footings sont pleins).
+    const reference = lastLoadHm ?? ideal;
+    let targetHm: number;
+    if (index === 1) targetHm = ideal;
+    else if (index === weeks) targetHm = raceWeekTargetHm(input.race, reference);
+    else if (index > lastLoad) targetHm = taperTargetHm(input.race, taperStep, reference);
+    else if (deload) targetHm = deloadTargetHm(reference);
+    else targetHm = Math.min(ideal, Math.max(reference, floorHalfKmHm(reference * (1 + MAX_WEEKLY_INCREASE))));
 
-    const drafts: DraftSession[] =
+    let longCap =
+      lastLoadLongHm === null ? longRunCapHm : Math.min(longRunCapHm, lastLoadLongHm + LONG_RUN_MAX_GAIN_KM * 10);
+    if (deload && lastLoadLongHm !== null) {
+      longCap = Math.min(longCap, floorHalfKmHm(lastLoadLongHm * DELOAD_LONG_RUN_FACTOR));
+    }
+    const taperLongFactor = TAPER_LONG_RUN_FACTORS[input.race][taperStep];
+    if (phase === 'affutage' && taperLongFactor !== undefined && peakLongHm > 0) {
+      longCap = Math.min(longCap, floorHalfKmHm(peakLongHm * taperLongFactor));
+    }
+
+    let drafts: DraftSession[] =
       index === weeks
         ? buildRaceWeek(ctx, {
             trainingHm: targetHm,
-            referenceHm: volumes.referenceHm,
+            referenceHm: reference,
             maxShare: TAPER_FACTORS[input.race][lengths.affutage - 1] ?? 0.45,
-            raceDowIdx: dowIndex(raceDay),
+            raceDowIdx,
           })
         : buildTrainingWeek(ctx, {
             phase,
             deload,
             targetHm,
             longRunShare: LONG_RUN_SHARE[phase],
-            longRunCapHm:
-              lastLoadLongHm === null
-                ? longRunCapHm
-                : Math.min(longRunCapHm, lastLoadLongHm + LONG_RUN_MAX_GAIN_KM * 10),
+            longRunCapHm: longCap,
             progress,
-            taperStep: phase === 'affutage' ? index - taperStart : 0,
+            taperStep,
             specificRank: phase === 'specifique' && !deload ? specificLoadWeeks.indexOf(index) : null,
+            weekIndex: index,
           });
+    let softened = false;
+    if (index === weeks - 1) {
+      const adjusted = softenBeforeRace(ctx, drafts, 7 + raceDowIdx, reference);
+      drafts = adjusted.drafts;
+      softened = adjusted.changed;
+    }
+    const longRun = drafts.find((d) => d.type === 'sl');
+    if (longRun) longestLongRunHm = Math.max(longestLongRunHm, longRun.hm);
     if (!deload) {
       progressByPhase.set(phase, progress + 1);
-      const longRun = drafts.find((d) => d.type === 'sl');
-      if (longRun) lastLoadLongHm = longRun.hm;
+      if (longRun) {
+        lastLoadLongHm = longRun.hm;
+        if (index <= lastLoad) peakLongHm = Math.max(peakLongHm, longRun.hm);
+      }
+      if (index <= lastLoad) lastLoadHm = drafts.reduce((acc, d) => acc + (d.type === 'course' ? 0 : d.hm), 0);
     }
 
     const sessions = drafts.map((d) => toSession(d, start));
@@ -282,14 +393,15 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
     const notes: string[] = [];
     const firstOfPhase = index === 1 || phases[index - 2] !== phase;
     if (firstOfPhase) notes.push(phaseIntro(phase, input.race));
-    if (index === 1) notes.push(...firstWeekNotes(noteCtx));
+    if (index === 1) notes.push(...firstWeekNotes(noteCtx, km));
     const christmas = christmasIndex === index;
     if (deload) {
-      notes.push(DELOAD_NOTE);
+      notes.push(index <= 2 ? EARLY_DELOAD_NOTE : DELOAD_NOTE);
       if (christmas) notes.push(CHRISTMAS_DELOAD_NOTE);
-    } else if (christmas && index !== weeks) {
+    } else if (christmas && index !== weeks && christmasDeload === null) {
       notes.push(CHRISTMAS_NOTE);
     }
+    if (softened) notes.push(PRE_RACE_NOTE);
     if (index === weeks) notes.push(RACE_WEEK_NOTE);
 
     const week: Week = {
@@ -305,13 +417,7 @@ export function generatePlan(rawInput: PlanInput, today?: string): Plan {
     result.push(week);
   }
 
-  return {
-    input,
-    weeks: result,
-    paces: paceInfo.paces,
-    predicted: paceInfo.predicted,
-    totalKm: round3(result.reduce((acc, w) => acc + w.km, 0)),
-  };
+  return { weeks: result, longestLongRunHm, longRunCapHm };
 }
 
 export function previewPlan(input: PlanInput, today?: string): PlanPreview {

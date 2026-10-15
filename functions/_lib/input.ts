@@ -4,6 +4,7 @@
  */
 import { parseInputFromQuery, validateInput } from '../../src/engine/index';
 import { isPlanError, type PlanInput } from '../../src/engine/types';
+import { LAST_RACE_DATE } from '../../src/shared/token';
 import { apiError } from './http';
 
 export type Parsed<T> = { ok: true; value: T } | { ok: false; response: Response };
@@ -62,9 +63,18 @@ export async function readJsonBody(request: Request, maxBytes: number): Promise<
 /** Valide une entrée inconnue avec le moteur ; 422 `invalid_input` + messages sinon. */
 export function checkPlanInput(raw: unknown): Parsed<PlanInput> {
   const result = validateInput(raw);
-  if (result.ok) return { ok: true, value: result.input };
-  return { ok: false, response: apiError('invalid_input', { details: result.errors }) };
+  if (!result.ok) return { ok: false, response: apiError('invalid_input', { details: result.errors }) };
+  // L'accès au plan prend fin le 30/06/2027 : une course plus tardive ne serait pas couverte.
+  if (result.input.raceDate > LAST_RACE_DATE) {
+    const message = RACE_AFTER_ACCESS_MESSAGE;
+    return { ok: false, response: apiError('invalid_input', { message, details: [message] }) };
+  }
+  return { ok: true, value: result.input };
 }
+
+/** Message affiché quand la course tombe après la fin de l'accès au plan. */
+export const RACE_AFTER_ACCESS_MESSAGE =
+  'Ton accès au plan est valable jusqu’au 30 juin 2027 : choisis une course au plus tard à cette date.';
 
 /** Query de `GET /api/preview` → `PlanInput` validée. */
 export function parsePreviewQuery(url: URL): Parsed<PlanInput> {

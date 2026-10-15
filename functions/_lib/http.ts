@@ -59,6 +59,9 @@ export const DEFAULT_ERROR_MESSAGES: Readonly<Record<ApiErrorCode, string>> = Ob
   method_not_allowed: 'Méthode non autorisée.',
   stripe_unavailable:
     'Impossible de vérifier ton paiement pour le moment. Réessaie dans quelques minutes : ton achat n’est pas perdu.',
+  rate_limited: 'Trop de demandes en peu de temps. Réessaie dans une heure, ou écris au support.',
+  service_unavailable:
+    'Ce service en ligne est momentanément indisponible. Utilise l’e-mail ou le courrier indiqués sur la page : ta démarche reste valable.',
   server_misconfigured:
     'Le service est momentanément indisponible. Réessaie un peu plus tard, ton achat n’est pas perdu.',
   internal_error: 'Une erreur inattendue est survenue. Réessaie dans un instant.',

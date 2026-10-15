@@ -105,7 +105,10 @@ describe('stripe', () => {
       client_reference_id: null,
       customer_email: null,
       customer_details: { email: 'a@b.fr' },
+      terms_accepted: false,
     });
+    expect(parseCheckoutSession({ ...base, consent: { terms_of_service: 'accepted' } })?.terms_accepted).toBe(true);
+    expect(parseCheckoutSession({ ...base, consent: { terms_of_service: null } })?.terms_accepted).toBe(false);
   });
 
   it('parseCheckoutSession refuse les formes inattendues', () => {

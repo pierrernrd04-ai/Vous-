@@ -25,6 +25,12 @@ export interface CheckoutSession {
   client_reference_id: string | null;
   customer_email: string | null;
   customer_details: { email: string | null } | null;
+  /**
+   * Case « conditions » de la page de paiement (Payment Link avec `consent_collection`) :
+   * `true` si l'acheteur l'a cochée. Son libellé reprend la demande d'accès immédiat et la
+   * renonciation au droit de rétractation (scripts/stripe-setup.mjs).
+   */
+  terms_accepted: boolean;
 }
 
 export type StripeFailure =
@@ -84,6 +90,13 @@ export function parseCheckoutSession(value: unknown): CheckoutSession | null {
     customerDetails = { email };
   }
 
+  // `consent` est absent ou `null` sans `consent_collection` : la case n'a alors pas été cochée.
+  const consent = v.consent;
+  const termsAccepted =
+    typeof consent === 'object' &&
+    consent !== null &&
+    (consent as Record<string, unknown>).terms_of_service === 'accepted';
+
   return {
     id: v.id,
     livemode: v.livemode,
@@ -93,6 +106,7 @@ export function parseCheckoutSession(value: unknown): CheckoutSession | null {
     client_reference_id: clientReferenceId,
     customer_email: customerEmail,
     customer_details: customerDetails,
+    terms_accepted: termsAccepted,
   };
 }
 

@@ -27,6 +27,8 @@ export const API_ROUTES = {
   preview: '/api/preview',
   unlock: '/api/unlock',
   plan: '/api/plan',
+  retractation: '/api/retractation',
+  waiver: '/api/waiver',
 } as const;
 
 /* ---------------- GET /api/preview?<PlanInput en query> ---------------- */
@@ -45,8 +47,13 @@ export type PreviewResponse = PlanPreview;
 
 /* ---------------- GET /api/unlock?session_id=cs_… ---------------- */
 
-/** Format accepté pour `session_id` (sinon 400 `invalid_session_id`). */
-export const STRIPE_SESSION_ID_RE = /^cs_(test|live)_[A-Za-z0-9]+$/;
+/**
+ * Format accepté pour `session_id` (sinon 400 `invalid_session_id`) : id de Checkout Session
+ * Stripe (SPEC section 3), resserré à la longueur des vrais ids
+ * (une soixantaine de caractères après le préfixe) : un id fantaisiste est refusé avant
+ * tout appel à Stripe.
+ */
+export const STRIPE_SESSION_ID_RE = /^cs_(test|live)_[A-Za-z0-9]{24,200}$/;
 
 export interface UnlockQuery {
   session_id: string;
@@ -83,6 +90,56 @@ export interface PlanRequest {
 
 export type PlanResponse = Plan;
 
+/* ---------------- POST /api/retractation ---------------- */
+
+/** Taille maximale du corps de `POST /api/retractation` et `POST /api/waiver` (octets). */
+export const FORM_REQUEST_MAX_BYTES = 4096;
+
+/**
+ * Déclaration de rétractation en ligne (fonction « Renoncer au contrat ici »,
+ * art. L221-21 et D221-5 C. conso) : nom et prénom, éléments identifiant le contrat,
+ * adresse où recevoir l'accusé de réception.
+ */
+export interface WithdrawalRequest {
+  name: string;
+  /** E-mail utilisé pour l'achat (identifie le contrat). */
+  purchaseEmail: string;
+  /** Référence de la commande (reçu Stripe ou PayPal), facultative. */
+  orderRef?: string;
+  /** Adresse où envoyer l'accusé de réception. */
+  ackEmail: string;
+}
+
+/**
+ * 200 : déclaration reçue. `acknowledgementSent` vaut faux si l'e-mail d'accusé de
+ * réception n'a pas pu partir (la déclaration est tout de même enregistrée) ; la page
+ * affiche alors l'accusé, à conserver. 422 `invalid_input` (détails), 429 `rate_limited`,
+ * 503 `service_unavailable` (fonction non configurée : utiliser l'e-mail ou le courrier).
+ */
+export interface WithdrawalResponse {
+  reference: string;
+  /** Date et heure de réception, ISO 8601 UTC. */
+  receivedAt: string;
+  /** Même instant, en toutes lettres à l'heure de Paris. */
+  receivedAtLabel: string;
+  /** Texte intégral de la déclaration. */
+  declaration: string;
+  acknowledgementSent: boolean;
+}
+
+/* ---------------- POST /api/waiver ---------------- */
+
+/** Accord d'accès immédiat donné après le paiement (/merci/, /plan/) ou avant (référence `w1-`). */
+export interface WaiverRequest {
+  token: string;
+}
+
+/** 200 : accord enregistré et/ou confirmation envoyée par e-mail. 401 jeton invalide, 503 non configuré. */
+export interface WaiverResponse {
+  recorded: boolean;
+  confirmationSent: boolean;
+}
+
 /* ---------------- Erreurs ---------------- */
 
 export type ApiErrorCode =
@@ -96,6 +153,8 @@ export type ApiErrorCode =
   | 'unknown_payment_link'
   | 'method_not_allowed'
   | 'stripe_unavailable'
+  | 'rate_limited'
+  | 'service_unavailable'
   | 'server_misconfigured'
   | 'internal_error';
 
@@ -111,6 +170,8 @@ export const API_ERROR_STATUS = {
   unknown_payment_link: 403,
   method_not_allowed: 405,
   stripe_unavailable: 502,
+  rate_limited: 429,
+  service_unavailable: 503,
   server_misconfigured: 500,
   internal_error: 500,
 } as const satisfies Record<ApiErrorCode, number>;

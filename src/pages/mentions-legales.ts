@@ -16,7 +16,7 @@ renderLegalPage(must('#contenu'), {
   title: 'Mentions légales',
   intro: [
     p(
-      'Conformément à l’article 6, III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l’économie numérique (LCEN), voici l’identité de l’éditeur et de l’hébergeur du site Pass J-24 · Traceo.',
+      'Conformément à l’article 1-1 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l’économie numérique (LCEN), voici l’identité de l’éditeur, de l’hébergeur et des prestataires qui stockent les données du site Pass J-24 · Traceo.',
     ),
   ],
   sections: [
@@ -58,6 +58,21 @@ renderLegalPage(must('#contenu'), {
           'Le site est servi par le service Cloudflare Pages. Les paiements sont traités par Stripe ou, le cas échéant, par PayPal : voir la ',
           h('a', { attrs: { href: '/confidentialite/' }, text: 'politique de confidentialité' }),
           '.',
+        ),
+      ],
+    },
+    {
+      id: 'stockage',
+      title: 'Stockage des données',
+      body: [
+        p('Les données traitées par l’éditeur sont stockées par :'),
+        h(
+          'ul',
+          {},
+          h('li', { text: 'Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, États-Unis (hébergement, calcul du plan, registre des rétractations et des accords d’accès immédiat) ;' }),
+          h('li', { text: 'Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Grand Canal Dock, Dublin D02 H210, Irlande (paiements par carte) ;' }),
+          h('li', { text: 'PayPal (Europe) S.à r.l. et Cie, S.C.A., 22-24 boulevard Royal, L-2449 Luxembourg (paiements PayPal, le cas échéant) ;' }),
+          h('li', { text: 'Resend, Inc., 2261 Market Street #5039, San Francisco, CA 94114, États-Unis (envoi des e-mails de confirmation et des accusés de réception).' }),
         ),
       ],
     },

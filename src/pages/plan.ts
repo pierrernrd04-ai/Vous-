@@ -7,9 +7,9 @@
 import { config } from '../config';
 import type { Plan, Week } from '../shared/api-types';
 import { clearToken, storeToken, storedToken, supportMailto, tokenFromHash, tokenInfo } from '../lib/access';
-import { isPlan, postPlan, type ApiFailure } from '../lib/api';
+import { isPlan, postPlan, postWaiver, type ApiFailure } from '../lib/api';
 import { bootPage } from '../lib/boot';
-import { createWaiverField, hasRecordedWaiver, hasWaiverRef, parseClientReference, readCheckoutPrefs, recordWaiver } from '../lib/checkout';
+import { confirmWaiverOnServer, createWaiverField, hasRecordedWaiver, hasWaiverRef, parseClientReference, readCheckoutPrefs, recordWaiver } from '../lib/checkout';
 import { announce, copyText, downloadBlob, h, must, prefersReducedMotion, qs, qsa, toast } from '../lib/dom';
 import {
   daysBetween,
@@ -146,7 +146,7 @@ function pasteLinkForm(): HTMLElement {
     error,
   );
   if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
-    const paste = h('button', { class: 'btn btn--sm btn--ghost', attrs: { type: 'button' } }, icon('copy'), 'Coller depuis le presse-papiers');
+    const paste = h('button', { class: 'btn btn--sm btn--ghost', attrs: { type: 'button' } }, icon('copy'), 'Coller le lien');
     paste.addEventListener('click', async () => {
       try {
         input.value = (await navigator.clipboard.readText()).trim();
@@ -167,11 +167,12 @@ function pasteLinkForm(): HTMLElement {
       input.focus();
       return;
     }
-    storeToken(token);
+    // Le jeton n'est enregistré qu'une fois validé par le serveur (voir `loadPlan`).
+    pendingToken = token;
     try {
       history.replaceState(null, '', `/plan/#t=${token}`);
     } catch {
-      // Le jeton est quand même enregistré localement.
+      // Sans conséquence : le jeton est gardé en mémoire pour cette visite.
     }
     void start();
   });
@@ -211,7 +212,33 @@ function renderNoToken(): void {
   );
 }
 
-function renderInvalidToken(message: string): void {
+function renderInvalidToken(message: string, rejected: string): void {
+  // Le lien ouvert est refusé, mais un accès valide reste peut-être enregistré sur l'appareil :
+  // il n'est jamais écrasé par un lien non vérifié.
+  const saved = storedToken();
+  const fallback =
+    saved && saved !== rejected
+      ? h(
+          'div',
+          { class: 'cluster' },
+          h('button', {
+            class: 'btn btn--primary',
+            attrs: { type: 'button' },
+            text: 'Ouvrir le plan enregistré sur cet appareil',
+            on: {
+              click: () => {
+                try {
+                  history.replaceState(null, '', '/plan/');
+                } catch {
+                  // Sans conséquence.
+                }
+                pendingToken = null;
+                void start();
+              },
+            },
+          }),
+        )
+      : null;
   screen(
     h(
       'div',
@@ -219,6 +246,7 @@ function renderInvalidToken(message: string): void {
       h('span', { class: 'state__icon' }, icon('alert')),
       h('h1', { text: 'Lien invalide' }),
       h('p', { attrs: { role: 'alert' }, text: message }),
+      fallback,
       h(
         'p',
         {},
@@ -230,7 +258,9 @@ function renderInvalidToken(message: string): void {
       ),
     ),
     h('div', { class: 'card' }, pasteLinkForm()),
-    h(
+    saved !== rejected
+      ? null
+      : h(
       'p',
       { class: 'center' },
       h('button', {
@@ -249,13 +279,14 @@ function renderInvalidToken(message: string): void {
           },
         },
       }),
-    ),
+        ),
   );
   announce(`Lien invalide. ${message}`, 'assertive');
 }
 
 function renderLoading(): void {
   headerSettings?.setAttribute('hidden', '');
+  window.scrollTo({ top: 0 });
   app.replaceChildren(
     h(
       'div',
@@ -496,7 +527,7 @@ function renderWeek(week: Week, isCurrent: boolean, done: DoneMap, onDoneChange:
 interface RenderContext {
   token: string;
   values: PlanFormValues;
-  offline: { savedAt: string; settingsDiffer: boolean } | null;
+  offline: { savedAt: string; settingsDiffer: boolean; reason: 'network' | 'server' } | null;
 }
 
 function storyData(plan: Plan, today: string): StoryData {
@@ -604,9 +635,13 @@ function renderPlan(plan: Plan, ctx: RenderContext): void {
       h(
         'p',
         { class: 'notice notice--warn', attrs: { role: 'status' } },
-        h('strong', { text: 'Hors ligne. ' }),
+        h('strong', { text: ctx.offline.reason === 'server' ? 'Le serveur ne répond pas pour l’instant. ' : 'Hors ligne. ' }),
         `Voici la dernière version enregistrée de ton plan (${formatDateLong(ctx.offline.savedAt.slice(0, 10), false)}).`,
-        ctx.offline.settingsDiffer ? ' Tes nouveaux réglages seront appliqués dès que tu seras reconnecté.' : '',
+        ctx.offline.settingsDiffer
+          ? ctx.offline.reason === 'server'
+            ? ' Tes nouveaux réglages seront appliqués dès que le service sera rétabli.'
+            : ' Tes nouveaux réglages seront appliqués dès que tu seras reconnecté.'
+          : '',
       ),
     );
   }
@@ -764,6 +799,13 @@ function renderPlan(plan: Plan, ctx: RenderContext): void {
           'Copier',
         ),
       ),
+      h(
+        'p',
+        { class: 'hint' },
+        'Droit de rétractation, remboursement : ',
+        h('a', { attrs: { href: '/retractation/#renoncer' }, text: 'Renoncer au contrat ici' }),
+        '.',
+      ),
       h('button', {
         class: 'btn btn--sm btn--ghost',
         attrs: { type: 'button' },
@@ -870,13 +912,24 @@ async function loadPlan(token: string, values: PlanFormValues, options: { keepPo
   if (result.ok) {
     const plan = result.data;
     const matches = sameInput(plan.input, input);
-    if (!result.fromCache) writeJson(STORAGE_KEYS.lastPlan, { savedAt: new Date().toISOString(), plan } satisfies LastPlan);
+    if (!result.fromCache) {
+      // Jeton accepté par le serveur : c'est seulement maintenant qu'il est enregistré
+      // (un lien non vérifié n'écrase jamais l'accès déjà présent sur l'appareil).
+      if (storedToken() !== token) storeToken(token, tokenInfo(token)?.ref);
+      pendingToken = null;
+      writeJson(STORAGE_KEYS.lastPlan, { savedAt: new Date().toISOString(), plan } satisfies LastPlan);
+    }
     const settled = settleStartDate(values, plan, !result.fromCache || matches);
     renderPlan(plan, {
       token,
       values: settled,
-      offline: result.fromCache ? { savedAt: new Date().toISOString(), settingsDiffer: !matches } : null,
+      offline: result.fromCache ? { savedAt: new Date().toISOString(), settingsDiffer: !matches, reason: 'network' } : null,
     });
+    if (firstRender) {
+      window.scrollTo({ top: 0 });
+      app.querySelector<HTMLElement>('#plan-title')?.setAttribute('tabindex', '-1');
+      app.querySelector<HTMLElement>('#plan-title')?.focus({ preventScroll: true });
+    }
     if (!firstRender && options.keepPosition) {
       toast('Plan mis à jour.');
       announce('Ton plan a été recalculé.');
@@ -887,7 +940,8 @@ async function loadPlan(token: string, values: PlanFormValues, options: { keepPo
   }
 
   if (result.code === 'invalid_token') {
-    renderInvalidToken('Ce lien d’accès n’est pas valide ou a expiré.');
+    pendingToken = null;
+    renderInvalidToken(result.message || 'Ce lien d’accès n’est pas valide ou a expiré.', token);
     return;
   }
 
@@ -904,12 +958,18 @@ async function loadPlan(token: string, values: PlanFormValues, options: { keepPo
     return;
   }
 
-  const last = readJson(STORAGE_KEYS.lastPlan, isLastPlan);
-  if (last && (result.code === 'network' || result.code === 'timeout' || result.status >= 500)) {
+  // Plan de secours : seulement pour l'accès déjà enregistré (jamais pour un lien non vérifié).
+  const last = token === storedToken() ? readJson(STORAGE_KEYS.lastPlan, isLastPlan) : null;
+  const networkIssue = result.code === 'network' || result.code === 'timeout';
+  if (last && (networkIssue || result.status >= 500)) {
     renderPlan(last.plan, {
       token,
       values,
-      offline: { savedAt: last.savedAt, settingsDiffer: !sameInput(last.plan.input, input) },
+      offline: {
+        savedAt: last.savedAt,
+        settingsDiffer: !sameInput(last.plan.input, input),
+        reason: networkIssue ? 'network' : 'server',
+      },
     });
     return;
   }
@@ -922,17 +982,24 @@ function proceed(token: string): void {
   else renderSetup(token, values);
 }
 
+/** Jeton ouvert pendant cette visite (lien `#t=` ou collé), pas encore validé par le serveur. */
+let pendingToken: string | null = null;
+
 async function start(): Promise<void> {
   const fromHash = tokenFromHash();
-  if (fromHash) storeToken(fromHash, tokenInfo(fromHash)?.ref);
-  const token = fromHash ?? storedToken();
+  if (fromHash) pendingToken = fromHash;
+  // Le jeton du lien reste en mémoire : il n'est enregistré qu'après validation par /api/plan.
+  const token = pendingToken ?? storedToken();
   if (!token) {
     renderNoToken();
     return;
   }
   const info = tokenInfo(token);
   if (info && !hasWaiverRef(info.ref) && !hasRecordedWaiver()) {
-    renderWaiverGate(() => proceed(token));
+    renderWaiverGate(() => {
+      confirmWaiverOnServer(token, info.sid, postWaiver);
+      proceed(token);
+    });
     return;
   }
   proceed(token);
