@@ -1,0 +1,30 @@
+{
+  "slug": "methode-prompt-pro",
+  "titre": "La méthode de prompt pro : des réponses IA utilisables du premier coup",
+  "sous_titre": "Structure tes prompts en 6 blocs, donne le bon contexte, utilise des exemples, itère sans tourner en rond, construis ta bibliothèque et vérifie les faits avant de publier.",
+  "niche": "IA / productivité",
+  "cible": "Salariés, indépendants, étudiants et responsables associatifs qui utilisent un assistant IA chaque semaine et veulent des réponses utilisables sans longues retouches, sans compétence technique.",
+  "prix": 49,
+  "modules": [
+    "Pourquoi tes réponses sont moyennes (et comment l'IA « lit » ton prompt)",
+    "La structure en 6 blocs",
+    "Le contexte et les exemples",
+    "Itérer : transformer une réponse moyenne en réponse utilisable",
+    "Ta bibliothèque de prompts",
+    "Vérifier les faits : ne jamais publier une erreur de l'IA"
+  ],
+  "mots_cles": [
+    "prompt",
+    "prompt engineering",
+    "IA",
+    "Claude",
+    "productivité",
+    "assistant IA",
+    "bibliothèque de prompts",
+    "contexte",
+    "exemples",
+    "itération",
+    "vérification des faits",
+    "hallucinations"
+  ]
+}

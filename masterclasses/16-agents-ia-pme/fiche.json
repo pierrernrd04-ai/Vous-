@@ -1,0 +1,33 @@
+{
+  "slug": "agents-ia-pme",
+  "titre": "Automatise ta petite entreprise avec des agents IA",
+  "sous_titre": "Repérer les tâches qui te coûtent le plus, construire 5 automatisations avec un outil no-code et un modèle de langage, et garder le contrôle : validation humaine, RGPD, coûts, erreurs.",
+  "niche": "IA et automatisation pour TPE-PME",
+  "cible": "Dirigeants d'indépendants, TPE et petites PME, non développeurs, qui veulent automatiser leurs tâches administratives et commerciales répétitives",
+  "prix": 49,
+  "modules": [
+    "Repérer les tâches à automatiser",
+    "Chatbot, automatisation, agent : choisir le bon niveau",
+    "Les outils : une plateforme d'automatisation et un modèle de langage",
+    "Trois automatisations du quotidien",
+    "Deux automatisations commerciales et de veille",
+    "Les garde-fous",
+    "Maintenir ses automatisations dans le temps"
+  ],
+  "mots_cles": [
+    "agents IA",
+    "automatisation",
+    "no-code",
+    "TPE",
+    "PME",
+    "n8n",
+    "Make",
+    "Zapier",
+    "prompts",
+    "tri des e-mails",
+    "qualification de leads",
+    "relance de devis",
+    "veille",
+    "RGPD"
+  ]
+}

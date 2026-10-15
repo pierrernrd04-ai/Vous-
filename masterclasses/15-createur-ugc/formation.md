@@ -291,7 +291,6 @@ ALLÉGATIONS À FAIRE VALIDER PAR LA MARQUE : [ ]
 - **Cadre** : yeux au tiers supérieur de l'image ; laisse de la place en bas pour les sous-titres et les boutons de la plateforme (la zone basse et la colonne de droite sont souvent masquées par l'interface).
 - **Mouvement** : un plan = une action. Bouge lentement le produit, jamais le téléphone en même temps.
 - **Mains** : propres, gestes posés. Les mains sont à l'écran la moitié du temps.
-- **Regard** : dans l'objectif, pas dans ton écran.
 
 ### Leçon 4.2 — Le montage pas à pas
 
@@ -731,9 +730,6 @@ Prépare tes 3 documents types prêts à envoyer : brief (7 questions), devis av
 - legifrance.gouv.fr : Code de la propriété intellectuelle (article L131-3 sur la cession de droits).
 
 **Outils (les noms et fonctions évoluent, choisis ce qui te convient)**
-- Une application de montage mobile avec sous-titres automatiques.
-- Un outil de page web simple ou de document en ligne pour le portfolio.
-- Un tableur ou un outil de notes pour le suivi de prospection.
-- Un stockage en ligne pour livrer tes fichiers par lien.
+- Une application de montage mobile, un outil de page web simple pour le portfolio, un tableur pour la prospection, un stockage en ligne pour livrer.
 
 Une question sur le contenu ? Écris à l'adresse support indiquée dans ton e-mail d'accès.

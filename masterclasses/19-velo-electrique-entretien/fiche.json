@@ -1,0 +1,29 @@
+{
+  "slug": "velo-electrique-entretien",
+  "titre": "Entretiens et dépanne toi-même ton vélo électrique",
+  "sous_titre": "Batterie, pneus, freins, chaîne, dérailleur, codes d'erreur : les gestes sûrs de l'entretien courant, et les limites à ne pas franchir",
+  "niche": "Vélo électrique / mobilité",
+  "cible": "Propriétaires de VAE débutants en mécanique qui veulent assurer l'entretien courant et savoir quand passer par un atelier",
+  "prix": 49,
+  "modules": [
+    "Connaître ton vélo et t'équiper",
+    "La routine d'entretien",
+    "La batterie : la comprendre, la charger, la stocker",
+    "Pneus, crevaisons et freins",
+    "Transmission : chaîne, cassette et dérailleur",
+    "Diagnostic électrique de base et codes d'erreur",
+    "Ce que tu laisses à l'atelier, sécurité et légalité"
+  ],
+  "mots_cles": [
+    "entretien vélo électrique",
+    "VAE",
+    "batterie vélo électrique",
+    "stockage batterie hiver",
+    "crevaison moteur moyeu",
+    "usure chaîne VAE",
+    "réglage dérailleur",
+    "code erreur vélo électrique",
+    "freins vélo électrique",
+    "débridage interdit"
+  ]
+}

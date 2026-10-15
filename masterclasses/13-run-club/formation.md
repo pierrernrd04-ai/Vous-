@@ -18,7 +18,7 @@ Cette masterclass est pour toi si :
 - tu as envie de créer du lien dans ton quartier, ta ville ou ton entreprise ;
 - tu peux t'engager sur **un créneau fixe par semaine pendant au moins 3 mois**.
 
-Tu n'as pas besoin d'être rapide, ni d'avoir un diplôme, ni d'avoir déjà organisé quoi que ce soit. Un run club de quartier, c'est d'abord un rendez-vous fiable, pas une performance.
+Tu n'as pas besoin d'être rapide ni d'avoir déjà organisé quoi que ce soit. Un run club de quartier, c'est d'abord un rendez-vous fiable, pas une performance.
 
 ### Ce que tu sauras faire à la fin
 
@@ -33,16 +33,6 @@ Tu n'as pas besoin d'être rapide, ni d'avoir un diplôme, ni d'avoir déjà org
 ### Comment suivre
 
 Lecture : 2 à 3 heures. Application : 4 semaines environ, jusqu'à ta première sortie, puis 8 semaines pour stabiliser. Chaque module finit par un exercice et un modèle à copier. Les passages entre crochets `[comme ceci]` sont à remplacer par tes informations.
-
-Le plan conseillé :
-
-| Semaine | Ce que tu fais |
-|---|---|
-| S1 | Modules 1 et 2 : concept, nom, format de sortie |
-| S2 | Module 3 : tracer et tester les parcours |
-| S3 | Modules 4 et 5 : comptes, premiers messages, contact d'un partenaire |
-| S4 | Module 6 : statut, assurance, règles ; première sortie |
-| S5 à S12 | Module 7 : rituels, bilan, ajustements |
 
 ---
 
@@ -94,17 +84,13 @@ C'est cette phrase que tu mettras partout : bio Instagram, description Strava, m
 
 ### Leçon 1.4 — Les 5 règles du club
 
-Écris tes règles dès le début. Elles évitent 90 % des malentendus (ce pourcentage n'est pas une statistique, c'est une façon de dire « la plupart »). Les miennes, à adapter :
+Écris tes règles dès le début. Elles évitent la plupart des malentendus. Les miennes, à adapter :
 
 1. **On part à l'heure, on revient ensemble.** Départ à H+5 maximum.
 2. **Allure de conversation** : si tu ne peux pas parler, tu vas trop vite.
 3. **Personne n'est laissé derrière** : un serre-file ferme toujours la marche.
 4. **Code de la route et respect des autres usagers** : on court à droite sur les trottoirs, on s'arrête aux feux rouges.
 5. **Chacun court sous sa responsabilité** : tu connais ton état de santé, tu t'arrêtes si quelque chose ne va pas et tu préviens.
-
-### Exemple
-
-Camille vient d'emménager près du canal. Elle court seule le soir, 3 fois par semaine. Son concept : « Canal Run Club — tous les jeudis 19 h, devant la passerelle, 6 km le long de l'eau, allure de conversation, café après. » Elle choisit le jeudi parce que le mardi est le jour d'un club existant à 2 km et qu'elle ne veut pas le concurrencer.
 
 ### Exercice
 
@@ -161,16 +147,7 @@ Trois réflexes d'organisateur :
 
 ### Leçon 2.3 — Les groupes de niveau
 
-En dessous de 10 personnes, un seul groupe suffit, avec un serre-file. Au-delà, crée des groupes. Règle simple : **un groupe = un meneur d'allure + un serre-file**, idéalement **8 à 12 personnes maximum par groupe**. Au-delà de 15, un groupe s'étire sur plusieurs centaines de mètres dans une rue, les traversées deviennent compliquées et tu perds les gens.
-
-Exemple de grille pour un club qui grandit :
-
-| Nombre de participants | Groupes | Bénévoles nécessaires |
-|---|---|---|
-| 3 à 10 | 1 groupe, allure unique | 1 meneur + 1 serre-file |
-| 11 à 20 | 2 groupes (ex. 7 min 30 et 6 min 30) | 2 meneurs + 2 serre-files |
-| 21 à 35 | 3 groupes (ex. 8 min, 7 min, 6 min) | 3 + 3 |
-| 35 et plus | 3 ou 4 groupes, parcours aux distances différentes | 4 + 4, et un référent par groupe |
+En dessous de 10 personnes, un seul groupe suffit, avec un serre-file. De 11 à 20, deux groupes (par exemple 7 min 30 et 6 min 30 au km). Au-delà de 20, trois groupes, puis des distances différentes. Règle simple : **un groupe = un meneur d'allure + un serre-file**, idéalement **8 à 12 personnes maximum par groupe**. Au-delà de 15, un groupe s'étire sur plusieurs centaines de mètres dans une rue, les traversées deviennent compliquées et tu perds les gens.
 
 Donne un nom simple aux groupes : par allure (« groupe 7 min 30 ») plutôt que par niveau (« débutants », « confirmés »). Personne n'aime se ranger dans « débutants », et une allure est un fait, pas un jugement.
 
@@ -188,13 +165,6 @@ Sa fiche mission :
 - en cas d'abandon, raccompagner la personne ou s'assurer qu'elle rentre en sécurité, puis prévenir.
 
 Le serre-file est aussi celui qui fait revenir les débutants : c'est souvent avec lui qu'ils ont le plus parlé. Choisis des personnes patientes et bavardes.
-
-### Leçon 2.5 — Le regroupement et les boucles
-
-Deux techniques pour garder un groupe ensemble sans frustrer les plus rapides :
-
-1. **Le point de regroupement** : à mi-parcours, à un repère clair (fontaine, entrée de parc), tout le monde attend le dernier. Les premiers arrivés trottinent sur place ou font une petite boucle autour.
-2. **La boucle de rattrapage** : les plus rapides font demi-tour et reviennent chercher les derniers, puis repartent avec eux. Cela leur ajoute de la distance sans casser le groupe.
 
 ### Erreurs fréquentes
 
@@ -276,10 +246,6 @@ Repasse sur chaque boucle tous les 2 à 3 mois : un chantier, des travaux de voi
 - **Pluie, vent fort, verglas** : décide à l'avance d'une règle d'annulation et communique-la (exemple : annulation en cas de vigilance orange vent, orage ou verglas annoncé, consultable sur vigilance.meteofrance.fr ; message dans le groupe au plus tard 2 h avant).
 - **Événements** : si tu veux organiser une course chronométrée, un défi avec classement ou un rassemblement important sur la voie publique, ce n'est plus une sortie de club. Renseigne-toi auprès de ta mairie et de la préfecture sur les déclarations et autorisations nécessaires.
 
-### Exemple
-
-Le Canal Run Club de Camille part de la passerelle. Boucle A : 4,8 km, aller-retour sur le quai rive gauche. Boucle B : 6,4 km, rive gauche puis retour rive droite par le pont, 3 traversées. Boucle C : 8,9 km, extension jusqu'à l'écluse. Au test du jeudi à 19 h, elle découvre que le quai rive droite est mal éclairé sur 600 m : elle inverse le sens pour faire ce passage au début, quand il fait encore un peu jour en septembre, et prévoit de le supprimer de novembre à février.
-
 ### Exercice
 
 1. Trace tes 3 boucles depuis ton point de rendez-vous.
@@ -316,6 +282,8 @@ Ne fais pas tout partout. Chaque outil a un rôle :
 | Strava (club) | Partager les traces, garder le lien entre les sorties | Les traces des sorties, éventuellement un événement par sortie |
 | Affiche / flyer | Toucher le quartier hors réseaux | Au lancement, puis 1 fois par trimestre |
 
+Sur Strava, crée un **club** au nom du tien et publie-y la trace de chaque boucle : les nouveaux la regardent avant de venir. Rappelle aux membres de régler leurs **zones de confidentialité** (masquer le début et la fin des activités autour du domicile) avant de partager leurs sorties avec des inconnus.
+
 Les fonctions de ces applis évoluent (création d'événements, communautés, sondages) : utilise ce qui existe au moment où tu lis, le principe reste le même.
 
 ### Leçon 4.2 — Instagram : le minimum qui marche
@@ -327,12 +295,7 @@ Les fonctions de ces applis évoluent (création d'événements, communautés, s
 - Lien : un lien vers le groupe WhatsApp ou vers une page simple avec le lien d'invitation et les règles.
 - 3 stories à la une : « Rejoindre », « Parcours », « Règles ».
 
-**Les 4 types de contenus qui suffisent.**
-
-1. **L'annonce de la semaine** (story, le lundi ou le mardi) : jour, heure, lieu, distance, allure.
-2. **La photo de groupe** (post, le soir même ou le lendemain) : tout le monde, sourires, le lieu reconnaissable. Demande toujours l'accord avant de publier (voir module 6).
-3. **Le portrait** (post ou carrousel, toutes les 2 semaines) : un participant, son prénom, depuis quand il court, pourquoi il vient. Avec son accord écrit.
-4. **Le pratique** (post, une fois par mois) : comment se passe une première sortie, quoi apporter, le parcours expliqué.
+Quatre contenus suffisent : l'annonce de la semaine en story, la photo de groupe (avec accord, voir module 6), un portrait de participant toutes les deux semaines (accord écrit), un post pratique par mois.
 
 **Légende type pour la photo de groupe :**
 
@@ -371,17 +334,7 @@ Météo : [doux / pluie légère, prévoyez un coupe-vent].
 Nouveau ou nouvelle ? Viens 5 min avant, on t'accueille.
 ```
 
-### Leçon 4.4 — Strava : garder le lien
-
-Crée un **club Strava** au nom de ton club. Usages concrets :
-
-- publier la trace de chaque boucle pour que les nouveaux puissent la regarder ;
-- créer un événement pour chaque sortie si la fonction est disponible (les gens voient le lieu et l'heure) ;
-- laisser les participants voir les activités des autres membres, ce qui entretient le lien entre deux sorties.
-
-Rappelle aux membres de vérifier leurs **zones de confidentialité** sur Strava (masquer le début et la fin des activités autour du domicile) : c'est important quand on partage ses traces avec un groupe de personnes qu'on ne connaît pas encore.
-
-### Leçon 4.5 — Le lancement : 3 semaines pour trouver les premiers
+### Leçon 4.4 — Le lancement : 3 semaines pour trouver les premiers
 
 Le premier jour, tu ne seras peut-être que 3 ou 4. C'est normal. Ce qui compte, c'est d'être là chaque semaine. Plan de lancement :
 
@@ -413,13 +366,6 @@ Départ : [lieu]
 Personne n'est laissé derrière
 Rejoins le groupe : [QR code vers WhatsApp ou Instagram]
 ```
-
-### Erreurs fréquentes
-
-- **Poster tous les jours la première semaine, puis plus rien.** Mieux vaut un rythme modeste et tenu.
-- **Mettre en avant les chronos et les distances** : tu attires des coureurs rapides et tu fais fuir les autres. Montre les sourires.
-- **Publier des photos sans accord.** Voir module 6.
-- **Un groupe WhatsApp qui déborde** de liens et de publicités : retire-les poliment mais vite.
 
 ### Exercice
 
@@ -493,23 +439,6 @@ Merci encore,
 [Prénom] — [Nom du club] — [téléphone]
 ```
 
-### Leçon 5.4 — La sortie spéciale avec une boutique
-
-Format simple, une fois par trimestre :
-
-- départ de la boutique, 5 km tranquilles ;
-- présentation de 10 minutes par la boutique (comment choisir ses chaussures, entretien, vêtements d'hiver) ;
-- éventuellement un test de chaussures si la boutique le propose ;
-- photo de groupe, offre réservée aux participants le soir même.
-
-Sois clair dans tes annonces : « sortie spéciale en partenariat avec [boutique] ». Les participants doivent savoir qu'il y a un partenaire, et ton contenu doit le signaler s'il y a une contrepartie (c'est aussi une obligation de transparence sur les réseaux lorsqu'il y a un avantage reçu).
-
-### Erreurs fréquentes
-
-- **Promettre « 30 personnes chaque semaine »** au gérant. Promets un rendez-vous régulier, pas un chiffre.
-- **Dépendre d'un seul lieu** : si le café ferme pour travaux, tu as besoin d'un point de rendez-vous de secours (un repère public à proximité).
-- **Oublier de remercier** : un post de remerciement par trimestre, une carte de fin d'année. Ça compte.
-
 ### Exercice
 
 1. Liste 3 partenaires possibles autour de ton point de départ, avec horaires et place disponible.
@@ -522,19 +451,7 @@ Sois clair dans tes annonces : « sortie spéciale en partenariat avec [boutique
 
 > Ce module donne des repères généraux pour savoir quelles questions te poser. Ce n'est pas un conseil juridique ni un conseil d'assurance personnalisé. Les règles et les montants évoluent : vérifie toujours sur service-public.fr et associations.gouv.fr, et demande à ton assureur ce qui est couvert, par écrit.
 
-### Leçon 6.1 — Ce qui peut arriver, réellement
-
-Les incidents les plus courants dans un run club de quartier sont banals :
-
-- une chute (trottoir, racine, pavé mouillé) avec écorchure ou entorse ;
-- un malaise (chaleur, hypoglycémie, problème cardiaque plus rarement) ;
-- une personne qui se perd ou se retrouve isolée ;
-- un accrochage avec un vélo, une trottinette ou un piéton ;
-- un conflit (remarque déplacée, comportement inapproprié).
-
-Ta préparation doit couvrir ces cas : **un serre-file, des parcours connus, un téléphone chargé, les numéros d'urgence, des règles de conduite écrites**.
-
-### Leçon 6.2 — Le kit de l'organisateur
+### Leçon 6.1 — Le kit de l'organisateur
 
 - Téléphone chargé, avec la localisation activée.
 - Numéros : **112** (urgence européen), **15** (SAMU), **17** (police), **18** (pompiers), **114** (par SMS, pour les personnes ayant des difficultés à parler ou entendre).
@@ -542,9 +459,9 @@ Ta préparation doit couvrir ces cas : **un serre-file, des parcours connus, un 
 - Une couverture de survie et quelques pansements (pas plus : tu n'es pas secouriste et tu ne soignes pas).
 - La liste des membres du groupe du jour (prénoms) pour vérifier que tout le monde est rentré.
 
-**Formation aux premiers secours.** Je te recommande fortement de suivre une formation de premiers secours (comme le PSC1, proposé par des organismes agréés comme la Croix-Rouge ou la Protection civile) et d'encourager tes meneurs à le faire. Repère aussi les défibrillateurs (DAE) sur ou près de tes parcours : beaucoup de lieux publics en sont équipés, et une carte nationale existe (cherche « Géo'DAE »).
+Suis une formation aux premiers secours (PSC1, auprès d'un organisme agréé) et repère les défibrillateurs proches de tes parcours (carte nationale Géo'DAE).
 
-### Leçon 6.3 — La conduite à tenir en cas d'incident
+### Leçon 6.2 — La conduite à tenir en cas d'incident
 
 1. **Arrêter le groupe** concerné. Le meneur ou le serre-file reste avec la personne.
 2. **Sécuriser** : mettre la personne hors de la circulation.
@@ -555,7 +472,7 @@ Ta préparation doit couvrir ces cas : **un serre-file, des parcours connus, un 
 
 Ajoute ceci à ton message d'accueil : « Si tu as une condition de santé que tu souhaites qu'un organisateur connaisse en cas d'urgence (diabète, allergie, épilepsie), tu peux nous le dire en privé. Ce n'est jamais obligatoire. » Et ne collecte pas ces informations dans un tableau partagé : ce sont des données de santé, très sensibles.
 
-### Leçon 6.4 — Collectif informel ou association loi 1901
+### Leçon 6.3 — Collectif informel ou association loi 1901
 
 Tu as deux grandes options pour démarrer.
 
@@ -580,7 +497,7 @@ La déclaration se fait en ligne. Les démarches, les modèles de statuts et le 
 
 Une troisième voie existe : **rejoindre ou s'adosser à une structure existante** (club d'athlétisme local, association de quartier, comité d'entreprise) qui accepte d'accueillir ta sortie. Tu bénéficies de son cadre et de son assurance, selon ce qui est prévu dans son contrat. Demande-le par écrit.
 
-### Leçon 6.5 — L'assurance responsabilité civile de l'organisateur
+### Leçon 6.4 — L'assurance responsabilité civile de l'organisateur
 
 La **responsabilité civile** couvre les dommages que tu causes à autrui. En tant qu'organisateur, ta responsabilité peut être recherchée si une faute d'organisation est reprochée (parcours manifestement dangereux, absence de consigne, groupe laissé sans encadrement). Point important :
 
@@ -600,7 +517,7 @@ J'organise bénévolement une sortie de course à pied hebdomadaire et gratuite,
 Merci de me répondre par écrit.
 ```
 
-### Leçon 6.6 — Mineurs, encadrement rémunéré, certificat, photos
+### Leçon 6.5 — Mineurs, encadrement rémunéré, certificat, photos
 
 **Mineurs.** Par défaut, réserve ton club aux **majeurs**. Accueillir des mineurs implique une autorisation parentale, une vigilance renforcée et des questions d'assurance spécifiques. Si tu veux un format famille, fais une sortie dédiée, où les mineurs viennent **avec un parent qui reste responsable** d'eux pendant toute la sortie.
 
@@ -610,7 +527,7 @@ Merci de me répondre par écrit.
 
 **Photos.** Une personne reconnaissable sur une photo a son mot à dire sur sa diffusion. Règle simple : annonce la photo de groupe, propose à ceux qui ne veulent pas apparaître de se mettre hors champ, et retire une photo sur simple demande, sans discuter. Pour un portrait individuel, demande un accord explicite (un message écrit suffit).
 
-### Leçon 6.7 — La charte de conduite
+### Leçon 6.6 — La charte de conduite
 
 Un run club rassemble des inconnus. Il faut une règle claire sur les comportements. Modèle :
 
@@ -650,9 +567,6 @@ Même à 3, la sortie a lieu. Ces 3 personnes sont tes futurs meneurs.
 3. **Le moment après**, même court : 15 minutes autour d'une boisson. C'est là que les amitiés se font.
 4. **Le message du lendemain** aux nouveaux : « Merci d'être venu(e) hier, on espère te revoir jeudi. » Un message, pas trois.
 5. **Les sorties à thème**, une par mois, pas plus : sortie lampes frontales en novembre, sortie déguisée en décembre, sortie lever du soleil en juin, sortie « ramène un ami ».
-6. **Les petits jalons** : 10e sortie du club, premier anniversaire. Une photo, un gâteau, c'est tout.
-7. **Les objectifs collectifs** sans pression : s'inscrire ensemble à une course populaire locale, ceux qui le veulent.
-
 ### Leçon 7.3 — Construire une équipe
 
 Seul, tu tiendras quelques mois. À plusieurs, des années. À partir de 10 à 15 réguliers, identifie :
@@ -662,16 +576,7 @@ Seul, tu tiendras quelques mois. À plusieurs, des années. À partir de 10 à 1
 - **1 personne réseaux** (photos, posts) ;
 - **1 personne partenariats et événements**.
 
-Fais tourner les rôles avec un planning mensuel partagé. Propose, ne force pas. Et remercie publiquement.
-
-**Planning mensuel à copier :**
-
-| Date | Boucle | Meneur groupe 1 | Serre-file 1 | Meneur groupe 2 | Serre-file 2 | Photos |
-|---|---|---|---|---|---|---|
-| [jeudi 1] | B | | | | | |
-| [jeudi 2] | B | | | | | |
-| [jeudi 3] | C (thème) | | | | | |
-| [jeudi 4] | A | | | | | |
+Fais tourner les rôles avec un planning mensuel partagé (un tableau : date, boucle, meneur et serre-file de chaque groupe, photos). Propose, ne force pas. Et remercie publiquement.
 
 ### Leçon 7.4 — Mesurer sans se mentir
 
@@ -688,16 +593,6 @@ Toutes les 4 semaines, regarde trois choses :
 - **Les remarques** : quelqu'un s'est-il plaint d'une allure trop rapide, d'un parcours mal éclairé ?
 
 Si les nouveaux ne reviennent pas, c'est presque toujours l'un de ces trois problèmes : allure trop rapide, accueil insuffisant, horaire peu pratique. Pas un problème de réseaux sociaux.
-
-**Le sondage trimestriel (5 questions, à copier) :**
-
-```
-1. Depuis combien de temps viens-tu ?
-2. Qu'est-ce qui te fait revenir ?
-3. Qu'est-ce qui pourrait te faire arrêter de venir ?
-4. L'allure de ton groupe te convient-elle ? (trop lente / bien / trop rapide)
-5. Une idée de sortie spéciale ?
-```
 
 ### Leçon 7.5 — Monétiser : faut-il le faire ?
 
@@ -723,10 +618,6 @@ Les options, de la plus simple à la plus engageante :
 - La fiscalité : les règles diffèrent selon la structure et les montants. Je ne te donne pas de chiffres ici parce qu'ils dépendent de ta situation : vérifie les règles et montants en vigueur sur les sites officiels ou auprès d'un professionnel.
 
 **Mon conseil :** garde la sortie hebdomadaire **gratuite**, toujours. Si tu veux financer quelque chose, fais-le à côté : cotisation volontaire pour ceux qui veulent le t-shirt et l'assurance, événement spécial payant, partenariat avec une boutique. La sortie gratuite est la porte d'entrée de ton club : ne la ferme pas.
-
-### Leçon 7.6 — Passer le relais
-
-Un club qui dépend d'une seule personne meurt quand elle déménage. Dès la première année, documente tout : fiches parcours, messages types, contacts partenaires, accès aux comptes (avec au moins deux administrateurs sur chaque outil). Si tu dois t'arrêter, c'est ce dossier qui permettra au club de continuer.
 
 ### Exercice
 
@@ -778,7 +669,7 @@ Un club qui dépend d'une seule personne meurt quand elle déménage. Dès la pr
 - [ ] Réponse écrite de l'assureur obtenue.
 - [ ] Choix collectif/association fait, date de réévaluation notée.
 - [ ] Club réservé aux majeurs (ou format famille encadré par les parents).
-- [ ] Formation premiers secours prévue.
+- [ ] Formation premiers secours prévue (PSC1 auprès d'un organisme agréé), défibrillateurs repérés sur les parcours.
 
 **Fidélisation**
 
@@ -798,7 +689,6 @@ Un club qui dépend d'une seule personne meurt quand elle déménage. Dès la pr
 - **vigilance.meteofrance.fr** : vigilance météo pour tes règles d'annulation.
 - **Formation aux premiers secours** : organismes agréés (Croix-Rouge française, Protection civile, sapeurs-pompiers selon les départements).
 - **Géo'DAE** : localisation des défibrillateurs.
-- **Traceo** (https://traceorun.pages.dev/app) : générer des boucles de course à partir d'un point de départ, à vérifier ensuite sur le terrain.
 - **Canva** ou équivalent : logo texte, modèles de stories et d'affiches.
 
 Une dernière chose. Le jour de ta première sortie, il y aura peut-être trois personnes, dont un ami venu par politesse. Cours avec eux, prends la photo, publie-la, et reviens la semaine suivante. Un run club, c'est un rendez-vous tenu, semaine après semaine. Le reste suit, ou pas, mais tu auras construit quelque chose de vrai.
