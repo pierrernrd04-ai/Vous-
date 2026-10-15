@@ -58,9 +58,7 @@ Un run club « pour tout le monde » est souvent un club pour personne. Choisis 
 |---|---|---|---|
 | Social du jeudi soir | Jeudi 19 h | 5 à 8 km | Actifs 25-40 ans, nouveaux dans le quartier |
 | Dimanche matin café | Dimanche 9 h 30 | 6 à 10 km | Familles, couples, coureurs du week-end |
-| Départ du boulot | Mardi 12 h 30 ou 18 h 15 | 5 km | Collègues d'une zone d'activité |
 | Débutants bienveillants | Samedi 10 h | 3 à 5 km, marche/course | Personnes qui (re)commencent |
-| Sortie longue entre initiés | Dimanche 8 h | 12 à 18 km | Coureurs qui préparent un semi ou un marathon |
 
 Pour un premier club, je te conseille **un seul créneau, une distance modeste (5 à 8 km) et une allure lente**. C'est le format qui accueille le plus large public et qui te demande le moins de logistique.
 
@@ -74,8 +72,7 @@ Pour un premier club, je te conseille **un seul créneau, une distance modeste (
 
 Vérifie avant de choisir : que le nom n'est pas déjà pris sur Instagram et Strava, et qu'il ne reprend pas la marque d'une enseigne ou d'un événement existant. Si tu crées une association plus tard, le nom pourra être celui de l'association.
 
-**Le visuel.** Une couleur, une police, un logo texte suffisent. Avec un outil comme Canva, tu fais en 30 minutes : un logo texte, un modèle de story « sortie de la semaine », un modèle de post « récap ». Ne commande pas de t-shirts avant d'avoir 15 personnes régulières.
-
+**Le visuel.** Une couleur, une police, un logo texte (fait avec Canva ou équivalent) suffisent. 
 **La phrase.** Une ligne qui dit tout. Structure : *qui, quand, où, combien, pour qui*.
 
 > « Tous les jeudis à 19 h, devant [lieu], 6 km à allure de conversation. Gratuit, tous niveaux, personne n'est laissé derrière. »
@@ -163,8 +160,6 @@ Sa fiche mission :
 - avoir un téléphone chargé avec le numéro de l'organisateur ;
 - prévenir le meneur (message ou appel) si l'écart devient trop grand ;
 - en cas d'abandon, raccompagner la personne ou s'assurer qu'elle rentre en sécurité, puis prévenir.
-
-Le serre-file est aussi celui qui fait revenir les débutants : c'est souvent avec lui qu'ils ont le plus parlé. Choisis des personnes patientes et bavardes.
 
 ### Erreurs fréquentes
 
@@ -691,4 +686,4 @@ Les options, de la plus simple à la plus engageante :
 - **Géo'DAE** : localisation des défibrillateurs.
 - **Canva** ou équivalent : logo texte, modèles de stories et d'affiches.
 
-Une dernière chose. Le jour de ta première sortie, il y aura peut-être trois personnes, dont un ami venu par politesse. Cours avec eux, prends la photo, publie-la, et reviens la semaine suivante. Un run club, c'est un rendez-vous tenu, semaine après semaine. Le reste suit, ou pas, mais tu auras construit quelque chose de vrai.
+Dernier mot : un run club, c'est un rendez-vous tenu, semaine après semaine. Le reste suit, ou pas, mais tu auras construit quelque chose de vrai.
