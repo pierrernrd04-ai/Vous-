@@ -136,6 +136,8 @@ Pour résumer à qui elle s'adresse : aux agents, négociateurs, mandataires et 
 
 Elle ne s'adresse pas à ceux qui veulent publier sans relecture, ni à ceux qui cherchent un avis juridique.
 
+Si tu hésites, pose-toi une question simple : combien de temps as-tu passé cette semaine à rédiger des annonces, des relances et des comptes rendus ? Si la réponse te pèse, la méthode est faite pour toi.
+
 Que tu l'achètes ou non, garde ce réflexe : une fiche bien complète avant chaque annonce, et la phrase « si une information manque, liste-la au lieu de l'inventer ».
 
 [LIEN PAGE DE VENTE]

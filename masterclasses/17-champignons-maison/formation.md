@@ -89,7 +89,7 @@ Pour démarrer à l'intérieur entre octobre et avril, prends une souche d'*ostr
 
 ### Leçon 1.3 — Le cycle en trois phases
 
-Retiens ce schéma, il explique 90 % des réussites et des échecs.
+Retiens ce schéma, il explique la plupart des réussites et des échecs.
 
 **Phase 1 — Inoculation (1 heure).**
 Tu mélanges le blanc et le substrat dans un contenant propre. L'enjeu : introduire le moins possible de spores de moisissures. Mains lavées, surfaces nettoyées, gestes rapides.

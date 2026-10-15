@@ -138,6 +138,8 @@ Elle est pour toi si l'administratif te prend tes soirées, si tu as des devis n
 
 Elle n'est pas pour toi si tu cherches un logiciel de facturation ou un conseil juridique sur un litige.
 
+Si tu hésites, compte le temps que tu as passé cette semaine sur tes devis, tes factures et tes messages, le soir après le chantier. Si ce chiffre te pèse, la méthode est faite pour toi.
+
 Un conseil gratuit pour finir : réponds aujourd'hui au dernier avis de ta fiche resté sans réponse. Remercie, reprends un détail précis, signe de ton prénom. Trois phrases suffisent.
 
 [LIEN PAGE DE VENTE]

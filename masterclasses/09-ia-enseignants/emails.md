@@ -6,7 +6,7 @@
 
 ## E-mail 1 — J0 — Annonce
 
-**Objet :** Tes cours, préparés avec l'IA (et relus par toi)
+**Objet :** Tes cours préparés avec l'IA, relus par toi
 **Aperçu :** Une méthode pour que l'IA serve vraiment ta préparation.
 
 Bonjour,
@@ -59,7 +59,7 @@ Ces deux lignes ne rendent pas l'IA infaillible. Elles t'évitent les réponses 
 
 Un rappel au passage : jamais de nom ni d'information sur un élève dans ta demande.
 
-La masterclass complète contient le brief en 6 blocs et plus de 25 prompts du même type.
+La masterclass complète contient le brief en 6 blocs et une vingtaine de prompts complets du même type.
 
 [LIEN PAGE DE VENTE]
 

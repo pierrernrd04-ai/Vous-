@@ -67,7 +67,7 @@ Pas de promesse de chiffre d'affaires ni de note parfaite : une méthode, des mo
 ## 6. Ce que tu reçois
 
 - La masterclass écrite complète : 6 modules, lisible en 2 heures environ.
-- Plus de 25 prompts complets prêts à copier.
+- Plus de 20 prompts complets prêts à copier.
 - La checklist des mentions du devis à vérifier, avec renvoi vers service-public.fr.
 - La méthode de relance d'impayés en 4 étapes, avec un tableau de suivi.
 - La méthode en 5 temps pour répondre aux avis négatifs.

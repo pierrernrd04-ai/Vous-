@@ -70,7 +70,7 @@ Le gain de temps dépend de ta discipline, de tes habitudes et de ta rigueur. Ce
 ## 6. Ce que tu reçois
 
 - La masterclass écrite complète : 7 modules, lisible en 2 à 3 heures.
-- Plus de 25 prompts complets prêts à copier, adaptables à ta discipline.
+- Plus de 20 prompts complets prêts à copier, adaptables à ta discipline.
 - Le modèle de brief pédagogique en 6 blocs.
 - La méthode de vérification des corrigés en 5 points.
 - Le modèle de charte d'usage de l'IA pour tes élèves (3 niveaux).

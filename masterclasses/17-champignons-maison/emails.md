@@ -40,7 +40,7 @@ Pierre
 
 ## E-mail 2 — J+1 — Valeur gratuite
 
-**Objet :** La règle qui explique 90 % des échecs
+**Objet :** La règle derrière la plupart des échecs
 **Aperçu :** Ton substrat est une table de banquet. Qui s'assoit en premier ?
 
 Bonjour,
