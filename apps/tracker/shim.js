@@ -1,9 +1,52 @@
-/* Version web autonome : remplace la base de données de Claude par la sauvegarde en ligne /api/state.
+/* Version web autonome : remplace les fonctions de Claude (window.claude.use) :
+   'sample' → API Claude avec la clé de l'utilisateur (ai.js), 'db' et 'user' → sauvegarde en ligne /api/state.
    Injecté dans <head> par build.mjs, avant le script de l'appli. */
 (function () {
   'use strict';
   window.RP_STANDALONE = true;
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+  /* analyse photo et tri : clé Claude de l'utilisateur, gardée dans ce téléphone ;
+     le SDK (ai.js) n'est chargé qu'au premier usage */
+  var AI_KEY = 'rp-ai-key', aiImpl = null;
+  function aiKey() { try { return localStorage.getItem(AI_KEY) || ''; } catch (e) { return ''; } }
+  function aiLoad() {
+    return aiImpl || (aiImpl = new Promise(function (ok, ko) {
+      var s = document.createElement('script');
+      s.src = window.RP_AI_SRC || 'ai.js';
+      s.onload = function () { if (window.RP_AI_IMPL) ok(window.RP_AI_IMPL); else ko(); };
+      s.onerror = function () { s.remove(); ko(); };
+      document.head.appendChild(s);
+    }).catch(function () { aiImpl = null; throw { code: 'offline' }; }));
+  }
+  window.RP_AI = {
+    hasKey: function () { return !!aiKey(); },
+    keyHint: function () { var k = aiKey(); return k ? k.slice(0, 7) + '…' + k.slice(-4) : ''; },
+    setKey: function (k) { try { localStorage.setItem(AI_KEY, k); } catch (e) {} },
+    clearKey: function () { try { localStorage.removeItem(AI_KEY); } catch (e) {} },
+    check: function (k) {
+      return aiLoad().then(function (m) { return m.check(k); }, function (e) { return { ok: false, code: e.code }; });
+    },
+    sample: {
+      limits: function () {
+        return Promise.resolve({ images: { maxCount: 4, mediaTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], maxInputBytes: 1500000 } });
+      },
+      json: function (prompt, opts) {
+        var k = aiKey();
+        if (!k) return Promise.reject({ code: 'ai_key' });
+        return aiLoad().then(function (m) { return m.json(prompt, opts || {}, k); });
+      },
+    },
+  };
+
+  var caps = {};
+  window.claude = {
+    use: function (name) {
+      if (name === 'sample') return Promise.resolve(window.RP_AI.sample);
+      if (caps[name]) return Promise.resolve(caps[name]);
+      return Promise.reject({ code: 'capability_disabled' });
+    },
+  };
 
   /* mode local : tout reste dans le téléphone, pas de serveur */
   if (window.RP_MODE !== 'cloud') { try { localStorage.setItem('rp-key-skip', '1'); } catch (e) {} return; }
@@ -118,14 +161,6 @@
       onSnapshot: function (cb, err) { subs.push({ path: path, cb: cb, err: err }); setTimeout(poll, 0); return function () {}; },
     };
   }
-  var db = { doc: docRef, collection: colRef };
-  var user = { id: function () { return Promise.resolve('me'); } };
-
-  window.claude = {
-    use: function (name) {
-      if (name === 'db') return Promise.resolve(db);
-      if (name === 'user') return Promise.resolve(user);
-      return Promise.reject({ code: 'capability_disabled' });
-    },
-  };
+  caps.db = { doc: docRef, collection: colRef };
+  caps.user = { id: function () { return Promise.resolve('me'); } };
 })();

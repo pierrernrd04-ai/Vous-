@@ -5,14 +5,24 @@ La même appli que l'artefact Claude, en vrai site : une adresse en `https://…
 | Fichier | Rôle |
 |---|---|
 | `app.source.html` | L'appli, exportée telle quelle de l'artefact Claude |
-| `shim.js` | Remplace la base de données de Claude par la sauvegarde en ligne `/api/state` |
-| `build.mjs` | Construit `public/index.html` (appli + shim + icônes + mode hors ligne) |
+| `shim.js` | Remplace les fonctions de Claude : sauvegarde en ligne `/api/state`, et analyse photo via `ai.js` |
+| `ai.js` | Analyse photo de l'assiette et tri automatique des photos : API Claude avec la clé de l'utilisateur |
+| `addon.js` | Réglage de cette clé (Mes apps › Analyse photo par Claude), inséré dans le script de l'appli |
+| `build.mjs` | Construit `public/index.html` (appli + shim + icônes + mode hors ligne) et `public/ai.js` (SDK Claude) |
 | `functions/api/state.js` | Sauvegarde en ligne (Cloudflare Pages Function + base D1) |
 | `wrangler.toml` | Configuration Cloudflare ; `ALLOWED_SHA` = empreinte de la clé autorisée |
 
 ## Publication actuelle : GitHub Pages (mode local)
 
-Adresse : **https://pierrernrd04-ai.github.io/Vous-/**, servie par la branche `gh-pages` (contenu de `public/` construit en mode local, plus un fichier `.nojekyll`). Les données restent dans le téléphone. Pour mettre à jour : `node apps/tracker/build.mjs`, puis copier `public/` dans la branche `gh-pages` (sans `_headers`) et pousser.
+Adresse : **https://pierrernrd04-ai.github.io/Vous-/**, servie par la branche `gh-pages` (contenu de `public/` construit en mode local, plus un fichier `.nojekyll`). Les données restent dans le téléphone. Pour mettre à jour : `npm ci` puis `node build.mjs` dans `apps/tracker`, puis copier `public/` dans la branche `gh-pages` (sans `_headers`) et pousser.
+
+## Analyse photo de l'assiette et tri automatique des photos
+
+Hors de Claude, ces deux fonctions appellent directement l'API Claude depuis le téléphone, avec la clé API personnelle de l'utilisateur (platform.claude.com › API Keys). La clé est collée une fois dans **Mes apps › Analyse photo par Claude**, vérifiée sans frais, puis gardée dans le téléphone (`localStorage`) : elle n'est ni dans le dépôt ni sur un serveur. Le SDK (`public/ai.js`, 310 Ko) n'est chargé qu'au premier usage.
+
+- Modèle : Claude Opus 5.5, effort moyen pour l'assiette, faible pour le tri ; repli automatique sur un autre modèle si Claude décline une photo.
+- Sans clé : la photo de l'assiette ouvre le réglage, et l'import de photos garde tout (sans tri), comme avant.
+- Les photos gardées par le tri sont enregistrées dans le téléphone (IndexedDB).
 
 ## Option : synchronisation entre appareils (Cloudflare)
 
@@ -30,7 +40,7 @@ Ensuite, chaque modification poussée dans `apps/tracker/` redéploie automatiqu
 
 ## Mettre à jour l'appli
 
-Exporte la nouvelle version de l'artefact dans `app.source.html`, lance `node apps/tracker/build.mjs`, pousse.
+Exporte la nouvelle version de l'artefact dans `app.source.html`, lance `npm ci` puis `node build.mjs` dans `apps/tracker`, pousse.
 
 ## Changer de clé
 

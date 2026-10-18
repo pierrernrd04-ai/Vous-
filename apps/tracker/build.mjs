@@ -5,13 +5,27 @@
 //   node apps/tracker/build.mjs
 //
 // Pour mettre à jour l'appli : remplacer app.source.html par le nouvel export, relancer, pousser.
+// Prérequis : npm ci (dans apps/tracker), pour le SDK Claude et esbuild.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { build as esbuild } from 'esbuild';
 
 const dir = new URL('./', import.meta.url);
 let src = readFileSync(new URL('app.source.html', dir), 'utf8');
 const MODE = process.env.TRACKER_MODE === 'cloud' ? 'cloud' : 'local';
-const shim = `window.RP_MODE = '${MODE}';\n` + readFileSync(new URL('shim.js', dir), 'utf8');
+const addon = readFileSync(new URL('addon.js', dir), 'utf8');
+
+// analyse photo et tri : ai.js + SDK Claude, regroupés dans public/ai.js (chargé au premier usage)
+const sdk = JSON.parse(readFileSync(new URL('node_modules/@anthropic-ai/sdk/package.json', dir), 'utf8'));
+const license = readFileSync(new URL('node_modules/@anthropic-ai/sdk/LICENSE', dir), 'utf8').trim();
+const ai = (await esbuild({
+  entryPoints: [new URL('ai.js', dir).pathname], bundle: true, write: false, minify: true,
+  format: 'iife', platform: 'browser', target: ['safari15'], legalComments: 'none',
+  banner: { js: `/* @anthropic-ai/sdk ${sdk.version}\n${license.replace(/\*\//g, '* /')}\n*/` },
+})).outputFiles[0].text;
+writeFileSync(new URL('public/ai.js', dir), ai);
+const aiSrc = `ai.js?v=${createHash('sha256').update(ai).digest('hex').slice(0, 8)}`;
+const shim = `window.RP_MODE = '${MODE}';\nwindow.RP_AI_SRC = '${aiSrc}';\n` + readFileSync(new URL('shim.js', dir), 'utf8');
 
 // 1. Retire l'enveloppe ajoutée par Claude autour de l'artefact.
 const body = src.indexOf('<body>');
@@ -28,6 +42,12 @@ if (lead) {
 
 // 3. Petites adaptations pour la version web.
 const patches = [
+  // analyse photo de l'assiette et tri automatique : actifs dès qu'une clé Claude est enregistrée (addon.js)
+  ["(window.RP_STANDALONE?'':photoCard())", 'photoCard()'],
+  ['on=!SA&&S.settings.impPeople!==false', 'on=(!SA||rpAiOn())&&S.settings.impPeople!==false'],
+  ['${SA?\'\':`<div class="wrap" style="margin-top:12px"><button class="chip ${on?\'on\':\'\'}" data-a="impPeople"',
+    '${SA&&!rpAiOn()?rpAiChip():`<div class="wrap" style="margin-top:12px"><button class="chip ${on?\'on\':\'\'}" data-a="impPeople"'],
+  ["mode:S.settings.impPeople===false||window.RP_STANDALONE?'all':'people'", "mode:S.settings.impPeople===false||!rpAiOn()?'all':'people'"],
   // le lien copié pour Raccourcis garde la clé
   ['const u=location.origin+location.pathname,ok=await copyText(u)', 'const u=location.href.split(\'#\')[0],ok=await copyText(u)'],
   // après saisie de la clé, l'adresse la contient (utile pour l'écran d'accueil)
@@ -47,8 +67,12 @@ for (const [from, to] of patches) {
   if (n !== 1) throw new Error(`Correctif introuvable ou ambigu (${n}) : ${from.slice(0, 60)}…`);
   src = src.replace(from, to);
 }
+// 4. Le réglage de la clé Claude (addon.js) va à la fin du script de l'appli, dans sa portée.
+const end = src.lastIndexOf('})();\n</script>');
+if (end < 0) throw new Error('Fin du script de l\'appli introuvable');
+src = src.slice(0, end) + addon + src.slice(end);
 
-const build = createHash('sha256').update(src + shim).digest('hex').slice(0, 10);
+const build = createHash('sha256').update(ai + shim + src).digest('hex').slice(0, 10);
 const html = `<!doctype html>
 <html lang="fr">
 <head>
@@ -77,4 +101,4 @@ ${src.trim()}
 writeFileSync(new URL('public/index.html', dir), html);
 const sw = readFileSync(new URL('public/sw.js', dir), 'utf8').replace(/rp-[\w_]+';/, `rp-${build}';`);
 writeFileSync(new URL('public/sw.js', dir), sw);
-console.log(`public/index.html construit en mode ${MODE} (${Math.round(html.length / 1024)} Ko, version ${build})`);
+console.log(`public/index.html construit en mode ${MODE} (${Math.round(html.length / 1024)} Ko, version ${build}) ; public/ai.js ${Math.round(ai.length / 1024)} Ko`);
