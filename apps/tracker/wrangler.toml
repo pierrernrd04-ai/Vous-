@@ -1,0 +1,15 @@
+# Tracker « Routine & Performance » · Cloudflare Pages + D1
+# Déployé par .github/workflows/tracker.yml (le workflow remplace __D1_ID__ au moment du déploiement).
+name = "routine-pierre"
+pages_build_output_dir = "public"
+compatibility_date = "2025-06-01"
+
+[vars]
+# Empreintes SHA-256 des clés de sauvegarde autorisées (séparées par des virgules).
+# La clé elle-même n'est jamais dans le dépôt.
+ALLOWED_SHA = "ac7bb069d4ff845bf84f60b3ae45a8ce17f18db8431fd9b782e2bfdd94875bc2"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rp-tracker"
+database_id = "__D1_ID__"
