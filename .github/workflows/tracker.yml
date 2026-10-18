@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: 22
       - name: Construire la page
-        run: node build.mjs
+        run: TRACKER_MODE=cloud node build.mjs
       - name: Vérifier les secrets
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then

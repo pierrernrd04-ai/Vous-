@@ -1,9 +1,14 @@
 // Service worker : l'appli s'ouvre même sans réseau. La sauvegarde (/api) n'est jamais mise en cache.
-const CACHE = 'rp-7cc07b29a7';
-const SHELL = ['./', './manifest.webmanifest', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'rp-60bd94fd6e';
+const SHELL = ['./index.html'];
+const EXTRA = ['./manifest.json', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(SHELL).then(() => Promise.all(EXTRA.map((u) => c.add(u).catch(() => {})))))
+      .then(() => self.skipWaiting()),
+  );
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(
@@ -21,14 +26,14 @@ self.addEventListener('fetch', (e) => {
       fetch(req)
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('./', copy));
+          caches.open(CACHE).then((c) => c.put('./index.html', copy));
           return res;
         })
-        .catch(() => caches.match('./', { ignoreSearch: true })),
+        .catch(() => caches.match('./index.html', { ignoreSearch: true })),
     );
     return;
   }
-  if (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
+  if (url.origin === location.origin || url.hostname === 'raw.githubusercontent.com' || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
     e.respondWith(
       caches.match(req).then(
         (hit) =>

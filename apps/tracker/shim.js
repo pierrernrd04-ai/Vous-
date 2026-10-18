@@ -3,6 +3,10 @@
 (function () {
   'use strict';
   window.RP_STANDALONE = true;
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+  /* mode local : tout reste dans le téléphone, pas de serveur */
+  if (window.RP_MODE !== 'cloud') { try { localStorage.setItem('rp-key-skip', '1'); } catch (e) {} return; }
 
   /* ---- clé de sauvegarde : lue dans l'adresse (?k=…) ou mémorisée sur l'appareil ---- */
   var q = new URLSearchParams(location.search), key = q.get('k') || '';

@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Routine">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <title>Routine &amp; Performance</title>
@@ -19,11 +19,16 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <script>
+window.RP_MODE = 'local';
 /* Version web autonome : remplace la base de données de Claude par la sauvegarde en ligne /api/state.
    Injecté dans <head> par build.mjs, avant le script de l'appli. */
 (function () {
   'use strict';
   window.RP_STANDALONE = true;
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+  /* mode local : tout reste dans le téléphone, pas de serveur */
+  if (window.RP_MODE !== 'cloud') { try { localStorage.setItem('rp-key-skip', '1'); } catch (e) {} return; }
 
   /* ---- clé de sauvegarde : lue dans l'adresse (?k=…) ou mémorisée sur l'appareil ---- */
   var q = new URLSearchParams(location.search), key = q.get('k') || '';
@@ -4327,8 +4332,8 @@ if(STANDALONE){
   /* sauvegarde en ligne (fonction Cloudflare /api/state protégée par une clé) */
   window.cloudState=function(){const k=(()=>{try{return localStorage.getItem('rp-key')||''}catch(e){return''}})(),on=S.db&&S.sync!=='error';
     return k?`<p>${on?'<b>Sauvegarde en ligne active.</b> Tes journées sont les mêmes dans Safari, sur l\'icône et sur tes autres appareils.':'<b>Sauvegarde en ligne injoignable.</b> Tes saisies restent sur ce téléphone en attendant.'} Les photos restent sur ce téléphone.</p><button class="btn ghost sm" data-a="cloudForget" style="margin-bottom:10px">Changer de clé</button>`
-      :`<p>Entre la clé de ta sauvegarde (donnée par Claude Code au déploiement) pour retrouver tes journées partout. Sans clé, tout reste sur ce téléphone.</p>
-        <div class="grid2" style="grid-template-columns:minmax(0,1fr) auto;margin-bottom:10px"><input class="inp" id="cloudKey" type="password" autocomplete="off" placeholder="Clé de sauvegarde"><button class="btn go" data-a="cloudKey">Connecter</button></div>`};
+      :`<p><b>Tes journées sont enregistrées dans ce téléphone.</b> Ouvre toujours l'appli depuis son icône sur l'écran d'accueil : Safari et l'icône ne partagent pas leurs données.</p>
+        `};
   Object.assign(ACT,{
     async cloudKey(){const k=(($('#cloudKey')||{}).value||'').trim();if(k.length<8){toast('La clé fait au moins 8 caractères.');return}
       try{const r=await fetch('api/state',{headers:{'x-key':k},cache:'no-store'});

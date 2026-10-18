@@ -10,7 +10,8 @@ import { createHash } from 'node:crypto';
 
 const dir = new URL('./', import.meta.url);
 let src = readFileSync(new URL('app.source.html', dir), 'utf8');
-const shim = readFileSync(new URL('shim.js', dir), 'utf8');
+const MODE = process.env.TRACKER_MODE === 'cloud' ? 'cloud' : 'local';
+const shim = `window.RP_MODE = '${MODE}';\n` + readFileSync(new URL('shim.js', dir), 'utf8');
 
 // 1. Retire l'enveloppe ajoutée par Claude autour de l'artefact.
 const body = src.indexOf('<body>');
@@ -33,6 +34,10 @@ const patches = [
   ["toast('Sauvegarde connectée.');setTimeout(()=>location.reload(),700)",
     "toast('Sauvegarde connectée.');setTimeout(()=>{location.href=location.pathname+'?k='+encodeURIComponent(k)},700)"],
   ["toast('Clé retirée.');setTimeout(()=>location.reload(),500)", "toast('Clé retirée.');setTimeout(()=>{location.href=location.pathname},500)"],
+  // mode local (sans serveur) : pas de champ « clé de sauvegarde »
+  ...(MODE === 'local' ? [["<p>Entre la clé de ta sauvegarde (donnée par Claude Code au déploiement) pour retrouver tes journées partout. Sans clé, tout reste sur ce téléphone.</p>",
+    "<p><b>Tes journées sont enregistrées dans ce téléphone.</b> Ouvre toujours l'appli depuis son icône sur l'écran d'accueil : Safari et l'icône ne partagent pas leurs données.</p>"],
+  ['<div class="grid2" style="grid-template-columns:minmax(0,1fr) auto;margin-bottom:10px"><input class="inp" id="cloudKey" type="password" autocomplete="off" placeholder="Clé de sauvegarde"><button class="btn go" data-a="cloudKey">Connecter</button></div>', '']] : []),
   // quand la connexion revient, renvoie ce qui n'avait pas pu partir
   ["if(!dirty.size&&S.sync!=='error')setSync('ok');",
     "if(snap.drained&&dirty.size){for(const d of [...dirty.keys()])if(!writing[d]){clearTimeout(timers[d]);retried[d]=0;timers[d]=setTimeout(()=>flush(d),60)}}if(!dirty.size&&(S.sync!=='error'||snap.drained))setSync('ok');"],
@@ -55,7 +60,7 @@ const html = `<!doctype html>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Routine">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 ${headTags.trim()}
@@ -72,4 +77,4 @@ ${src.trim()}
 writeFileSync(new URL('public/index.html', dir), html);
 const sw = readFileSync(new URL('public/sw.js', dir), 'utf8').replace(/rp-[\w_]+';/, `rp-${build}';`);
 writeFileSync(new URL('public/sw.js', dir), sw);
-console.log(`public/index.html construit (${Math.round(html.length / 1024)} Ko, version ${build})`);
+console.log(`public/index.html construit en mode ${MODE} (${Math.round(html.length / 1024)} Ko, version ${build})`);

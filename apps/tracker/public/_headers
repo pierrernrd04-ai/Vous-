@@ -8,5 +8,5 @@
   Cache-Control: no-cache
 /sw.js
   Cache-Control: no-cache
-/manifest.webmanifest
+/manifest.json
   Cache-Control: no-cache
