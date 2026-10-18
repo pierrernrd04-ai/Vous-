@@ -20,12 +20,56 @@
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <script>
 window.RP_MODE = 'local';
-/* Version web autonome : remplace la base de données de Claude par la sauvegarde en ligne /api/state.
+window.RP_AI_SRC = 'ai.js?v=987e0780';
+/* Version web autonome : remplace les fonctions de Claude (window.claude.use) :
+   'sample' → API Claude avec la clé de l'utilisateur (ai.js), 'db' et 'user' → sauvegarde en ligne /api/state.
    Injecté dans <head> par build.mjs, avant le script de l'appli. */
 (function () {
   'use strict';
   window.RP_STANDALONE = true;
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+  /* analyse photo et tri : clé Claude de l'utilisateur, gardée dans ce téléphone ;
+     le SDK (ai.js) n'est chargé qu'au premier usage */
+  var AI_KEY = 'rp-ai-key', aiImpl = null;
+  function aiKey() { try { return localStorage.getItem(AI_KEY) || ''; } catch (e) { return ''; } }
+  function aiLoad() {
+    return aiImpl || (aiImpl = new Promise(function (ok, ko) {
+      var s = document.createElement('script');
+      s.src = window.RP_AI_SRC || 'ai.js';
+      s.onload = function () { if (window.RP_AI_IMPL) ok(window.RP_AI_IMPL); else ko(); };
+      s.onerror = function () { s.remove(); ko(); };
+      document.head.appendChild(s);
+    }).catch(function () { aiImpl = null; throw { code: 'offline' }; }));
+  }
+  window.RP_AI = {
+    hasKey: function () { return !!aiKey(); },
+    keyHint: function () { var k = aiKey(); return k ? k.slice(0, 7) + '…' + k.slice(-4) : ''; },
+    setKey: function (k) { try { localStorage.setItem(AI_KEY, k); } catch (e) {} },
+    clearKey: function () { try { localStorage.removeItem(AI_KEY); } catch (e) {} },
+    check: function (k) {
+      return aiLoad().then(function (m) { return m.check(k); }, function (e) { return { ok: false, code: e.code }; });
+    },
+    sample: {
+      limits: function () {
+        return Promise.resolve({ images: { maxCount: 4, mediaTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], maxInputBytes: 1500000 } });
+      },
+      json: function (prompt, opts) {
+        var k = aiKey();
+        if (!k) return Promise.reject({ code: 'ai_key' });
+        return aiLoad().then(function (m) { return m.json(prompt, opts || {}, k); });
+      },
+    },
+  };
+
+  var caps = {};
+  window.claude = {
+    use: function (name) {
+      if (name === 'sample') return Promise.resolve(window.RP_AI.sample);
+      if (caps[name]) return Promise.resolve(caps[name]);
+      return Promise.reject({ code: 'capability_disabled' });
+    },
+  };
 
   /* mode local : tout reste dans le téléphone, pas de serveur */
   if (window.RP_MODE !== 'cloud') { try { localStorage.setItem('rp-key-skip', '1'); } catch (e) {} return; }
@@ -140,16 +184,8 @@ window.RP_MODE = 'local';
       onSnapshot: function (cb, err) { subs.push({ path: path, cb: cb, err: err }); setTimeout(poll, 0); return function () {}; },
     };
   }
-  var db = { doc: docRef, collection: colRef };
-  var user = { id: function () { return Promise.resolve('me'); } };
-
-  window.claude = {
-    use: function (name) {
-      if (name === 'db') return Promise.resolve(db);
-      if (name === 'user') return Promise.resolve(user);
-      return Promise.reject({ code: 'capability_disabled' });
-    },
-  };
+  caps.db = { doc: docRef, collection: colRef };
+  caps.user = { id: function () { return Promise.resolve('me'); } };
 })();
 </script>
 </head>
@@ -3691,7 +3727,7 @@ async function addMotivPhotos(files,opt){opt=opt||{};
   const m=imem(),fresh=imgs.filter(f=>!m.sig.has(fSig(f))),skip=imgs.length-fresh.length;
   if(!fresh.length){toast(`Ces ${imgs.length} photos ont déjà été triées. Choisis la suite de ta galerie.`,{label:'Choisir',fn:()=>{S.picking=Date.now();try{PICK.click()}catch(e){}}});return}
   uploading=true;hideMotiv();
-  IMP={state:'run',files:fresh,n:fresh.length,vids,skip,dec:0,cls:0,kept:0,rej:0,dup:0,fail:0,ufail:0,unsure:0,sess:0,calls:0,mode:S.settings.impPeople===false||window.RP_STANDALONE?'all':'people',
+  IMP={state:'run',files:fresh,n:fresh.length,vids,skip,dec:0,cls:0,kept:0,rej:0,dup:0,fail:0,ufail:0,unsure:0,sess:0,calls:0,mode:S.settings.impPeople===false||!rpAiOn()?'all':'people',
     cap20:!opt.zip&&picked.length===20,zip:!!opt.zip,stop:false,userPause:false,ctls:new Set(),rejects:[],thumbs:[],t0:Date.now(),min:false,upQ:[],view:'run',sel:new Set()};
   impMount();wake(true);diag('tri',{n:fresh.length,vids,skip,mode:IMP.mode});
   const J=IMP;
@@ -3801,7 +3837,7 @@ Object.assign(ACT,{
   impForget(t){if(!S.forgetArm){S.forgetArm=true;t.textContent='Toucher encore pour tout réanalyser';setTimeout(()=>{S.forgetArm=false},3500);return}S.forgetArm=false;IMEM={sig:new Set(),rej:new Set()};try{localStorage.removeItem(IMP_LS)}catch(e){}toast('Mémoire du tri effacée : tout sera réanalysé.');render()},
 });
 /* carte d'import en tête de l'onglet Photos */
-function impHub(){const J=IMP,SA=!!window.RP_STANDALONE,on=!SA&&S.settings.impPeople!==false,n=allPhotos().length,m=imem();
+function impHub(){const J=IMP,SA=!!window.RP_STANDALONE,on=(!SA||rpAiOn())&&S.settings.impPeople!==false,n=allPhotos().length,m=imem();
   if(J&&J.state!=='done')return`<section class="imp-hub">${ORBS}<div class="hello">${ic('img',14)} Tri en cours</div><h3>${J.kept} photo${J.kept>1?'s':''} gardée${J.kept>1?'s':''} sur ${J.n}</h3><p>${J.mode==='people'?'Claude écarte les vidéos, les paysages et les doublons.':'Import sans tri.'}</p><button class="btn block go" data-a="impOpen" style="background:var(--accent);color:var(--on-accent)">Voir le tri</button></section>`;
   return`<section class="imp-hub">${ORBS}<div class="hello">${ic('bolt',14)} Import massif</div><h3>Toute ta galerie, d'un coup</h3>
     <p>Sélectionne jusqu'à 2 500 photos. ${on?"Claude garde seulement celles où il y a des personnes et écarte les vidéos, les paysages et les doublons.":"Toutes les photos sont gardées, sauf les vidéos et les doublons."}</p>
@@ -3809,7 +3845,7 @@ function impHub(){const J=IMP,SA=!!window.RP_STANDALONE,on=!SA&&S.settings.impPe
     ${SA?'':`<div class="imp-more"><b>${ic('bolt',15)} Bloqué à 20 photos ?</b><p>C'est la limite du sélecteur dans l'appli Claude. Deux façons d'en envoyer des centaines d'un coup :</p>
       <div class="imp-way"><i>1</i><div><strong>Dans Safari</strong><span>Ouvre cette appli dans Safari (connecté à claude.ai) : le sélecteur de photos n'a plus de limite.</span><a class="btn sm ghost" href="${esc(APP_URL)}" target="_blank" rel="noopener">${ic('ext',14)} Ouvrir dans Safari</a></div></div>
       <div class="imp-way"><i>2</i><div><strong>Avec un fichier .zip, ici</strong><span>App Photos : « Sélectionner », glisse pour cocher des centaines de photos, Partager, « Enregistrer dans Fichiers ». App Fichiers : appui long sur le dossier, « Compresser ». Puis choisis le .zip ici.</span><label class="btn sm ghost filebtn" for="pickZip">${ic('plus',14)} Choisir un .zip</label></div></div></div>`}
-    ${SA?'':`<div class="wrap" style="margin-top:12px"><button class="chip ${on?'on':''}" data-a="impPeople" aria-pressed="${on}">${on?ic('check',14):''} Seulement les photos avec des personnes</button></div>`}
+    ${SA&&!rpAiOn()?rpAiChip():`<div class="wrap" style="margin-top:12px"><button class="chip ${on?'on':''}" data-a="impPeople" aria-pressed="${on}">${on?ic('check',14):''} Seulement les photos avec des personnes</button></div>`}
     <div class="ways"><span>${ic('img',13)} ${i0(n)} / ${i0(MAXP)} photos</span>${m.sig.size?`<span>${ic('check',13)} ${i0(m.sig.size)} déjà triées</span><button class="tlink" style="color:var(--hero-muted)" data-a="impForget">Tout réanalyser</button>`:''}</div>
     <p style="margin:12px 0 0;font-size:12.5px">Par lots de 300 à 500 photos, c'est le plus fiable. Les vidéos du .zip sont ignorées.</p></section>`}
 function photosGuide(){return`<div class="ph-guide"><h3>Commence par la carte « Import massif » ci-dessus</h3><p class="hint" style="margin:0">Claude regarde chaque photo et garde seulement celles où il y a des personnes : toi et tes proches.</p></div>`}
@@ -4056,7 +4092,7 @@ function render(enter,dir){
   renderChrome();
   const m=$('#main'),V={
     home:()=>{const h=vHome(),i=h.indexOf('</section>')+10;return soberCard()+h.slice(0,i)+appsDock()+h.slice(i)+photosCard()+(S.settings.installDone?'':installCard(true))},
-    food:()=>{const v=vFood(),i=v.indexOf('</section>',v.indexOf('</section>')+10)+10;return (window.RP_STANDALONE?'':photoCard())+v.slice(0,i)+transitCard()+v.slice(i)+menusCard()},sport:vSport,hyg:vHyg,beer:vSober,traceo:vTraceo,
+    food:()=>{const v=vFood(),i=v.indexOf('</section>',v.indexOf('</section>')+10)+10;return photoCard()+v.slice(0,i)+transitCard()+v.slice(i)+menusCard()},sport:vSport,hyg:vHyg,beer:vSober,traceo:vTraceo,
     photos:()=>impHub()+vPhotos().replace(/<div class="next" style="margin-top:10px;font-size:12.5px">Jusqu'à 600 photos[^<]*<\/div>/,''),
     budget:()=>{const b=vBudget(),i=b.indexOf('</section>')+10;return b.slice(0,i)+bplanCard()+b.slice(i)+bankCard()},
     todo:vTodo};
@@ -4394,6 +4430,78 @@ setInterval(()=>{applyPalette();const tm=S.docs[S.sel]&&S.docs[S.sel].timer;if(t
 setInterval(checkReminders,15000);setTimeout(checkReminders,3500);
 setInterval(()=>{if(motivReady()&&Date.now()-S.motivLast>=motivEvery()*1000)showMotiv()},2000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')S.motivLast=Math.max(S.motivLast,Date.now()-motivEvery()*1000+5000)});
+/* Version web : clé Claude pour l'analyse photo de l'assiette et le tri automatique des photos.
+   Inséré par build.mjs à la fin du script de l'appli, dans la même portée que ses fonctions. */
+function rpAiOn() { return !!(window.RP_AI && window.RP_AI.hasKey()); }
+function rpAiChip() { return `<div class="wrap" style="margin-top:12px"><button class="chip" data-a="aiSetup">${ic('sparkle', 14)} Activer le tri automatique</button></div>`; }
+if (window.RP_STANDALONE && window.RP_AI) {
+  const AI = window.RP_AI, WHERE = 'Mes apps › Analyse photo par Claude';
+  let pending = null;
+
+  const aiCard = () => AI.hasKey()
+    ? `<div class="apps-note" id="aiCard"><b>${ic('sparkle', 15)} Analyse photo par Claude</b>
+      <p><b>Activée.</b> Photo de l'assiette dans l'onglet Alimentation, tri automatique de ta galerie (photos avec des personnes) dans l'onglet Photos. Clé ${esc(AI.keyHint())}, gardée dans ce téléphone.</p>
+      <button class="btn ghost sm" data-a="aiKeyForget" style="margin-bottom:10px">Retirer la clé</button></div>`
+    : `<div class="apps-note" id="aiCard"><b>${ic('sparkle', 15)} Analyse photo par Claude</b>
+      <p>Pour analyser ton assiette en photo et trier ta galerie automatiquement, colle ta clé API Claude. Elle reste dans ce téléphone et n'est envoyée qu'à Claude.</p>
+      <div class="grid2" style="grid-template-columns:minmax(0,1fr) auto;margin-bottom:10px"><input class="inp" id="aiKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…"><button class="btn go" data-a="aiKeySave">Activer</button></div>
+      <p>Crée ta clé sur platform.claude.com › API Keys. Paiement à l'usage : quelques centimes par assiette. Fixe une limite mensuelle (Limits) pour être tranquille.</p>
+      <a class="btn ghost sm" href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener" style="margin-bottom:10px">${ic('ext', 14)} Créer ma clé</a></div>`;
+  const aiOpen = () => {
+    ACT.appsOpen();
+    setTimeout(() => { const c = $('#aiCard'); if (c) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 350);
+  };
+
+  const _xferNote = xferNote;
+  xferNote = () => aiCard() + _xferNote();
+
+  /* sans clé, la photo de l'assiette ouvre directement le réglage, puis l'analyse part dès que la clé est validée */
+  const _analyzePhoto = analyzePhoto;
+  analyzePhoto = (file) => {
+    if (!AI.hasKey()) { pending = file; aiOpen(); toast('Ajoute ta clé Claude pour analyser ton assiette.'); return; }
+    return _analyzePhoto(file);
+  };
+
+  const _photoErr = photoErr;
+  photoErr = (e) => {
+    const c = e && e.code;
+    if (c === 'ai_key' || c === 'no_sample') return `Ajoute ta clé Claude pour analyser tes assiettes : ${WHERE}.`;
+    if (c === 'ai_key_bad') return `Ta clé Claude est refusée : vérifie-la dans ${WHERE}.`;
+    if (c === 'ai_credit') return "Ton compte Claude n'a plus de crédit : recharge-le sur platform.claude.com (Billing), puis réessaie.";
+    if (c === 'refused') return "Claude n'a pas pu analyser cette photo. Essaie avec une autre photo de ton assiette.";
+    if (c === 'rate_limited') return "Trop d'analyses d'affilée : réessaie dans une minute.";
+    if (c === 'offline') return "Pas de connexion : l'analyse a besoin d'internet. Réessaie dès que tu as du réseau.";
+    return _photoErr(e);
+  };
+
+  const keyMsg = ['Tri automatique non activé', `Ajoute ta clé Claude dans ${WHERE}, puis touche « Réessayer ». Ou importe tout sans tri.`];
+  Object.assign(IMP_MSG, {
+    nosample: keyMsg, ai_key: keyMsg, not_granted: keyMsg,
+    ai_key_bad: ['Clé Claude refusée', `Vérifie ta clé dans ${WHERE}, puis touche « Réessayer ». Ou importe tout sans tri.`],
+    ai_credit: ['Plus de crédit Claude', 'Recharge ton compte sur platform.claude.com (Billing), puis touche « Réessayer ». Les photos déjà triées sont gardées.'],
+    rate_limited: ['Claude fait une pause', "Trop de demandes d'affilée. Attends une minute, puis touche « Réessayer » : les photos déjà triées sont gardées."],
+    session_expired: ['Connexion à Claude perdue', 'Touche « Réessayer » : rien n\'est perdu.'],
+  });
+
+  Object.assign(ACT, {
+    aiSetup() { aiOpen(); },
+    async aiKeySave(t) {
+      const k = (($('#aiKey') || {}).value || '').trim();
+      if (!/^sk-ant-\S{16,}$/.test(k)) { toast('Colle la clé complète : elle commence par sk-ant-'); return; }
+      t.disabled = true; t.textContent = 'Vérification…';
+      const r = await AI.check(k);
+      if (!r.ok) {
+        t.disabled = false; t.textContent = 'Activer';
+        toast(r.code === 'ai_key_bad' ? 'Clé refusée : vérifie-la.' : 'Claude est injoignable : vérifie ta connexion et réessaie.');
+        return;
+      }
+      AI.setKey(k); haptic('success'); toast('Analyse photo activée.');
+      appsRefresh(); render();
+      if (pending) { const f = pending; pending = null; ACT.appsClose(); analyzePhoto(f); }
+    },
+    aiKeyForget() { AI.clearKey(); toast('Clé retirée.'); appsRefresh(); render(); },
+  });
+}
 })();
 </script>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
