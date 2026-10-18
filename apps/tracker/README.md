@@ -10,7 +10,11 @@ La même appli que l'artefact Claude, en vrai site : une adresse en `https://…
 | `functions/api/state.js` | Sauvegarde en ligne (Cloudflare Pages Function + base D1) |
 | `wrangler.toml` | Configuration Cloudflare ; `ALLOWED_SHA` = empreinte de la clé autorisée |
 
-## Mise en ligne (une seule fois)
+## Publication actuelle : GitHub Pages (mode local)
+
+Adresse : **https://pierrernrd04-ai.github.io/Vous-/**, servie par la branche `gh-pages` (contenu de `public/` construit en mode local, plus un fichier `.nojekyll`). Les données restent dans le téléphone. Pour mettre à jour : `node apps/tracker/build.mjs`, puis copier `public/` dans la branche `gh-pages` (sans `_headers`) et pousser.
+
+## Option : synchronisation entre appareils (Cloudflare)
 
 1. Cloudflare (gratuit) : **My Profile › API Tokens › Create Token › Custom token**, avec les droits *Account › Cloudflare Pages › Edit* et *Account › D1 › Edit*. Note aussi ton **Account ID** (colonne de droite de la page d'accueil du tableau de bord).
 2. GitHub : **Settings › Secrets and variables › Actions** du dépôt, ajoute `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID`.
