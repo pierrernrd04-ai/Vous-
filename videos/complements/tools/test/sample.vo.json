@@ -1,0 +1,8 @@
+{
+  "voice": "female",
+  "length_scale": 1.0,
+  "duration": 2.0,
+  "lines": [
+    { "id": "hook", "start": 0.1, "text": "Ambrel. Tout est écrit." }
+  ]
+}

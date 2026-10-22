@@ -1,0 +1,34 @@
+<!doctype html>
+<!-- WebGL check + example: full-screen fragment shader driven by t (deterministic).
+     node tools/snap.mjs tools/test/webgl-check.html /tmp/x.png --t 1 -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../brand/brand.css">
+<script src="../lib/scene-kit.js"></script>
+<style>#gl{position:absolute;inset:0;width:100%;height:100%}#info{position:absolute;left:80px;top:320px;color:#fff;font:700 40px Manrope}</style>
+</head><body>
+<div id="stage" class="ak-stage"><canvas id="gl" width="1080" height="1920"></canvas><div id="info"></div></div>
+<script>
+const c = document.getElementById('gl');
+const gl = c.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
+const info = document.getElementById('info');
+let uT;
+if (!gl) info.textContent = 'NO WEBGL';
+else {
+  const d = gl.getExtension('WEBGL_debug_renderer_info');
+  info.textContent = 'WebGL: ' + (d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : 'ok').slice(0, 40);
+  const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  const fs = `precision mediump float;uniform float t;uniform vec2 r;
+  void main(){vec2 uv=gl_FragCoord.xy/r;float g=uv.y+0.08*sin(uv.x*6.+t*1.3)+0.05*sin(uv.x*13.-t*.7);
+  vec3 dawn=vec3(.31,.38,.46),amber=vec3(.93,.71,.40),cream=vec3(.96,.94,.89);
+  vec3 col=mix(amber,dawn,smoothstep(.15,.95,g));col=mix(col,cream,.25*smoothstep(.4,.0,abs(g-.5)));
+  gl_FragColor=vec4(col,1.);}`;
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+  const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr); gl.useProgram(pr);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  uT = gl.getUniformLocation(pr, 't'); gl.uniform2f(gl.getUniformLocation(pr, 'r'), c.width, c.height);
+}
+SK.scene({ stage: '#stage', width: 1080, height: 1920, duration: 4, seek(t) {
+  if (!gl) return; gl.uniform1f(uT, t); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); gl.finish();
+}});
+</script></body></html>

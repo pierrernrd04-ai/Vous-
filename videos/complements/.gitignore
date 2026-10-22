@@ -1,0 +1,6 @@
+# Rendus intermédiaires (régénérables)
+**/frames/
+**/frames-*/
+**/.frames*/
+**/tmp/
+*.partial.mp4

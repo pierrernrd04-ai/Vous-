@@ -1,0 +1,146 @@
+<!doctype html>
+<!--
+  Ambrel scene template (9:16, 1080x1920). Copy it to videos/complements/<vN>/scene.html:
+  every path below is relative and stays valid from any folder one level under videos/complements/.
+
+  Pattern:
+    1. Static DOM (layers) styled with brand.css tokens.
+    2. ready(): preload images (SK.loadImages), build canvases, captions.
+    3. seek(t): set EVERY animated property from t only (SK.prog / SK.seg / SK.kf / SK.spring).
+       No timers, no Date, no Math.random (use SK.rng(seed)), no CSS transitions
+       (CSS @keyframes are fine if you call SK.syncCSS(t)).
+  Preview : open in a browser (file:// works) -> auto-play + scrubber. ?safe=1 shows safe zones,
+            ?t=3.2 freezes a frame. Or: node tools/snap.mjs <scene> /tmp/x.png --t 3.2
+  Render  : node tools/render.mjs <scene> out.mp4 --w 1080 --h 1920 --fps 30 --dur 8
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ambrel · scene template</title>
+<link rel="stylesheet" href="../brand/brand.css">
+<script src="../brand/brand.js"></script>
+<script src="../tools/lib/scene-kit.js"></script>
+<!-- Optional: word timings written by `node tools/vo-build.mjs <x.vo.json>` (classic script -> window.VO_TIMINGS).
+     In a copied scene use e.g. <script src="audio/v1-timings.js"></script>. Missing file = fallback cues below. -->
+<script src="test/audio/sample-timings.js"></script>
+<style>
+  #bg { position: absolute; inset: 0; background: linear-gradient(180deg, var(--cream) 0%, #EFE3D2 60%, #E2D3BF 100%); }
+  #sun { position: absolute; width: 1400px; height: 1400px; left: -160px; top: 120px; border-radius: 50%;
+         background: radial-gradient(closest-side, rgba(237,180,103,.85), rgba(237,180,103,.32) 55%, rgba(237,180,103,0)); }
+  #fx { position: absolute; inset: 0; }
+  #jar { position: absolute; height: 640px; left: 50%; top: 650px; transform-origin: 50% 90%; margin-left: -267px; }
+  #shadow { position: absolute; left: 330px; width: 420px; top: 1196px; height: 44px; border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(58,38,20,.38), rgba(58,38,20,0)); }
+  #kicker { position: absolute; left: 80px; width: 870px; top: 470px; text-align: center; }
+  #headline { position: absolute; left: 80px; width: 870px; top: 506px; text-align: center; font-size: 124px; color: var(--ink); }
+  #headline span { display: inline-block; }
+  #captions { top: 1236px; } /* below the jar; captions may go down to y=1440 (TikTok), claims/CTA stay above 1248 */
+  #end { position: absolute; left: 80px; width: 870px; top: 640px; display: flex; flex-direction: column; align-items: center; gap: 34px; }
+  #end .ak-legal { width: 870px; }
+</style>
+</head>
+<body>
+<div id="stage" class="ak-stage">
+  <div id="bg" class="ak-layer"></div>
+  <div id="sun"></div>
+  <canvas id="fx" width="1080" height="1920"></canvas>
+  <div id="shadow"></div>
+  <img id="jar" alt="">
+  <div id="kicker" class="ak-kicker"></div>
+  <div id="headline" class="ak-display"></div>
+  <div id="captions" class="ak-captions"></div>
+  <div id="end">
+    <img id="endlogo" alt="" style="width:420px">
+    <div id="endcta" class="ak-cta"></div>
+    <div class="ak-legal" id="legal"></div>
+  </div>
+  <div id="badge" class="ak-badge"></div>
+  <div id="disclosure" class="ak-disclosure"></div>
+</div>
+<script>
+(function () {
+  const A = window.AMBREL, $ = (s) => document.querySelector(s);
+  const { prog, seg, ease, kf, win, spring, set, lerp } = SK;
+  const DUR = 8;
+
+  // ---------- static content (always from brand.js: exact, compliant wording)
+  $('#kicker').textContent = A.product.nameShort;
+  $('#headline').innerHTML = A.tagline.split(' ').map((w) => `<span>${w}</span>`).join(' ');
+  $('#badge').textContent = A.mentions.v1.badge;
+  $('#disclosure').textContent = A.mentions.v1.open;
+  $('#endcta').textContent = A.cta.main;
+  $('#legal').innerHTML = `${A.legal.full}<span class="ak-fictive">${A.legal.fictive}</span>`;
+  $('#jar').src = A.assets.packshot1200;   // pick the smallest asset that is >= its on-screen size
+  $('#endlogo').src = A.assets.logo;
+
+  // ---------- captions: real timings if vo-build output is loaded, else estimated cues
+  const cues = window.VO_TIMINGS ? window.VO_TIMINGS.cues
+    : [{ start: 0.25, end: 1.75, text: 'Ambrel. Tout est écrit.', words: SK.estimateWords('Ambrel. Tout est écrit.', 0.25, 1.75) }];
+  const captions = new SK.Captions($('#captions'), cues, { maxWords: 3, emphasis: ['ambrel', 'écrit'] });
+
+  // ---------- deterministic particles (light dust): fixed seeds, position = f(t)
+  const fx = $('#fx').getContext('2d');
+  const R = SK.rng(42);
+  const dots = Array.from({ length: 70 }, () => ({ x: R() * 1080, y: R() * 1920, r: 1.5 + R() * 4, s: 8 + R() * 26, ph: R() * 6.28, a: 0.25 + R() * 0.5 }));
+  function drawFx(t) {
+    fx.clearRect(0, 0, 1080, 1920);
+    for (const d of dots) {
+      const y = (d.y - t * d.s + 1920) % 1920, x = d.x + Math.sin(t * 0.6 + d.ph) * 14;
+      fx.globalAlpha = d.a * (0.6 + 0.4 * Math.sin(t * 2 + d.ph));
+      fx.fillStyle = '#FFF3DD';
+      fx.beginPath(); fx.arc(x, y, d.r, 0, Math.PI * 2); fx.fill();
+    }
+    fx.globalAlpha = 1;
+  }
+  let grain = null;
+
+  SK.scene({
+    stage: '#stage', width: 1080, height: 1920, duration: DUR,
+    async ready() {
+      // optional lo-fi grain (?grain=1). Full-screen blend layers cost render time: only add when needed.
+      if (SK.params.qs.get('grain') === '1') {
+        const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
+        c.style.cssText = 'position:absolute;inset:0;mix-blend-mode:overlay;pointer-events:none';
+        $('#stage').appendChild(c); grain = new SK.Grain(c, { amount: 0.08 });
+      }
+    },
+    seek(t, ctx) {
+      // background: static gradient (set once in CSS); animate cheap properties (transform/opacity) only
+      const warm = seg(t, 0, 3, ease.inOutSine);
+      set($('#sun'), { x: Math.sin(t * 0.3) * 30, y: lerp(80, 0, warm), s: lerp(0.9, 1.05, warm), o: lerp(0.5, 1, warm) });
+      drawFx(t);
+
+      // product: spring entrance at 0.15 s + gentle float + handheld micro-motion
+      const sp = spring(t, 0.15, 1.6, 0.5);
+      const hh = SK.handheld(t, 3, 0.7, 5);
+      const float = Math.sin(t * 1.4) * 6;
+      const outP = seg(t, DUR - 4.6, DUR - 4.0, ease.inOutCubic); // leaves before end card
+      set($('#jar'), { x: hh.x, y: lerp(260, 0, sp) + float + hh.y - outP * 120, r: hh.r, s: lerp(0.86, 1, sp), o: prog(t, 0.15, 0.4) * (1 - outP) });
+      set($('#shadow'), { s: lerp(0.6, 1, sp), o: 0.9 * prog(t, 0.15, 0.4) * (1 - outP) });
+
+      // headline: words stagger in (0.6 s +0.12 s each)
+      const ws = $('#headline').children;
+      for (let i = 0; i < ws.length; i++) {
+        const p = ease.outBack(prog(t, 0.6 + i * 0.12, 1.0 + i * 0.12), 1.6);
+        set(ws[i], { y: (1 - p) * 60, o: prog(t, 0.6 + i * 0.12, 0.8 + i * 0.12) * (1 - outP) });
+      }
+      set($('#kicker'), { y: (1 - seg(t, 0.4, 0.8, ease.outCubic)) * 20, o: prog(t, 0.4, 0.7) * (1 - outP) });
+
+      // captions (word by word, accent on the current word)
+      captions.update(t);
+
+      // mentions: opening disclosure 0-2.2 s, permanent badge after
+      set($('#disclosure'), { o: win(t, 0, 2.2, 0.01, 0.3), y: 0 });
+      set($('#badge'), { o: 1 });
+
+      // end card (>= 4 s): logo, CTA, legal block
+      const e = seg(t, DUR - 4.2, DUR - 3.6, ease.outCubic);
+      set($('#end'), { y: (1 - e) * 60, o: e });
+
+      if (grain) grain.draw(t, ctx.fps);
+    },
+  });
+})();
+</script>
+</body>
+</html>
