@@ -1,0 +1,10 @@
+{
+  "voice": "female", "length_scale": 1.2, "duration": 23,
+  "lines": [
+    { "id": "eau", "start": 4.10, "text": "Avant le jour, il y a l’eau." },
+    { "id": "geste", "start": 7.70, "text": "La pierre. Et un geste simple." },
+    { "id": "produit", "start": 11.40, "length_scale": 1.1, "text": "Ambrel. Magnésium bisglycinate et vitamine B6." },
+    { "id": "claim", "start": 16.00, "text": "Le magnésium et la vitamine B6 contribuent à réduire la fatigue." },
+    { "id": "signature", "start": 21.20, "text": "Tout est écrit." }
+  ]
+}

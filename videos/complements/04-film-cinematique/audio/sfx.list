@@ -1,0 +1,8 @@
+# V4 effects + ambience (start_s file gain_dB), mixed without ducking by tools/mux.sh
+0.00 wind.wav 0
+4.59 drop.wav -4
+5.02 drop.wav -13
+6.19 glass.wav -11
+7.93 pour.wav -16
+8.50 swell.wav -6
+18.30 chime.wav -5
