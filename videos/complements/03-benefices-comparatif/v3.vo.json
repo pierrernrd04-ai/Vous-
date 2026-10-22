@@ -1,0 +1,10 @@
+{
+  "voice": "male", "length_scale": 0.95, "duration": 20,
+  "lines": [
+    { "id": "hook", "start": 0.10, "text": "Avant d’acheter un magnésium, lis cette ligne." },
+    { "id": "forme", "start": 2.95, "text": "Bisglycinate : du magnésium lié à deux molécules de glycine.", "caption": "Bisglycinate : du magnésium lié à 2 molécules de glycine." },
+    { "id": "claim", "start": 7.00, "text": "Le magnésium et la vitamine B6 contribuent au fonctionnement normal du système nerveux." },
+    { "id": "compare", "start": 12.55, "text": "Compare les étiquettes, ligne par ligne." },
+    { "id": "cta", "start": 16.30, "text": "Ambrel. Lis l’étiquette complète." }
+  ]
+}

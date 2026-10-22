@@ -1,0 +1,737 @@
+<!doctype html>
+<!--
+  Ambrel V3 · « Pourquoi cette forme · bénéfices autour du produit » (9:16, 1080x1920, 20 s, 30 fps)
+  Brief: brand/brand-system.md §14 V3. Texts and claims come from brand/brand.js (window.AMBREL).
+  Beats (re-timed on audio/v3-timings.js, measured from the Piper VO):
+    0.00-2.45  hook: 3 punch-in shots on the jar's composition panel (real 3D label wrap, hi-res),
+               honey highlighter on « bisglycinate de magnésium », kinetic captions
+    2.45-3.60  pull-back + turn to the front label, push into the word « bisglycinate » -> match cut
+    3.60-6.85  the form: Mg + 2 glycines assemble in 3D, coordination bonds draw, definition synced to VO
+    6.85-12.25 benefits around the product: 4 callouts tracked on the turning jar (claims.nerveux synced)
+    12.25-15.5 facts-only comparison: « Ambrel » vs « À vérifier ailleurs » (? marks), row by row
+    15.5-20.0  end card: logo, jar, CTA « Lis l'étiquette complète », legal.full + legal.fictive (>= 4 s, static)
+  Preview: open in a browser (file:// works). ?safe=1 overlay, ?t=9.5 frozen frame.
+  lint-ok (this comment block quotes no forbidden wording; marker only for safety)
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ambrel · V3 bénéfices et comparatif</title>
+<link rel="stylesheet" href="../brand/brand.css">
+<script src="../brand/brand.js"></script>
+<script src="../tools/lib/scene-kit.js"></script>
+<script src="../tools/lib/jar3d.js"></script>
+<script src="lib/jar3d-tiles.js"></script>
+<script src="audio/v3-timings.js"></script>
+<style>
+  #bg { position: absolute; inset: 0; background: linear-gradient(180deg, #F6EFE4 0%, #EFE3D2 60%, #E2D3BF 100%); }
+  #halo { position: absolute; left: -260px; top: -300px; width: 1600px; height: 1600px; border-radius: 50%;
+          background: radial-gradient(closest-side, rgba(237,180,103,.72), rgba(237,180,103,.28) 52%, rgba(237,180,103,0));
+          will-change: transform, opacity; }
+  #beam { position: absolute; left: -400px; top: -500px; width: 900px; height: 3000px; transform-origin: 50% 0;
+          background: linear-gradient(90deg, rgba(255,246,228,0) 0%, rgba(255,246,228,.55) 45%, rgba(255,246,228,.0) 100%);
+          will-change: transform, opacity; }
+  canvas.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  #vig { position: absolute; inset: 0; pointer-events: none;
+         background: radial-gradient(130% 85% at 50% 46%, rgba(40,20,8,0) 58%, rgba(40,20,8,.34) 100%); will-change: opacity; }
+
+  .grp { position: absolute; inset: 0; will-change: opacity; visibility: hidden; }
+
+  /* ---------- S2 : la forme */
+  #s2kicker { position: absolute; left: 80px; width: 870px; top: 436px; text-align: center; }
+  #s2title { position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap;
+             font-family: var(--font-display); font-style: italic; font-weight: 500; color: var(--amber-deep);
+             letter-spacing: -0.01em; font-variation-settings: 'opsz' 144; line-height: 1; will-change: transform, opacity; }
+  #mol { position: absolute; left: 0; top: 560px; width: 1080px; height: 600px; }
+  #s2def { position: absolute; left: 80px; width: 870px; top: 1112px; text-align: center;
+           font: 700 46px/1.26 var(--font-ui); color: var(--ink); text-wrap: balance; }
+  #s2def span { display: inline-block; will-change: transform, opacity; }
+  #s2def .em { color: var(--amber-deep); font-weight: 800; }
+  #s2def .soft { color: var(--clay-dark); font-weight: 600; }
+
+  /* ---------- S3 : bénéfices autour du produit */
+  #lines { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+  #lines .ln { fill: none; stroke: rgba(33,27,22,.55); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  #lines .dot { fill: var(--honey); stroke: #fff; stroke-width: 4; }
+  #lines .ring { fill: none; stroke: var(--honey); stroke-width: 3; }
+  #lines .anc { fill: rgba(33,27,22,.7); }
+  .card { opacity: 0; position: absolute; background: rgba(255,255,255,.95); border-radius: 26px; color: var(--ink);
+          box-shadow: 0 18px 42px rgba(70,40,15,.14), 0 2px 6px rgba(70,40,15,.08); will-change: transform, opacity; }
+  .card.claim { left: 80px; width: 870px; padding: 26px 34px 30px 44px; }
+  .card.claim::before { content: ''; position: absolute; left: 0; top: 28px; bottom: 28px; width: 7px; border-radius: 0 7px 7px 0; background: var(--amber); }
+  .card .ak-claim { font-size: 42px; line-height: 1.24; text-wrap: balance; }
+  .card .ak-claim span { background-image: linear-gradient(rgba(237,180,103,.66), rgba(237,180,103,.66));
+          background-repeat: no-repeat; background-position: 0 86%; background-size: 0% 42%; }
+  #c1 { top: 394px; }
+  #c2 { top: 1084px; }
+  .card.fact { padding: 20px 24px 22px; width: 262px; }
+  #c3 { left: 80px; top: 792px; }
+  #c4 { left: 688px; top: 884px; }
+  .fact .big { font-family: var(--font-display); font-weight: 600; font-size: 80px; line-height: .92; letter-spacing: -0.02em;
+               font-variation-settings: 'opsz' 144; color: var(--ink); white-space: nowrap; }
+  .fact .big small { font-family: var(--font-ui); font-weight: 800; font-size: 38px; letter-spacing: 0; margin-left: 4px; }
+  .fact .sub { font: 800 31px/1.18 var(--font-ui); color: var(--amber-deep); margin-top: 10px; white-space: nowrap; }
+  .fact .row4 { display: flex; align-items: center; gap: 16px; }
+  .fact .row4 .big { font-size: 118px; line-height: .8; }
+  .fact .row4 .sub { margin-top: 0; font-size: 29px; line-height: 1.14; color: var(--ink); font-weight: 700; }
+
+  /* ---------- S4 : comparatif factuel */
+  #s4title { position: absolute; left: 80px; width: 870px; top: 372px; text-align: center;
+             font-family: var(--font-display); font-weight: 500; font-size: 78px; line-height: 1.0; letter-spacing: -0.02em;
+             font-variation-settings: 'opsz' 144; color: var(--ink); }
+  #s4title > div { line-height: 1.1; }
+  #s4title .l2 { font-style: italic; color: var(--amber-deep); }
+  #s4title span.w { display: inline-block; will-change: transform, opacity; }
+  #tbl { position: absolute; inset: 0; will-change: transform, opacity; }
+  #colA { position: absolute; left: 80px; top: 568px; width: 612px; height: 674px; border-radius: 28px;
+          background: rgba(255,255,255,.95); box-shadow: 0 20px 46px rgba(70,40,15,.14), 0 2px 6px rgba(70,40,15,.08); will-change: transform, opacity; }
+  #colB { position: absolute; left: 712px; top: 568px; width: 238px; height: 674px; border-radius: 28px;
+          border: 3px dashed rgba(110,90,69,.55); background: rgba(246,239,228,.55); will-change: transform, opacity; }
+  #hdrA { position: absolute; left: 180px; top: 586px; height: 46px; display: flex; align-items: center; will-change: opacity; }
+  #hdrA img { height: 46px; display: block; }
+  #hdrB { position: absolute; left: 712px; width: 238px; top: 580px; text-align: center; font: 800 25px/1.12 var(--font-ui);
+          color: var(--clay-dark); letter-spacing: .01em; will-change: opacity; }
+  .row { position: absolute; left: 80px; width: 870px; height: 98px; }
+  .row .sep { position: absolute; left: 24px; width: 564px; top: 0; height: 2px; background: #E6DCCD; transform-origin: 0 50%; }
+  .row .sepB { position: absolute; left: 656px; width: 190px; top: 0; height: 0; border-top: 2px dashed rgba(110,90,69,.35); transform-origin: 0 50%; }
+  .row .chk { position: absolute; left: 22px; top: 25px; width: 48px; height: 48px; will-change: transform; }
+  .row .txt { position: absolute; left: 90px; top: 13px; width: 500px; will-change: transform, opacity; }
+  .row .crit { font: 800 21px/1.1 var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--clay-dark); }
+  .row .val { font: 800 37px/1.2 var(--font-ui); color: var(--ink); margin-top: 5px; white-space: nowrap; letter-spacing: -0.005em; }
+  .row .q { position: absolute; left: 727px; top: 18px; width: 60px; height: 60px; border-radius: 50%;
+            border: 3px dashed rgba(110,90,69,.75); color: var(--clay-dark); text-align: center;
+            font: 600 42px/54px var(--font-display); will-change: transform, opacity; }
+
+  /* ---------- S5 : carton final */
+  #s5logo { position: absolute; left: 380px; width: 320px; top: 366px; will-change: transform, opacity; }
+  #s5cta { position: absolute; top: 906px; left: 0; width: 1080px; display: flex; justify-content: center; will-change: transform, opacity; }
+  #s5legal { position: absolute; left: 80px; width: 870px; top: 1032px; will-change: opacity; }
+
+  #captions { top: 1290px; }
+</style>
+</head>
+<body>
+<div id="stage" class="ak-stage">
+  <div id="bg" class="ak-layer"></div>
+  <div id="halo"></div>
+  <div id="beam"></div>
+  <canvas id="dust" class="full" width="1080" height="1920"></canvas>
+  <div id="s4back" class="grp"><div id="colA"></div><div id="colB"></div></div>
+  <canvas id="jarc" class="full" width="1080" height="1920"></canvas>
+  <div id="vig"></div>
+
+  <div id="s2" class="grp">
+    <div id="s2kicker" class="ak-kicker">La forme</div>
+    <div id="s2title"></div>
+    <canvas id="mol" width="1080" height="600"></canvas>
+    <div id="s2def"></div>
+  </div>
+
+  <div id="s3" class="grp">
+    <svg id="lines" viewBox="0 0 1080 1920"></svg>
+    <div id="c1" class="card claim"><div class="ak-claim" id="c1t"></div></div>
+    <div id="c3" class="card fact"><div class="big" id="c3big"></div><div class="sub" id="c3sub"></div></div>
+    <div id="c4" class="card fact"><div class="row4"><div class="big">3</div><div class="sub" id="c4sub"></div></div></div>
+    <div id="c2" class="card claim"><div class="ak-claim" id="c2t"></div></div>
+  </div>
+
+  <div id="s4" class="grp">
+    <div id="s4title"></div>
+    <div id="tbl">
+      <div id="hdrA"><img id="hdrLogo" alt=""></div>
+      <div id="hdrB">À vérifier<br>ailleurs</div>
+      <div id="rows"></div>
+    </div>
+  </div>
+
+  <div id="s5" class="grp">
+    <img id="s5logo" alt="">
+    <div id="s5cta"><div class="ak-cta" id="cta"></div></div>
+    <div id="s5legal" class="ak-legal"></div>
+  </div>
+
+  <canvas id="front" class="full" width="1080" height="1920"></canvas>
+  <div id="captions" class="ak-captions"></div>
+  <div id="badge" class="ak-badge"></div>
+  <div id="disclosure" class="ak-disclosure"></div>
+</div>
+<script>
+(function () {
+  'use strict';
+  const A = window.AMBREL, NB = A.NB, $ = (s) => document.querySelector(s);
+  const { prog, seg, ease, kf, win, spring, set, lerp, clamp } = SK;
+  const DUR = 20;
+  const MC = SK.params.qs.get('mc') === '1'; // debug: match-cut overlay (title + jar at 50 %)
+  const T = {
+    cutB: 0.85, cutC: 1.70, hlA: 1.86, hlB: 2.42,
+    pullA: 2.45, pullB: 3.02, pushA: 3.10, pushB: 3.52, xA: 3.44, xB: 3.64,
+    mg: 3.74, ligL: 4.82, ligR: 4.98, bondL: 5.40, bondR: 5.58, gly: 6.22,
+    s2out: 6.90, s3in: 6.94,
+    c1: 7.14, c3: 7.90, c4: 8.50, c2: 9.10,
+    s3out: 12.24, tblIn: 12.50, row0: 12.74, rowStep: 0.42,
+    s4out: 15.42, legal: 15.74, logo: 16.24, cta: 17.60,
+  };
+  window.V3_TIMES = T;
+
+  // ------------------------------------------------------------------ texts (all from brand.js)
+  const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9%]/g, '');
+  const VT = window.VO_TIMINGS || { cues: [] };
+  const cue = (id) => VT.cues.find((c) => c.id === id);
+  function wordsFor(id, text, a, b) { const c = cue(id); return c && c.words && c.words.length ? c.words : SK.estimateWords(text, a, b); }
+
+  $('#badge').textContent = A.mentions.v3.badge;
+  $('#disclosure').textContent = A.mentions.v3.open;
+
+  // S2 title + definition (product fact, AMBREL.product.formExplained)
+  $('#s2title').textContent = 'Bisglycinate';
+  const fe = A.product.formExplained;
+  const defText = '= ' + fe.charAt(0).toLowerCase() + fe.slice(1);
+  const fw = wordsFor('forme', 'Bisglycinate : du magnésium lié à 2 molécules de glycine.', 2.95, 6.89);
+  const defWords = defText.split(' ');
+  const defTimes = []; { let j = 0, last = fw[fw.length - 1].start;
+    defWords.forEach((w) => {
+      if (w === '=') { const k = fw.findIndex((x) => norm(x.w) === 'du'); defTimes.push(k >= 0 ? fw[k].start : 3.95); return; }
+      const n = norm(w); const k = fw.findIndex((x, i) => i >= j && norm(x.w) === n);
+      if (k >= 0 && !/^\(/.test(w)) { defTimes.push(fw[k].start); j = k + 1; }
+      else { last += 0.1; defTimes.push(last); }
+    }); }
+  let inParen = false;
+  $('#s2def').innerHTML = defWords.map((w) => {
+    if (/^\(/.test(w)) inParen = true;
+    const cls = inParen ? 'soft' : (/^(magn|glycine)/.test(norm(w)) ? 'em' : '');
+    return `<span class="${cls}">${w}</span>`;
+  }).join(' ');
+  const defSpans = Array.from($('#s2def').children);
+
+  // S3 callouts
+  const claim1 = A.claims.nerveux, claim2 = A.claims.muscle;
+  const c1w = claim1.split(' ');
+  $('#c1t').innerHTML = c1w.map((w, i) => `<span>${w}${i < c1w.length - 1 ? ' ' : ''}</span>`).join('');
+  const c1spans = Array.from($('#c1t').children);
+  const cw = wordsFor('claim', claim1, 7.0, 12.3);
+  const c1times = c1w.map((w, i) => (cw.length === c1w.length ? cw[i] : SK.estimateWords(claim1, 7.0, 12.3)[i]));
+  $('#c2t').textContent = claim2;
+  const mgParts = A.product.mgShort.split(' · ');               // ['300 mg', '80 % VNR']
+  $('#c3big').innerHTML = mgParts[0].replace(NB + 'mg', `<small>mg</small>`);
+  $('#c3sub').textContent = mgParts[1];
+  $('#c4sub').innerHTML = 'gélules<br>végétales<br>par jour';  // « 3 gélules végétales par jour »
+
+  // S4 title (spoken line) + rows (facts on Ambrel only; right column = invitation to check)
+  const cmpW = wordsFor('compare', 'Compare les étiquettes, ligne par ligne.', 12.55, 15.07);
+  const cmpText = 'Compare les étiquettes, ligne par ligne.'.split(' ');
+  $('#s4title').innerHTML = `<div>${cmpText.slice(0, 3).map((w) => `<span class="w">${w}</span>`).join(' ')}</div>` +
+    `<div class="l2">${cmpText.slice(3).map((w) => `<span class="w">${w}</span>`).join(' ')}</div>`;
+  const s4spans = Array.from($('#s4title').querySelectorAll('.w'));
+  const s4times = cmpText.map((w, i) => (cmpW[i] ? cmpW[i].start : 12.6 + i * 0.3));
+  const ROWS = [
+    ['Forme du magnésium', 'Bisglycinate'],
+    ['Magnésium par jour', `300${NB}mg (80${NB}% VNR)`],
+    ['Vitamine B6 par jour', `1,4${NB}mg (100${NB}% VNR)`],
+    ['Gélule', 'Végétale'],
+    ['Arôme, édulcorant', 'Aucun'],
+    ['Dose', A.product.dose],
+  ];
+  const ROW_Y0 = 652, ROW_H = 98;
+  $('#rows').innerHTML = ROWS.map((r, i) => `
+    <div class="row" style="top:${ROW_Y0 + i * ROW_H}px">
+      <div class="sep"></div><div class="sepB"></div>
+      <svg class="chk" viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="#C46F28"/>
+        <path d="M13.5 24.5 L21 32 L35 17" fill="none" stroke="#F6EFE4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/></svg>
+      <div class="txt"><div class="crit">${r[0]}</div><div class="val">${r[1]}</div></div>
+      <div class="q">?</div>
+    </div>`).join('');
+  const rowEls = Array.from(document.querySelectorAll('.row')).map((el) => ({
+    el, sep: el.querySelector('.sep'), sepB: el.querySelector('.sepB'), chk: el.querySelector('.chk'),
+    path: el.querySelector('.chk path'), txt: el.querySelector('.txt'), q: el.querySelector('.q'),
+  }));
+  $('#hdrLogo').src = A.assets.logo;
+
+  // S5
+  $('#s5logo').src = A.assets.logo;
+  $('#cta').textContent = A.cta.alt[1];                          // « Lis l’étiquette complète »
+  $('#s5legal').innerHTML = `${A.legal.full}<span class="ak-fictive">${A.legal.fictive}</span>`;
+
+  // hook captions (kinetic, word by word, from the measured timings)
+  const hookCue = cue('hook') ? [cue('hook')] : [{ start: 0.1, end: 2.8, text: 'Avant d’acheter un magnésium, lis cette ligne.' }];
+  const captions = new SK.Captions($('#captions'), hookCue, { maxWords: 3, maxChars: 20, emphasis: ['magnésium', 'ligne'] });
+
+  // ------------------------------------------------------------------ helpers
+  function show(el, o) { el.style.visibility = o > 0.002 ? 'visible' : 'hidden'; if (o > 0.002) el.style.opacity = clamp(o).toFixed(3); }
+  const springP = (t, t0, f, d) => (t < t0 ? 0 : spring(t, t0, f, d));
+  const R = 278; // jar radius (packshot units)
+
+  // ------------------------------------------------------------------ dust (back) + bokeh (front), deterministic
+  const dust = $('#dust').getContext('2d'), front = $('#front').getContext('2d');
+  function sprite(r, rgb, a0) {
+    const c = document.createElement('canvas'); c.width = c.height = r * 2; const x = c.getContext('2d');
+    const g = x.createRadialGradient(r, r, 0, r, r, r);
+    g.addColorStop(0, `rgba(${rgb},${a0})`); g.addColorStop(0.55, `rgba(${rgb},${a0 * 0.45})`); g.addColorStop(1, `rgba(${rgb},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, r * 2, r * 2); return c;
+  }
+  const spDust = sprite(16, '255,244,222', 1), spBok = sprite(120, '255,236,200', 0.9), spBokA = sprite(120, '237,180,103', 0.9);
+  const RD = SK.rng(17);
+  const dots = Array.from({ length: 46 }, () => ({ x: RD() * 1080, y: RD() * 1920, r: 3 + RD() * 9, s: 10 + RD() * 24, ph: RD() * 6.28, a: 0.25 + RD() * 0.45 }));
+  const boks = Array.from({ length: 9 }, () => ({ x: RD() * 1080, y: RD() * 1920, r: 60 + RD() * 110, s: 26 + RD() * 40, ph: RD() * 6.28, a: 0.10 + RD() * 0.14, amb: RD() > 0.5 }));
+  function drawDust(t, amt) {
+    dust.clearRect(0, 0, 1080, 1920);
+    if (amt <= 0) return;
+    for (const d of dots) {
+      const y = ((d.y - t * d.s) % 1920 + 1920) % 1920, x = d.x + Math.sin(t * 0.5 + d.ph) * 18;
+      dust.globalAlpha = amt * d.a * (0.65 + 0.35 * Math.sin(t * 1.7 + d.ph));
+      dust.drawImage(spDust, x - d.r, y - d.r, d.r * 2, d.r * 2);
+    }
+    dust.globalAlpha = 1;
+  }
+  // out-of-focus foreground props (capsules, mineral crystal): pre-blurred sprites, parallax drift
+  const PROPS = [];
+  function blurred(draw, w, h, blur) {
+    const pad = Math.ceil(blur * 3) + 70, c = document.createElement('canvas'); c.width = w + 2 * pad; c.height = h + 2 * pad;
+    const x = c.getContext('2d'); x.filter = `blur(${blur}px)`; x.translate(pad, pad); draw(x, w, h); return c;
+  }
+  function crystal(x, w, h) {
+    const shards = [[0.30, 1.0, 0.18, 0.92, -0.10], [0.58, 1.0, 0.22, 0.70, 0.18], [0.80, 1.0, 0.14, 0.50, 0.32]];
+    shards.forEach(([cx, by, hw, ht, lean]) => {
+      const X = cx * w, B = by * h, top = [X + lean * w * 0.5, B - ht * h];
+      const L = [X - hw * w, B], Rr = [X + hw * w, B], M = [X + lean * w * 0.15, B - ht * h * 0.35];
+      const face = (pts, col) => { x.fillStyle = col; x.beginPath(); pts.forEach((p, i) => (i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1]))); x.closePath(); x.fill(); };
+      face([L, top, M], '#EEF2F5'); face([M, top, Rr], '#AFC0CC'); face([L, M, Rr], '#C7D2DA');
+    });
+  }
+  function drawProps(t, amt) {
+    for (const p of PROPS) {
+      const y = p.y - t * 5 * p.d + Math.sin(t * 0.5 + p.ph) * 8 * p.d + p.shift(t);
+      const x = p.x + Math.sin(t * 0.3 + p.ph) * 10 * p.d;
+      front.save(); front.globalAlpha = amt * p.a; front.translate(x, y); front.rotate((p.r + Math.sin(t * 0.4 + p.ph) * 3) * Math.PI / 180);
+      front.drawImage(p.c, -p.c.width / 2, -p.c.height / 2); front.restore();
+    }
+  }
+  function drawFront(t, amt, dx) {
+    front.clearRect(0, 0, 1080, 1920);
+    if (t > T.xA) drawProps(t, prog(t, T.xA, T.xB + 0.5));
+    if (amt <= 0) return;
+    for (const b of boks) {
+      const y = ((b.y - t * b.s) % 2300 + 2300) % 2300 - 190, x = b.x + Math.sin(t * 0.35 + b.ph) * 40 + (dx || 0) * (b.r / 120);
+      front.globalAlpha = amt * b.a;
+      front.drawImage(b.amb ? spBokA : spBok, x - b.r, y - b.r, b.r * 2, b.r * 2);
+    }
+    front.globalAlpha = 1;
+  }
+
+  // ------------------------------------------------------------------ jar
+  const jc = $('#jarc').getContext('2d');
+  let jarHi = null, jarLo = null;
+  // honey highlighter on « bisglycinate de magnésium » (ingredients line), label units (1748 x 530)
+  const HL = { u0: 161, u1: 334, v0: 276.5, v1: 299 };
+  function drawHighlight(ctx, X0, Y0, s, rot, p) {
+    if (p <= 0) return;
+    const G = Jar3DT.GEOMETRY, Rr = (G.bx1 - G.bx0) / 2, CX = (G.bx0 + G.bx1) / 2, n = 36;
+    const ue = lerp(HL.u0, HL.u1, p);
+    const pt = (u, v) => {
+      const th = 2 * Math.PI * (u / 1748 - 0.5) - rot, dx = Rr * Math.sin(th);
+      return [CX + dx, Jar3DT.edge(G.labT, dx) + G.texOffset + v];
+    };
+    ctx.save(); ctx.translate(X0, Y0); ctx.scale(s, s);
+    ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgba(237,180,103,0.95)';
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) { const u = lerp(HL.u0, ue, i / n); const q = pt(u, HL.v0 + 1.8 * SK.noise1(u * 0.05, 3) - 1.0 * (i / n)); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1] + 2.5); }
+    const e1 = pt(ue + 5, (HL.v0 + HL.v1) / 2); const b1 = pt(ue, HL.v1);
+    ctx.quadraticCurveTo(e1[0], e1[1], b1[0], b1[1]);
+    for (let i = n; i >= 0; i--) { const u = lerp(HL.u0, ue, i / n); const q = pt(u, HL.v1 + 1.8 * SK.noise1(u * 0.05, 9) - 0.8 * (i / n)); ctx.lineTo(q[0], q[1]); }
+    const e0 = pt(HL.u0 - 5, (HL.v0 + HL.v1) / 2), a0 = pt(HL.u0, HL.v0 + 2.5);
+    ctx.quadraticCurveTo(e0[0], e0[1], a0[0], a0[1]);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  // screen point of a front-label feature (packshot units fx, fy) on a jar turned by rot
+  function feature(J, fx, fy, rot) {
+    const th = Math.asin(clamp((fx - 500) / R, -1, 1)) - rot;
+    return { x: J.X0 + J.s * (500 + R * Math.sin(th)), y: J.Y0 + J.s * fy, vis: Math.cos(th) };
+  }
+  function shadow(cx, yb, s, a) {
+    const g = jc.createRadialGradient(cx, yb, 0, cx, yb, 330 * s);
+    g.addColorStop(0, `rgba(58,34,14,${0.42 * a})`); g.addColorStop(0.6, `rgba(58,34,14,${0.14 * a})`); g.addColorStop(1, 'rgba(58,34,14,0)');
+    jc.save(); jc.translate(cx, yb); jc.scale(1, 0.13); jc.translate(-cx, -yb);
+    jc.fillStyle = g; jc.fillRect(cx - 340 * s, yb - 340 * s, 680 * s, 680 * s); jc.restore();
+  }
+
+  // camera states for the hook: s (px per packshot unit), rot, fy (packshot y on screen at sy)
+  const SHOT = {
+    A: { s: [2.02, 2.12], rot: [-2.00, -2.06], fy: 560, sy: 650 },
+    B: { s: [2.44, 2.54], rot: [-2.13, -2.18], fy: 690, sy: 800 },
+    C: { s: [2.98, 3.08], rot: [-2.245, -2.275], fy: 721, sy: 850 },
+  };
+  const FRONT = { s: 1.18, rot: 0, fy: 606, sy: 936 };
+  const WORD = { s: 2.78, rot: 0, fy: 668, sy: 0 };   // sy = title centre, set in ready()
+  function shotState(sh, p) { return { s: lerp(sh.s[0], sh.s[1], p), rot: lerp(sh.rot[0], sh.rot[1], p), fy: sh.fy, sy: sh.sy }; }
+  function mix(a, b, p, pr) { return { s: Math.exp(lerp(Math.log(a.s), Math.log(b.s), p)), rot: lerp(a.rot, b.rot, pr === undefined ? p : pr), fy: lerp(a.fy, b.fy, p), sy: lerp(a.sy, b.sy, p) }; }
+
+  const wordDrift = (t) => 1 + 0.035 * ease.outSine(prog(t, T.pushB, T.pushB + 0.8));
+  function hookCam(t) {
+    if (t < T.cutB) return { ...shotState(SHOT.A, prog(t, 0, T.cutB)), cut: 0 };
+    if (t < T.cutC) return { ...shotState(SHOT.B, prog(t, T.cutB, T.cutC)), cut: T.cutB };
+    if (t < T.pullA) return { ...shotState(SHOT.C, prog(t, T.cutC, T.pullA)), cut: T.cutC };
+    const cEnd = shotState(SHOT.C, 1);
+    if (t < T.pushA) {
+      const p = prog(t, T.pullA, T.pullB);
+      return { ...mix(cEnd, FRONT, ease.inOutCubic(p), ease.outBack(ease.inOutQuad(p), 0.9)), cut: -1 };
+    }
+    const e = ease.inOutCubic(prog(t, T.pushA, T.pushB));
+    const m = mix(FRONT, WORD, e); m.s *= wordDrift(t);         // same drift as the DOM title (match cut)
+    return { ...m, cut: -1 };
+  }
+
+  // ------------------------------------------------------------------ molecule (Mg + 2 glycinates, chelate rings)
+  const mc = $('#mol').getContext('2d');
+  const U = 90, MCX = 540, MCY = 330;
+  const LIG = [['N', [-1.45, -0.86, 0.14]], ['C', [-2.68, -0.48, 0.22]], ['C', [-2.80, 0.92, 0.06]], ['O', [-1.56, 1.06, -0.04]], ['O', [-3.86, 1.62, -0.16]]];
+  const LIGC = [-2.47, 0.45];
+  const RAD = { Mg: 0.76, N: 0.42, C: 0.38, O: 0.42 };
+  const COL = {
+    Mg: ['#F7CF8C', '#C46F28', '#5C2A0B', '#F6EFE4'], N: ['#A9BCCD', '#4F6175', '#1C2633', '#F6EFE4'],
+    C: ['#8D7D6F', '#3A302A', '#120D0A', '#F6EFE4'], O: ['#FFFFFF', '#C7D2DA', '#7A8995', '#211B16'],
+  };
+  const SPR = {};
+  function makeAtomSprite(el) {
+    const r = 110, c = document.createElement('canvas'); c.width = c.height = r * 2 + 8; const x = c.getContext('2d');
+    const cx = r + 4, cy = r + 4, [li, ba, da, lab] = COL[el];
+    const g = x.createRadialGradient(cx - 0.36 * r, cy - 0.42 * r, r * 0.05, cx, cy, r * 1.02);
+    g.addColorStop(0, li); g.addColorStop(0.5, ba); g.addColorStop(1, da);
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+    // warm rim light (back light through amber)
+    const rim = x.createRadialGradient(cx + 0.3 * r, cy + 0.35 * r, r * 0.6, cx, cy, r);
+    rim.addColorStop(0, 'rgba(237,180,103,0)'); rim.addColorStop(1, 'rgba(237,180,103,.35)');
+    x.fillStyle = rim; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+    // specular
+    const sp = x.createRadialGradient(cx - 0.4 * r, cy - 0.46 * r, 0, cx - 0.4 * r, cy - 0.46 * r, r * 0.42);
+    sp.addColorStop(0, 'rgba(255,255,255,.75)'); sp.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = sp; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+    x.fillStyle = lab; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = el === 'Mg' ? '800 92px Manrope' : '800 118px Manrope';
+    x.fillText(el, cx, cy + (el === 'Mg' ? 4 : 6));
+    SPR[el] = { c, r };
+  }
+  const spGlow = sprite(160, '237,180,103', 0.95);
+  function rotXY(p, a, c) { // rotate p around centre c (2D) by a
+    const dx = p[0] - c[0], dy = p[1] - c[1], co = Math.cos(a), si = Math.sin(a);
+    return [c[0] + dx * co - dy * si, c[1] + dx * si + dy * co, p[2]];
+  }
+  function proj(p, ry, rx) {
+    const x1 = p[0] * Math.cos(ry) + p[2] * Math.sin(ry), z1 = -p[0] * Math.sin(ry) + p[2] * Math.cos(ry);
+    const y1 = p[1] * Math.cos(rx) - z1 * Math.sin(rx), z2 = p[1] * Math.sin(rx) + z1 * Math.cos(rx);
+    const k = 9 / (9 + z2);
+    return { x: MCX + x1 * U * k, y: MCY + y1 * U * k, z: z2, k };
+  }
+  function bond(a, b, w, col, hi) {
+    mc.lineCap = 'round';
+    mc.strokeStyle = col; mc.lineWidth = w; mc.beginPath(); mc.moveTo(a.x, a.y); mc.lineTo(b.x, b.y); mc.stroke();
+    if (hi) { mc.strokeStyle = hi; mc.lineWidth = w * 0.34; mc.beginPath(); mc.moveTo(a.x, a.y - w * 0.2); mc.lineTo(b.x, b.y - w * 0.2); mc.stroke(); }
+  }
+  function drawMolecule(t) {
+    mc.clearRect(0, 0, 1080, 600);
+    const ry = lerp(-0.55, 0.45, ease.inOutSine(prog(t, 3.5, 7.2)));
+    const rx = 0.22 + 0.06 * Math.sin(t * 0.9);
+    // ground shadow
+    const shA = prog(t, T.mg, T.mg + 0.4);
+    if (shA > 0) {
+      mc.save(); mc.translate(MCX, MCY + 2.0 * U); mc.scale(1, 0.11);
+      const g = mc.createRadialGradient(0, 0, 0, 0, 0, 3.6 * U);
+      g.addColorStop(0, `rgba(58,34,14,${0.16 * shA})`); g.addColorStop(1, 'rgba(58,34,14,0)');
+      mc.fillStyle = g; mc.fillRect(-3.6 * U, -3.6 * U, 7.2 * U, 7.2 * U); mc.restore();
+    }
+    const items = [];
+    // Mg
+    const mgS = springP(t, T.mg, 1.7, 0.5);
+    const mgP = proj([0, 0, 0], ry, rx);
+    if (mgS > 0) items.push({ z: mgP.z, kind: 'atom', el: 'Mg', p: mgP, sc: mgS, a: prog(t, T.mg, T.mg + 0.12) });
+    // ligands
+    const ligP = [];
+    [0, 1].forEach((li) => {
+      const t0 = li ? T.ligR : T.ligL;
+      const e = springP(t, t0, 1.25, 0.62);
+      if (e <= 0) { ligP.push(null); return; }
+      const sgn = li ? -1 : 1;
+      const ang = (1 - e) * 1.1 * (li ? -1 : 1);
+      const off = (1 - e) * 7.5 * sgn;   // world units, slides in from the side
+      const pts = LIG.map(([el, p]) => {
+        let q = rotXY(p, ang, LIGC);
+        q = [q[0] - off, q[1], q[2]];
+        if (li) q = [-q[0], -q[1], -q[2]];
+        return { el, p: proj(q, ry, rx) };
+      });
+      const a = prog(t, t0, t0 + 0.2);
+      ligP.push({ pts, a });
+      pts.forEach((o, i) => items.push({ z: o.p.z, kind: 'atom', el: o.el, p: o.p, sc: 1, a }));
+      [[0, 1], [1, 2], [2, 3]].forEach(([i, j]) => items.push({ z: (pts[i].p.z + pts[j].p.z) / 2 + 0.01, kind: 'bond', a: pts[i].p, b: pts[j].p, al: a }));
+      items.push({ z: (pts[2].p.z + pts[4].p.z) / 2 + 0.01, kind: 'double', a: pts[2].p, b: pts[4].p, al: a });
+      // coordination bonds Mg-N and Mg-O (dashed amber, drawn from the ligand to Mg)
+      const tb = li ? T.bondR : T.bondL;
+      [[0, 0], [3, 0.12]].forEach(([i, d]) => {
+        const p = seg(t, tb + d, tb + d + 0.34, ease.inOutCubic);
+        if (p > 0) items.push({ z: (pts[i].p.z + mgP.z) / 2 + 0.02, kind: 'coord', a: pts[i].p, b: mgP, pr: p, tdone: tb + d + 0.34 });
+      });
+    });
+    items.sort((u, v) => (u.kind === 'atom') - (v.kind === 'atom') || v.z - u.z); // bonds behind, atoms far -> near
+    // Mg glow (pulse on « magnésium » and when the bonds close)
+    const pulse = Math.max(win(t, 4.12, 4.9, 0.12, 0.6) * 0.8, win(t, 5.86, 6.7, 0.1, 0.6), win(t, 6.0, 6.85, 0.1, 0.6));
+    if (mgS > 0) {
+      const gr = (1.9 + 0.5 * pulse) * RAD.Mg * U * mgP.k * mgS;
+      mc.globalAlpha = 0.45 + 0.45 * pulse; mc.drawImage(spGlow, mgP.x - gr, mgP.y - gr, gr * 2, gr * 2); mc.globalAlpha = 1;
+    }
+    for (const it of items) {
+      if (it.kind === 'atom') {
+        const S = SPR[it.el], r = RAD[it.el] * U * it.p.k * it.sc;
+        mc.globalAlpha = clamp(it.a); mc.drawImage(S.c, it.p.x - r * (S.r + 4) / S.r, it.p.y - r * (S.r + 4) / S.r, 2 * r * (S.r + 4) / S.r, 2 * r * (S.r + 4) / S.r); mc.globalAlpha = 1;
+      } else if (it.kind === 'bond') {
+        mc.globalAlpha = it.al; bond(it.a, it.b, 15 * it.a.k, '#6E5A45', 'rgba(255,240,220,.45)'); mc.globalAlpha = 1;
+      } else if (it.kind === 'double') {
+        const dx = it.b.x - it.a.x, dy = it.b.y - it.a.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L * 7, ny = dx / L * 7;
+        mc.globalAlpha = it.al;
+        bond({ x: it.a.x + nx, y: it.a.y + ny }, { x: it.b.x + nx, y: it.b.y + ny }, 10, '#6E5A45', 'rgba(255,240,220,.4)');
+        bond({ x: it.a.x - nx, y: it.a.y - ny }, { x: it.b.x - nx, y: it.b.y - ny }, 10, '#6E5A45', 'rgba(255,240,220,.4)');
+        mc.globalAlpha = 1;
+      } else if (it.kind === 'coord') {
+        const ex = lerp(it.a.x, it.b.x, it.pr), ey = lerp(it.a.y, it.b.y, it.pr);
+        mc.save(); mc.setLineDash([13, 11]); mc.lineDashOffset = -t * 30; mc.lineCap = 'round';
+        mc.strokeStyle = '#C46F28'; mc.lineWidth = 8; mc.beginPath(); mc.moveTo(it.a.x, it.a.y); mc.lineTo(ex, ey); mc.stroke(); mc.restore();
+        if (t > it.tdone && t < it.tdone + 0.45) { // contact ring at the ligand atom
+          const q = prog(t, it.tdone, it.tdone + 0.45);
+          mc.strokeStyle = `rgba(196,111,40,${0.7 * (1 - q)})`; mc.lineWidth = 4;
+          mc.beginPath(); mc.arc(it.a.x, it.a.y, 34 + 46 * ease.outCubic(q), 0, Math.PI * 2); mc.stroke();
+        }
+      }
+    }
+    // « glycine » labels
+    const gl = prog(t, T.gly, T.gly + 0.3);
+    if (gl > 0) {
+      mc.font = '700 31px Manrope'; mc.textAlign = 'center'; mc.textBaseline = 'middle';
+      [0, 1].forEach((li) => {
+        if (!ligP[li]) return;
+        const c = li ? proj([-LIGC[0], -LIGC[1] - 1.6, 0], ry, rx) : proj([LIGC[0], LIGC[1] + 1.6, 0], ry, rx);
+        mc.globalAlpha = gl; mc.fillStyle = '#6E5A45';
+        mc.fillText('glycine', c.x, c.y + (1 - ease.outCubic(gl)) * 14 * (li ? -1 : 1));
+        mc.globalAlpha = 1;
+      });
+    }
+  }
+
+  // ------------------------------------------------------------------ S3 connectors (SVG), tracked on the turning jar
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const CONN = [
+    // dots sit on the jar silhouette (glass edge), lines never cross the label text
+    { card: '#c1', t0: T.c1, f: [766, 452], anchor: 'bottom', ax: 0.84 },  // claims.nerveux   -> right shoulder
+    { card: '#c3', t0: T.c3, f: [226, 800], anchor: 'right', ay: 0.5 },    // 300 mg · 80 % VNR -> left edge
+    { card: '#c4', t0: T.c4, f: [774, 906], anchor: 'left', ay: 0.5 },     // 3 gélules végétales par jour -> right edge
+    { card: '#c2', t0: T.c2, f: [236, 1000], anchor: 'top', ax: 0.30 },    // claims.muscle    -> lower left
+  ];
+  CONN.forEach((c) => {
+    c.el = $(c.card);
+    c.ln = document.createElementNS(SVGNS, 'polyline'); c.ln.setAttribute('class', 'ln');
+    c.ring = document.createElementNS(SVGNS, 'circle'); c.ring.setAttribute('class', 'ring');
+    c.dot = document.createElementNS(SVGNS, 'circle'); c.dot.setAttribute('class', 'dot');
+    c.anc = document.createElementNS(SVGNS, 'circle'); c.anc.setAttribute('class', 'anc'); c.anc.setAttribute('r', '6');
+    $('#lines').append(c.ln, c.ring, c.dot, c.anc);
+  });
+  function anchorOf(c) {
+    const x = c.box.x, y = c.box.y, w = c.box.w, h = c.box.h;
+    if (c.anchor === 'bottom') return { x: x + w * c.ax, y: y + h };
+    if (c.anchor === 'top') return { x: x + w * c.ax, y };
+    if (c.anchor === 'right') return { x: x + w, y: y + h * c.ay };
+    return { x, y: y + h * c.ay };
+  }
+
+  // ------------------------------------------------------------------ scene
+  SK.scene({
+    stage: '#stage', width: 1080, height: 1920, duration: DUR,
+    fonts: ['italic 500 100px Fraunces', '600 80px Fraunces', '500 78px Fraunces', 'italic 500 78px Fraunces', '800 31px Manrope'],
+    async ready() {
+      const im = await SK.loadImages({
+        bodyHi: 'assets/body-3x.png', lidHi: 'assets/lid-3x.png',
+        t0: 'assets/label4x-tile0.png', t1: 'assets/label4x-tile1.png', t2: 'assets/label4x-tile2.png', t3: 'assets/label4x-tile3.png',
+        body: A.assets.jarBody, lid: A.assets.jarLid, label: A.assets.labelWrap,
+      });
+      // hi-res jar for the close-ups: 4x label split in 4 tiles (see lib/jar3d-tiles.js)
+      jarHi = new Jar3DT({ body: im.bodyHi, lid: im.lidHi, labelTiles: [im.t0, im.t1, im.t2, im.t3] });
+      jarLo = new Jar3D({ body: im.body, lid: im.lid, label: im.label });
+      ['Mg', 'N', 'C', 'O'].forEach(makeAtomSprite);
+      const cap = await SK.loadImage(A.assets.capsulePng);
+      const capS = (w, b) => blurred((x, W, H) => { x.shadowColor = 'rgba(90,50,18,.35)'; x.shadowBlur = 26; x.shadowOffsetY = 14; x.drawImage(cap, 0, 0, W, H); x.shadowColor = 'transparent'; x.globalCompositeOperation = 'source-atop'; x.fillStyle = 'rgba(214,170,110,.28)'; x.fillRect(0, 0, W, H); }, w, Math.round(w * 240 / 640), b);
+      const sx = (t) => kf(t, [[6.8, 0], [7.4, 1], [12.2, 1], [12.8, -1], [15.4, -1], [16.0, 0]], ease.inOutCubic);
+      PROPS.push(
+        { c: capS(400, 13), x: 110, y: 1690, r: 26, a: 0.95, d: 1.4, ph: 0.3, shift: (t) => sx(t) * 46 },
+        { c: capS(250, 7), x: 975, y: 1560, r: -34, a: 0.95, d: 1.0, ph: 2.1, shift: (t) => -sx(t) * 30 },
+        { c: blurred(crystal, 230, 230, 9), x: 820, y: 1800, r: 4, a: 0.95, d: 1.6, ph: 4.0, shift: (t) => sx(t) * 60 },
+        { c: capS(210, 15), x: 1000, y: 210, r: 62, a: 0.75, d: 1.8, ph: 1.2, shift: (t) => -sx(t) * 50 },
+      );
+      // S2 title sized to match the label word « bisglycinate » at the end of the push (match cut)
+      const ttl = $('#s2title');
+      ttl.style.fontSize = '100px';
+      const r = document.createRange(); r.selectNodeContents(ttl);
+      const w100 = r.getBoundingClientRect().width;
+      const target = 250 * WORD.s * 1.06;                 // label word is 250 units wide (lower-case b)
+      const fs = 100 * target / w100;
+      ttl.style.fontSize = fs.toFixed(1) + 'px';
+      ttl.style.top = (562 - fs * 0.56).toFixed(1) + 'px';
+      WORD.sy = 562;
+      // card boxes (for connectors)
+      CONN.forEach((c) => { const e = c.el; c.box = { x: e.offsetLeft, y: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight }; });
+    },
+    seek(t) {
+      // ---------------- global light
+      const inS1 = t < T.xB + 0.05;
+      const haloPos = kf(t, [[0, [300, 420, 0.55]], [2.4, [320, 460, 0.6]], [3.2, [540, 820, 0.85]], [6.8, [540, 860, 0.9]], [7.4, [540, 860, 1]],
+        [12.2, [540, 860, 1]], [12.8, [540, 980, 0.55]], [15.4, [540, 980, 0.55]], [16.1, [540, 660, 1]], [20, [540, 640, 1]]], ease.inOutCubic);
+      set($('#halo'), { x: haloPos[0] - 540 + Math.sin(t * 0.4) * 24, y: haloPos[1] - 500, s: 0.9 + 0.05 * Math.sin(t * 0.5), o: haloPos[2] });
+      set($('#beam'), { x: 120 + Math.sin(t * 0.25) * 60, y: 0, r: -24 + Math.sin(t * 0.2) * 3, o: 0.55 + 0.25 * Math.sin(t * 0.7) });
+      show($('#vig'), inS1 ? 1 - prog(t, T.pullA, T.pullB) * 0.85 : 0);
+      drawDust(t, inS1 ? 0.45 : 1);
+      drawFront(t, inS1 ? 1 : (t < T.s2out ? 0.35 : 0.55), inS1 ? -hookCam(t).rot * 40 : 0);
+
+      // ---------------- jar
+      jc.setTransform(1, 0, 0, 1, 0, 0);
+      jc.clearRect(0, 0, 1080, 1920);
+      let J = null; // {X0, Y0, s, rot}
+      if (inS1) {
+        const c = hookCam(t);
+        const hh = SK.handheld(t, c.cut >= 0 ? 4 : 1.5, 0.9, 7);
+        const punch = c.cut > 0 ? 1 + 0.035 * (1 - ease.outCubic(prog(t, c.cut, c.cut + 0.22))) : 1;
+        const s = c.s * punch;
+        const X0 = 540 + hh.x - 500 * s, Y0 = c.sy + hh.y - c.fy * s;
+        const lightP = t > T.pullA ? prog(t, T.pullA + 0.15, T.pushA + 0.2) : -1;
+        // handheld roll applied by the compositor (a rotated canvas transform makes every strip ~5x slower)
+        set($('#jarc'), { r: hh.r, s: 1.012 });
+        jc.save();
+        jc.globalAlpha = MC ? 0.5 : 1 - prog(t, T.xA, T.xB);
+        jarHi.draw(jc, { x: X0, y: Y0, scale: s, rot: c.rot, light: lightP });
+        if (t < T.pullA + 0.3) drawHighlight(jc, X0, Y0, s, c.rot, prog(t, T.hlA, T.hlB));
+        jc.restore(); jc.globalAlpha = 1;
+      } else if (t >= T.s3in) {
+        set($('#jarc'), {});
+        // S3: jar enters, slowly turns; S4: icon in the table header; S5: hero on the end card
+        let cx, cy, s, rot, light = -1, sh = 1, alpha = 1;
+        const fl = Math.sin(t * 1.3) * 6;
+        if (t < T.s3out) {
+          const e = springP(t, T.s3in, 1.15, 0.6);
+          cx = 540; cy = lerp(1560, 852, e) + fl * prog(t, 7.4, 8); s = 0.44;
+          rot = lerp(-1.6, -0.28, ease.outCubic(prog(t, T.s3in, T.s3in + 0.8))) + 0.56 * ease.inOutSine(prog(t, 7.6, 12.2));
+          light = prog(t, 10.2, 11.3); sh = prog(t, T.s3in + 0.15, T.s3in + 0.6);
+          alpha = prog(t, T.s3in, T.s3in + 0.15);
+        } else if (t < T.s4out) {
+          const e = seg(t, T.s3out, T.s3out + 0.55, ease.inOutCubic);
+          const lift = Math.sin(Math.PI * e) * -90;
+          cx = lerp(540, 132, e); cy = lerp(852, 611, e) + lift; s = Math.exp(lerp(Math.log(0.44), Math.log(0.08), e));
+          rot = lerp(0.28, 0, e); sh = 1 - prog(t, T.s3out, T.s3out + 0.3);
+        } else {
+          const e = springP(t, T.s4out, 1.0, 0.62);
+          const ee = ease.outCubic(prog(t, T.s4out, T.s4out + 0.75));
+          cx = lerp(132, 540, ee); cy = lerp(611, 682, ee) + fl * prog(t, 16.4, 17); s = Math.exp(lerp(Math.log(0.08), Math.log(0.40), clamp(e, 0, 1.08)));
+          rot = -2 * Math.PI * (1 - ease.outCubic(prog(t, T.s4out, T.s4out + 1.0))) + 0.16 * Math.sin((t - 16.4) * 0.6) * prog(t, 16.4, 17.2);
+          light = prog(t, 17.2, 18.4); sh = prog(t, T.s4out + 0.3, T.s4out + 0.8);
+        }
+        const X0 = cx - 500 * s, Y0 = cy - 606 * s;
+        if (sh > 0) shadow(cx, Y0 + 1066 * s, s, sh);
+        jc.globalAlpha = alpha;
+        (s > 1.0 ? jarHi : jarLo).draw(jc, { x: X0, y: Y0, scale: s, rot, light });
+        jc.globalAlpha = 1;
+        J = { X0, Y0, s, rot };
+      }
+
+      // ---------------- S1 captions + mentions
+      captions.update(t);
+      if (t > 2.4) $('#captions').style.opacity = (parseFloat($('#captions').style.opacity || 1) * (1 - prog(t, 2.5, 2.64))).toFixed(3);
+      show($('#disclosure'), win(t, 0, 2.2, 0.01, 0.3));
+      set($('#badge'), { o: 1 });
+
+      // ---------------- S2 : la forme
+      const s2o = prog(t, T.xA, T.xB) * (1 - prog(t, T.s2out, T.s2out + 0.3));
+      show($('#s2'), t < T.xA || t > T.s2out + 0.3 ? 0 : 1);
+      if (t >= T.xA && t <= T.s2out + 0.3) {
+        const out = seg(t, T.s2out, T.s2out + 0.3, ease.inCubic);
+        set($('#s2title'), { y: -out * 90, s: wordDrift(t) + 0.04 * out, o: (MC ? 0.5 : prog(t, T.xA, T.xB)) * (1 - out) });
+        set($('#s2kicker'), { y: (1 - seg(t, 3.7, 4.1, ease.outCubic)) * 18 - out * 90, o: prog(t, 3.7, 3.95) * (1 - out) });
+        drawMolecule(t);
+        set($('#mol'), { y: -out * 120, s: 1 - 0.25 * out, o: 1 - out });
+        defSpans.forEach((sp, i) => {
+          const a = defTimes[i] - 0.08, p = ease.outBack(prog(t, a, a + 0.22), 1.8);
+          set(sp, { y: (1 - p) * 22 - out * 70, s: lerp(0.9, 1, p), o: prog(t, a, a + 0.1) * (1 - out) });
+        });
+      }
+
+      // ---------------- S3 : bénéfices autour du produit
+      const inS3 = t >= T.s3in && t < T.s3out + 0.5;
+      show($('#s3'), inS3 ? 1 : 0);
+      if (inS3 && J) {
+        CONN.forEach((c, k) => {
+          const exit = seg(t, T.s3out + k * 0.025, T.s3out + 0.16 + k * 0.025, ease.outQuad);
+          const pd = springP(t, c.t0 - 0.3, 2.2, 0.5);
+          const pl = seg(t, c.t0 - 0.26, c.t0 + 0.02, ease.inOutCubic) * (1 - exit);
+          const pc = springP(t, c.t0, 1.9, 0.55);
+          const B = feature(J, c.f[0], c.f[1], 0);
+          const hh = SK.handheld(t, 3, 0.5, 11 + k); // cards float on their own plane (parallax vs jar)
+          const cardDX = hh.x, cardDY = hh.y + (1 - Math.min(pc, 1)) * 26 - exit * 30;
+          const Aa = anchorOf(c); const Ap = { x: Aa.x + cardDX, y: Aa.y + cardDY };
+          const E = (c.anchor === 'left' || c.anchor === 'right') ? { x: lerp(Ap.x, B.x, 0.35), y: Ap.y } : { x: Ap.x, y: lerp(Ap.y, B.y, 0.4) };
+          const L = Math.hypot(E.x - B.x, E.y - B.y) + Math.hypot(Ap.x - E.x, Ap.y - E.y);
+          c.ln.setAttribute('points', `${B.x.toFixed(1)},${B.y.toFixed(1)} ${E.x.toFixed(1)},${E.y.toFixed(1)} ${Ap.x.toFixed(1)},${Ap.y.toFixed(1)}`);
+          c.ln.style.strokeDasharray = `${L.toFixed(1)} ${(L + 10).toFixed(1)}`;
+          c.ln.style.strokeDashoffset = (L * (1 - pl)).toFixed(1);
+          const dv = clamp(pd) * (1 - exit) * clamp(B.vis * 3);
+          c.dot.setAttribute('cx', B.x.toFixed(1)); c.dot.setAttribute('cy', B.y.toFixed(1)); c.dot.setAttribute('r', (10 * Math.max(0, pd)).toFixed(2));
+          c.dot.style.opacity = dv.toFixed(3);
+          const rq = (Math.max(0, t - c.t0 + 0.3) % 1.6) / 1.6;
+          c.ring.setAttribute('cx', B.x.toFixed(1)); c.ring.setAttribute('cy', B.y.toFixed(1)); c.ring.setAttribute('r', (12 + 26 * rq).toFixed(1));
+          c.ring.style.opacity = (t > c.t0 - 0.3 ? (1 - rq) * 0.8 * dv : 0).toFixed(3);
+          c.anc.setAttribute('cx', Ap.x.toFixed(1)); c.anc.setAttribute('cy', Ap.y.toFixed(1)); c.anc.style.opacity = (prog(t, c.t0 - 0.05, c.t0 + 0.05) * (1 - exit)).toFixed(3);
+          set(c.el, { x: cardDX, y: cardDY, s: lerp(0.88, 1, Math.min(pc, 1.04)) - exit * 0.05, o: prog(t, c.t0, c.t0 + 0.14) * (1 - exit) });
+        });
+        // claim 1: honey marker follows the voice word by word
+        c1spans.forEach((sp, i) => {
+          const w = c1times[i]; const p = w ? prog(t, w.start - 0.04, w.end) : 0;
+          const v = (p * 100).toFixed(1) + '% 42%';
+          if (sp._v !== v) { sp.style.backgroundSize = v; sp._v = v; }
+        });
+      }
+
+      // ---------------- S4 : comparatif factuel
+      const inS4 = t >= T.tblIn && t < T.s4out + 0.4;
+      show($('#s4'), inS4 ? 1 : 0); show($('#s4back'), inS4 ? 1 : 0);
+      if (inS4) {
+        const out = seg(t, T.s4out, T.s4out + 0.32, ease.inCubic);
+        s4spans.forEach((sp, i) => {
+          const a = s4times[i] - 0.08, p = ease.outBack(prog(t, a, a + 0.24), 1.7);
+          set(sp, { y: (1 - p) * 34, o: prog(t, a, a + 0.1) });
+        });
+        set($('#s4title'), { y: -out * 60, o: 1 - out });
+        const tin = springP(t, T.tblIn, 1.4, 0.6);
+        set($('#tbl'), { y: (1 - Math.min(tin, 1.05)) * 70 - out * 50, o: prog(t, T.tblIn, T.tblIn + 0.2) * (1 - out) });
+        set($('#s4back'), { y: (1 - Math.min(tin, 1.05)) * 70 - out * 50, o: prog(t, T.tblIn, T.tblIn + 0.2) * (1 - out) });
+        set($('#hdrB'), { o: prog(t, T.tblIn + 0.25, T.tblIn + 0.45) });
+        set($('#hdrA'), { x: (1 - seg(t, T.tblIn + 0.45, T.tblIn + 0.8, ease.outCubic)) * -20, o: prog(t, T.tblIn + 0.45, T.tblIn + 0.7) });
+        rowEls.forEach((r, i) => {
+          const tr = T.row0 + i * T.rowStep;
+          const p = seg(t, tr, tr + 0.3, ease.outCubic);
+          set(r.txt, { x: (1 - p) * -34, o: prog(t, tr, tr + 0.16) });
+          set(r.sep, { sx: p }); set(r.sepB, { sx: seg(t, tr + 0.1, tr + 0.4, ease.outCubic) });
+          const pk = springP(t, tr + 0.04, 2.2, 0.5);
+          set(r.chk, { s: Math.max(0, pk), o: prog(t, tr + 0.04, tr + 0.1) });
+          r.path.style.strokeDashoffset = (1 - seg(t, tr + 0.12, tr + 0.34, ease.inOutCubic)).toFixed(3);
+          const pq = springP(t, tr + 0.18, 2.0, 0.5);
+          set(r.q, { s: Math.max(0, pq), r: (1 - Math.min(pq, 1)) * -25, o: prog(t, tr + 0.18, tr + 0.26) });
+        });
+      }
+
+      // ---------------- S5 : carton final (legal block static once shown)
+      const inS5 = t >= T.legal - 0.05;
+      show($('#s5'), inS5 ? 1 : 0);
+      if (inS5) {
+        set($('#s5legal'), { o: prog(t, T.legal, T.legal + 0.2) });
+        const pl = springP(t, T.logo, 1.6, 0.55);
+        set($('#s5logo'), { y: (1 - Math.min(pl, 1.05)) * 30, s: lerp(0.94, 1, Math.min(pl, 1)), o: prog(t, T.logo, T.logo + 0.2) });
+        const pc = springP(t, T.cta, 1.8, 0.5);
+        set($('#s5cta'), { y: (1 - Math.min(pc, 1.05)) * 26, s: lerp(0.9, 1, Math.min(pc, 1.03)), o: prog(t, T.cta, T.cta + 0.14) });
+      }
+    },
+  });
+})();
+</script>
+</body>
+</html>
