@@ -1,0 +1,257 @@
+{
+  "duration": 15,
+  "voice": "female",
+  "source": "v1.vo.json",
+  "cues": [
+    {
+      "id": "hook",
+      "start": 0.15,
+      "end": 3.104,
+      "text": "5 flacons. Et aucune idée de ce qu’il y a dedans.",
+      "spoken": "Cinq flacons. Et aucune idée de ce qu’il y a dedans.",
+      "file": "lines/hook-b21c5688.wav",
+      "words": [
+        {
+          "w": "5",
+          "start": 0.18,
+          "end": 0.38
+        },
+        {
+          "w": "flacons.",
+          "start": 0.38,
+          "end": 0.84
+        },
+        {
+          "w": "Et",
+          "start": 1.26,
+          "end": 1.5
+        },
+        {
+          "w": "aucune",
+          "start": 1.5,
+          "end": 1.67
+        },
+        {
+          "w": "idée",
+          "start": 1.67,
+          "end": 1.96
+        },
+        {
+          "w": "de",
+          "start": 1.96,
+          "end": 2.08
+        },
+        {
+          "w": "ce",
+          "start": 2.08,
+          "end": 2.31
+        },
+        {
+          "w": "qu’il",
+          "start": 2.31,
+          "end": 2.35
+        },
+        {
+          "w": "y",
+          "start": 2.35,
+          "end": 2.64
+        },
+        {
+          "w": "a",
+          "start": 2.64,
+          "end": 2.78
+        },
+        {
+          "w": "dedans.",
+          "start": 2.78,
+          "end": 2.98
+        }
+      ]
+    },
+    {
+      "id": "agit",
+      "start": 3.35,
+      "end": 6.214,
+      "text": "Forme ? Dose ? Rien n’est clair.",
+      "spoken": "Forme ? Dose ? Rien n’est clair.",
+      "file": "lines/agit-82b09cc4.wav",
+      "words": [
+        {
+          "w": "Forme",
+          "start": 3.42,
+          "end": 3.68
+        },
+        {
+          "w": "?",
+          "start": 3.68,
+          "end": 3.9
+        },
+        {
+          "w": "Dose",
+          "start": 4.24,
+          "end": 4.58
+        },
+        {
+          "w": "?",
+          "start": 4.58,
+          "end": 4.74
+        },
+        {
+          "w": "Rien",
+          "start": 5.25,
+          "end": 5.62
+        },
+        {
+          "w": "n’est",
+          "start": 5.62,
+          "end": 5.71
+        },
+        {
+          "w": "clair.",
+          "start": 5.71,
+          "end": 6.08
+        }
+      ]
+    },
+    {
+      "id": "solution",
+      "start": 6.35,
+      "end": 9.196,
+      "text": "Ambrel : 1 seul pot. Tout est écrit.",
+      "spoken": "Ambrel : un seul pot. Tout est écrit.",
+      "file": "lines/solution-d58dbeb9.wav",
+      "words": [
+        {
+          "w": "Ambrel",
+          "start": 6.4,
+          "end": 6.79
+        },
+        {
+          "w": ":",
+          "start": 6.79,
+          "end": 6.87
+        },
+        {
+          "w": "1",
+          "start": 7.32,
+          "end": 7.55
+        },
+        {
+          "w": "seul",
+          "start": 7.55,
+          "end": 7.77
+        },
+        {
+          "w": "pot.",
+          "start": 7.77,
+          "end": 7.98
+        },
+        {
+          "w": "Tout",
+          "start": 8.36,
+          "end": 8.5
+        },
+        {
+          "w": "est",
+          "start": 8.5,
+          "end": 8.63
+        },
+        {
+          "w": "écrit.",
+          "start": 8.63,
+          "end": 9.04
+        }
+      ]
+    },
+    {
+      "id": "claim",
+      "start": 9.3,
+      "end": 13.151,
+      "text": "Le magnésium et la vitamine B6 contribuent à réduire la fatigue.",
+      "spoken": "Le magnésium et la vitamine B6 contribuent à réduire la fatigue.",
+      "file": "lines/claim-05bed1ae.wav",
+      "words": [
+        {
+          "w": "Le",
+          "start": 9.35,
+          "end": 9.59
+        },
+        {
+          "w": "magnésium",
+          "start": 9.59,
+          "end": 10.06
+        },
+        {
+          "w": "et",
+          "start": 10.06,
+          "end": 10.37
+        },
+        {
+          "w": "la",
+          "start": 10.37,
+          "end": 10.58
+        },
+        {
+          "w": "vitamine",
+          "start": 10.58,
+          "end": 11.09
+        },
+        {
+          "w": "B6",
+          "start": 11.09,
+          "end": 11.21
+        },
+        {
+          "w": "contribuent",
+          "start": 11.21,
+          "end": 11.75
+        },
+        {
+          "w": "à",
+          "start": 11.75,
+          "end": 11.87
+        },
+        {
+          "w": "réduire",
+          "start": 11.87,
+          "end": 12.35
+        },
+        {
+          "w": "la",
+          "start": 12.35,
+          "end": 12.49
+        },
+        {
+          "w": "fatigue.",
+          "start": 12.49,
+          "end": 13.02
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "start": 13.4,
+      "end": 14.83,
+      "text": "Découvre la composition.",
+      "spoken": "Découvre la composition.",
+      "file": "lines/cta-b864d62b.wav",
+      "words": [
+        {
+          "w": "Découvre",
+          "start": 13.45,
+          "end": 13.82
+        },
+        {
+          "w": "la",
+          "start": 13.82,
+          "end": 14.03
+        },
+        {
+          "w": "composition.",
+          "start": 14.03,
+          "end": 14.71
+        }
+      ]
+    }
+  ]
+}

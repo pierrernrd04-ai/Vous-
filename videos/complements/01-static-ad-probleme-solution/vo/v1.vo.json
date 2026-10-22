@@ -1,0 +1,10 @@
+{
+  "voice": "female", "length_scale": 0.92, "duration": 15,
+  "lines": [
+    { "id": "hook", "start": 0.15, "text": "Cinq flacons. Et aucune idée de ce qu’il y a dedans.", "caption": "5 flacons. Et aucune idée de ce qu’il y a dedans." },
+    { "id": "agit", "start": 3.35, "text": "Forme ? Dose ? Rien n’est clair." },
+    { "id": "solution", "start": 6.35, "text": "Ambrel : un seul pot. Tout est écrit.", "caption": "Ambrel : 1 seul pot. Tout est écrit." },
+    { "id": "claim", "start": 9.30, "text": "Le magnésium et la vitamine B6 contribuent à réduire la fatigue." },
+    { "id": "cta", "start": 13.40, "text": "Découvre la composition." }
+  ]
+}

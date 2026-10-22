@@ -1,0 +1,568 @@
+<!doctype html>
+<!--
+  Ambrel · V1 « Static ad animée · problème → solution » (9:16, 1080x1920, 15 s).
+  Brief: brand/brand-system.md §14 V1. Texts from brand/brand.js only (claims, mentions, legal).
+  Word timings: vo/v1-timings.js (node tools/vo-build.mjs ... --out vo).
+  Render: node tools/render.mjs 01-static-ad-probleme-solution/scene.html <out.mp4> --w 1080 --h 1920 --fps 30 --dur 15
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ambrel · V1 static ad</title>
+<link rel="stylesheet" href="../brand/brand.css">
+<script src="../brand/brand.js"></script>
+<script src="../tools/lib/scene-kit.js"></script>
+<script src="vo/v1-timings.js"></script>
+<style>
+  .ak-stage { background: #211B16; }
+  .L { position: absolute; left: 0; top: 0; }
+
+  /* ---------------- warm half / solution ---------------- */
+  #warm { position: absolute; inset: 0; z-index: 1; }
+  #warmbg { position: absolute; inset: 0; background: linear-gradient(180deg, #F6EFE4 0%, #F1E6D6 52%, #E4D5C1 100%); }
+  #floor { position: absolute; left: 0; right: 0; top: 1180px; height: 740px;
+           background: linear-gradient(180deg, rgba(214,192,163,0) 0%, rgba(214,192,163,.38) 30%, rgba(196,170,138,.5) 100%); }
+  #halo { position: absolute; width: 1500px; height: 1500px; left: 0; top: 0; border-radius: 50%;
+          background: radial-gradient(closest-side, rgba(237,180,103,.78), rgba(237,180,103,.34) 45%, rgba(237,180,103,0) 100%); }
+  #rays { position: absolute; left: 0; top: 0; width: 1700px; height: 1700px; }
+  #dust { position: absolute; inset: 0; }
+  .cap { position: absolute; left: 0; top: 0; }
+  #jarWrap { position: absolute; left: 0; top: 0; width: 583px; height: 700px; transform-origin: 291.5px 626px; }
+  #jarWrap > * { position: absolute; left: 0; top: 0; width: 583px; height: 700px; }
+  #jarShadow { position: absolute; left: 61px !important; top: 596px !important; width: 460px !important; height: 70px !important; border-radius: 50%;
+               background: radial-gradient(closest-side, rgba(70,40,16,.42), rgba(70,40,16,.16) 60%, rgba(70,40,16,0)); }
+  #sheen { -webkit-mask-image: url(../brand/png/packshot-transparent-1200.png); mask-image: url(../brand/png/packshot-transparent-1200.png);
+           -webkit-mask-size: 100% 100%; mask-size: 100% 100%; background-repeat: no-repeat;
+           background-image: linear-gradient(100deg, rgba(255,246,228,0) 0%, rgba(255,246,228,0) 38%, rgba(255,246,228,.62) 50%, rgba(255,246,228,0) 62%, rgba(255,246,228,0) 100%);
+           background-size: 300% 100%; }
+
+  #title { position: absolute; left: 80px; width: 870px; top: 388px; text-align: center; color: var(--ink); font-size: 100px; line-height: 1.0; z-index: 3; }
+  #title .ln { display: block; }
+  #title .w { display: inline-block; }
+  #title .accent { color: var(--amber-deep); }
+  #leaders { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 3; overflow: visible; }
+  .chip { position: absolute; left: 0; top: 0; z-index: 4; width: 346px; transform-origin: 0 50%;
+          padding: 18px 24px 19px 26px; border-radius: 22px; background: rgba(255,255,255,.95);
+          box-shadow: 0 14px 34px rgba(86,48,18,.16), 0 2px 6px rgba(86,48,18,.08);
+          font: 700 32px/1.18 var(--font-ui); color: var(--ink); letter-spacing: -0.005em; }
+  .chip::before { content: ''; position: absolute; left: 0; top: 22px; bottom: 22px; width: 6px; border-radius: 0 6px 6px 0; background: var(--amber); }
+  .chip b { font-weight: 800; color: var(--amber-deep); }
+  .chip i { font: italic 400 40px/1.05 var(--font-display); color: var(--amber-deep); letter-spacing: -0.01em; }
+  #band { position: absolute; left: 0; top: 1046px; width: 1080px; height: 196px; z-index: 5; transform-origin: 0 50%;
+          background: linear-gradient(180deg, rgba(255,255,255,.97), rgba(255,253,249,.95));
+          box-shadow: 0 18px 40px rgba(86,48,18,.14), 0 -1px 0 rgba(196,111,40,.25) inset; }
+  #band::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: var(--honey); }
+
+  /* ---------------- problem half ---------------- */
+  #prob { position: absolute; inset: 0; z-index: 5; }
+  #probIn { position: absolute; inset: 0; }
+  #probbg { position: absolute; left: 0; top: -900px; width: 1080px; height: 2100px;
+            background: radial-gradient(900px 700px at 22% 50%, rgba(236,236,236,.35), rgba(236,236,236,0) 70%),
+                        linear-gradient(180deg, #B9B6B1 0%, #B3AFAA 45%, #A5A19C 54%, #9B9792 100%); }
+  #cam { position: absolute; left: 0; top: 0; width: 1080px; height: 1100px; transform-origin: 0 0; }
+  #shelf { position: absolute; left: -400px; width: 1880px; top: 892px; height: 40px; }
+  #shelf .top { position: absolute; left: 0; right: 0; top: 0; height: 13px; background: linear-gradient(180deg, #D3D0CB, #C3BFBA); }
+  #shelf .front { position: absolute; left: 0; right: 0; top: 13px; height: 27px; background: linear-gradient(180deg, #8F8B86, #7A7671); }
+  #shelf .sh { position: absolute; left: 0; right: 0; top: 40px; height: 70px; background: linear-gradient(180deg, rgba(60,58,55,.35), rgba(60,58,55,0)); }
+  .bottle { position: absolute; left: 0; top: 0; transform-origin: 50% 100%; }
+  .bottle canvas { position: absolute; left: 0; top: 0; }
+  .bshadow { position: absolute; height: 18px; border-radius: 50%; background: radial-gradient(closest-side, rgba(40,38,36,.45), rgba(40,38,36,0)); }
+  #tags { position: absolute; inset: 0; }
+  #strings { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+  .tag { position: absolute; left: 0; top: 0; transform-origin: 50% 0; padding: 26px 30px 18px; border-radius: 14px 14px 18px 18px;
+         background: linear-gradient(180deg, #F2F0EC, #E3E0DB); color: var(--ink); white-space: nowrap;
+         font: 800 46px/1 var(--font-ui); letter-spacing: -0.01em; box-shadow: 0 12px 26px rgba(30,28,26,.28); }
+  .tag::before { content: ''; position: absolute; left: 50%; top: 9px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%;
+                 background: #9D9994; box-shadow: inset 0 1px 2px rgba(0,0,0,.4); }
+  #pgrain { position: absolute; left: 0; top: 0; width: 1080px; height: 1100px; mix-blend-mode: overlay; pointer-events: none; }
+  #hook { position: absolute; left: 80px; width: 870px; top: 486px; text-align: center; color: var(--ink); }
+  #hookA, #hookB { position: absolute; left: 0; top: 0; width: 870px; font-size: 88px; line-height: 1.02; text-wrap: balance; }
+  #hookA .w, #hookB .w { display: inline-block; }
+  #divider { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 6; overflow: visible; }
+
+  /* ---------------- end card ---------------- */
+  #endlogo { position: absolute; left: 370px; top: 380px; width: 340px; z-index: 8; }
+  #claim { position: absolute; left: 80px; top: 0; width: 870px; z-index: 9; text-align: center; color: var(--ink); text-wrap: balance; }
+  #ctaWrap { position: absolute; left: 80px; width: 870px; top: 0; z-index: 9; text-align: center; }
+  #legal { position: absolute; left: 80px; width: 870px; top: 0; z-index: 9; }
+
+  #captions { z-index: 40; top: 1030px; }
+</style>
+</head>
+<body>
+<div id="stage" class="ak-stage">
+  <div id="warm">
+    <div id="warmbg"></div>
+    <div id="floor"></div>
+    <div id="halo"></div>
+    <canvas id="rays" width="850" height="850"></canvas>
+    <div id="capsBack"></div>
+    <div id="jarWrap">
+      <div id="jarShadow"></div>
+      <canvas id="jarBlur" width="583" height="700"></canvas>
+      <img id="jarSharp" alt="">
+      <div id="sheen"></div>
+    </div>
+    <svg id="leaders" viewBox="0 0 1080 1920"></svg>
+    <div id="chips"></div>
+    <div id="capsFront"></div>
+    <canvas id="dust" width="1080" height="1920"></canvas>
+    <div id="title" class="ak-display"></div>
+    <div id="band"></div>
+  </div>
+
+  <div id="prob">
+    <div id="probIn">
+      <div id="probbg"></div>
+      <div id="cam">
+        <div id="shelf"><div class="sh"></div><div class="top"></div><div class="front"></div></div>
+        <div id="bottles"></div>
+      </div>
+      <div id="tags"><svg id="strings" viewBox="0 0 1080 1920"></svg></div>
+      <canvas id="pgrain" width="1080" height="1100"></canvas>
+      <div id="hook" class="ak-display"><div id="hookA"></div><div id="hookB"></div></div>
+    </div>
+  </div>
+  <svg id="divider" viewBox="0 0 1080 1920">
+    <line id="divGlow" x1="0" y1="0" x2="1080" y2="0" stroke="#EDB467" stroke-width="26" stroke-linecap="round" opacity=".28"/>
+    <line id="divLine" x1="0" y1="0" x2="1080" y2="0" stroke="#EDB467" stroke-width="6" stroke-linecap="round"/>
+  </svg>
+
+  <img id="endlogo" alt="">
+  <div id="claim" class="ak-claim"></div>
+  <div id="ctaWrap"><div id="cta" class="ak-cta"></div></div>
+  <div id="legal" class="ak-legal"></div>
+
+  <div id="captions" class="ak-captions"></div>
+  <div id="badge" class="ak-badge"></div>
+  <div id="disclosure" class="ak-disclosure"></div>
+</div>
+<script>
+(function () {
+  const A = window.AMBREL, NB = A.NB, $ = (s) => document.querySelector(s);
+  const { prog, seg, ease, kf, win, spring, set, lerp, clamp } = SK;
+  const DUR = 15;
+
+  // ================================================================ static copy (brand.js only)
+  $('#badge').textContent = A.mentions.v1.badge;
+  $('#disclosure').textContent = A.mentions.v1.open;
+  $('#cta').textContent = A.cta.main;
+  $('#legal').innerHTML = `${A.legal.full}<span class="ak-fictive">${A.legal.fictive}</span>`;
+  $('#claim').textContent = A.claims.fatigue;
+  $('#endlogo').src = A.assets.logo;
+  $('#jarSharp').src = A.assets.packshot1200;
+
+  const words = (s, cls) => s.split(' ').map((w) => `<span class="w${cls ? ' ' + cls : ''}">${w}</span>`).join(' ');
+  $('#hookA').innerHTML = words('5 flacons.');
+  $('#hookB').innerHTML = words('Aucune idée de ce qu’il y a dedans.');
+  $('#title').innerHTML = `<span class="ln">${words('1 pot.', 'accent')}</span><span class="ln">${words(A.tagline)}</span>`;
+
+  // chips: exact product data from brand.js (mgShort / b6Short / dose)
+  const [mgDose, mgVnr] = A.product.mgShort.split(' · ');
+  const [b6Dose, b6Vnr] = A.product.b6Short.split(' · ');
+  const doseW = A.product.dose.split(' ');           // 3 gélules par jour
+  const CHIPS = [
+    { html: `Magnésium<br><i>bisglycinate</i>`, anchor: [0.70, 0.535] },
+    { html: `<b>${mgDose}</b> · ${mgVnr}`, anchor: [0.70, 0.636] },
+    { html: `Vitamine B6<br><b>${b6Dose}</b> · ${b6Vnr}`, anchor: [0.70, 0.679] },
+    { html: `<b>${doseW.slice(0, 2).join(' ')}</b> ${doseW.slice(2).join(' ')}`, anchor: [0.66, 0.79] },
+  ];
+  const chipsEl = $('#chips'), leaders = $('#leaders');
+  CHIPS.forEach((c, i) => {
+    const d = document.createElement('div'); d.className = 'chip'; d.innerHTML = c.html; chipsEl.appendChild(d); c.el = d;
+    const NS = 'http://www.w3.org/2000/svg';
+    const ln = document.createElementNS(NS, 'line'); ln.setAttribute('stroke', '#7E3F14'); ln.setAttribute('stroke-width', '3'); ln.setAttribute('stroke-linecap', 'round');
+    const dot = document.createElementNS(NS, 'circle'); dot.setAttribute('r', '9'); dot.setAttribute('fill', '#EDB467'); dot.setAttribute('stroke', '#7E3F14'); dot.setAttribute('stroke-width', '3');
+    const ring = document.createElementNS(NS, 'circle'); ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', '#EDB467'); ring.setAttribute('stroke-width', '3');
+    leaders.appendChild(ln); leaders.appendChild(ring); leaders.appendChild(dot); c.ln = ln; c.dot = dot; c.ring = ring;
+  });
+
+  // ================================================================ captions (L1-L3, real word timings)
+  const rawCues = (window.VO_TIMINGS ? window.VO_TIMINGS.cues : []).filter((c) => ['hook', 'agit', 'solution'].includes(c.id));
+  // glue lone punctuation ("?", ":") to the previous word with a no-break space (French typography)
+  const cues = rawCues.map((c) => {
+    const ws = [];
+    c.words.forEach((w) => {
+      if (/^[?:!;]$/.test(w.w) && ws.length) { const p = ws[ws.length - 1]; ws[ws.length - 1] = { w: p.w + NB + w.w, start: p.start, end: w.end }; }
+      else ws.push({ ...w });
+    });
+    return { ...c, words: ws };
+  });
+  const captions = new SK.Captions($('#captions'), cues, { maxWords: 3, maxChars: 18, emphasis: ['ambrel', 'écrit'] });
+
+  // ================================================================ generic grey bottles (no brand, illegible label)
+  const BOT = [
+    // type, x centre, w, h (bottom on the shelf at y=898)
+    { type: 'tall', x: 178, w: 120, h: 240 },
+    { type: 'squat', x: 358, w: 176, h: 165 },
+    { type: 'dropper', x: 532, w: 106, h: 236 },
+    { type: 'pill', x: 702, w: 136, h: 200 },
+    { type: 'tube', x: 868, w: 84, h: 246 },
+  ];
+  const SHELF_Y = 912;
+  const ORDER = [1, 3, 0, 4, 2];                       // drop order
+  const IMPACT = [];                                   // impact time per bottle index
+  ORDER.forEach((bi, k) => { IMPACT[bi] = 0.62 + k * 0.15; });
+
+  function bottleSVG(b) {
+    const { w, h, type } = b;
+    const defs = `<defs>
+      <linearGradient id="gb" x1="0" x2="1"><stop offset="0" stop-color="#5E5B57"/><stop offset=".16" stop-color="#8A8681"/><stop offset=".3" stop-color="#B4B0AA"/><stop offset=".46" stop-color="#9B9792"/><stop offset=".8" stop-color="#6E6A66"/><stop offset="1" stop-color="#4E4B48"/></linearGradient>
+      <linearGradient id="gc" x1="0" x2="1"><stop offset="0" stop-color="#3E3C3A"/><stop offset=".3" stop-color="#7A7671"/><stop offset=".55" stop-color="#5A5753"/><stop offset="1" stop-color="#363432"/></linearGradient>
+      <linearGradient id="gl" x1="0" x2="1"><stop offset="0" stop-color="#A9A59F"/><stop offset=".25" stop-color="#D9D5CF"/><stop offset=".5" stop-color="#CFCBC5"/><stop offset=".85" stop-color="#ADA9A3"/><stop offset="1" stop-color="#97938E"/></linearGradient>
+      <linearGradient id="gh" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    </defs>`;
+    let body = '', label;
+    const ridges = (x0, x1, y0, y1, n) => { let s = ''; for (let i = 1; i < n; i++) { const x = x0 + (x1 - x0) * i / n; s += `<line x1="${x}" y1="${y0 + 3}" x2="${x}" y2="${y1 - 3}" stroke="#2E2C2A" stroke-opacity=".28" stroke-width="1.6"/>`; } return s; };
+    if (type === 'tall') {
+      body = `<path d="M40,44 C40,62 6,64 6,88 L6,${h - 14} Q6,${h} 20,${h} L100,${h} Q114,${h} 114,${h - 14} L114,88 C114,64 80,62 80,44 Z" fill="url(#gb)"/>
+              <rect x="40" y="27" width="40" height="19" fill="#5A5753"/>
+              <rect x="31" y="0" width="58" height="31" rx="5" fill="url(#gc)"/>${ridges(31, 89, 0, 31, 9)}`;
+      label = [6, 112, 108, h - 142];
+    } else if (type === 'squat') {
+      body = `<rect x="4" y="32" width="168" height="133" rx="22" fill="url(#gb)"/>
+              <rect x="15" y="0" width="146" height="38" rx="8" fill="url(#gc)"/>${ridges(15, 161, 0, 38, 16)}`;
+      label = [4, 62, 168, 78];
+    } else if (type === 'dropper') {
+      body = `<path d="M34,88 L72,88 C72,106 102,112 102,136 L102,222 Q102,236 88,236 L18,236 Q4,236 4,222 L4,136 C4,112 34,106 34,88 Z" fill="url(#gb)"/>
+              <rect x="37" y="0" width="32" height="58" rx="16" fill="#4A4744"/><rect x="41" y="6" width="7" height="40" rx="3.5" fill="#fff" opacity=".18"/>
+              <rect x="26" y="50" width="54" height="40" rx="6" fill="url(#gc)"/>${ridges(26, 80, 50, 90, 7)}`;
+      label = [4, 146, 98, 72];
+    } else if (type === 'pill') {
+      body = `<rect x="9" y="40" width="118" height="160" rx="12" fill="url(#gb)"/>
+              <rect x="0" y="0" width="136" height="46" rx="8" fill="url(#gc)"/>${ridges(0, 136, 0, 46, 18)}
+              <rect x="0" y="38" width="136" height="6" fill="#2E2C2A" opacity=".25"/>`;
+      label = [9, 70, 118, 104];
+    } else {
+      body = `<rect x="7" y="36" width="70" height="210" rx="13" fill="url(#gb)"/>
+              <rect x="2" y="0" width="80" height="40" rx="9" fill="url(#gc)"/>${ridges(2, 82, 0, 40, 9)}`;
+      label = [7, 66, 70, 160];
+    }
+    const [lx, ly, lw, lh] = label;
+    const lab = `<rect x="${lx}" y="${ly}" width="${lw}" height="${lh}" fill="url(#gl)"/>`;
+    const hl = `<rect x="${w * 0.17}" y="${type === 'squat' || type === 'pill' ? 44 : 50}" width="${w * 0.12}" height="${h - 64}" rx="${w * 0.06}" fill="url(#gh)"/>`;
+    const bodySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * 2}" height="${h * 2}" viewBox="0 0 ${w} ${h}">${defs}${body}${lab}${hl}</svg>`;
+    // illegible label lines (blurred), separate layer so they can tremble
+    const R = SK.rng(w * 7 + h);
+    let ls = '', y = ly + lh * 0.14;
+    const pad = lw * 0.12;
+    const bar = (yy, hh, ww, op) => { ls += `<rect x="${lx + pad}" y="${yy}" width="${ww}" height="${hh}" rx="${hh / 2}" fill="#6F6B66" opacity="${op}"/>`; };
+    bar(y, lh * 0.11, (lw - 2 * pad) * (0.55 + R() * 0.3), 0.85); y += lh * 0.11 + lh * 0.1;
+    const n = lh > 120 ? 7 : 4;
+    for (let i = 0; i < n; i++) { bar(y, lh * 0.055, (lw - 2 * pad) * (0.5 + R() * 0.5), 0.6); y += lh * 0.055 + lh * 0.065; }
+    const linesSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * 2}" height="${h * 2}" viewBox="0 0 ${w} ${h}"><defs><filter id="f" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="1.7"/></filter></defs><g filter="url(#f)">${ls}</g></svg>`;
+    return { bodySvg, linesSvg };
+  }
+  const svgUrl = (s) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+  async function toCanvas(src, w, h, scale) {
+    const im = await SK.loadImage(src);
+    const c = document.createElement('canvas'); c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    c.style.width = w + 'px'; c.style.height = h + 'px';
+    return c;
+  }
+
+  // ================================================================ question tags
+  const TAGS = [
+    { text: 'Forme' + NB + '?', t: 3.42, bottle: 1, L: 70, a0: -6 },
+    { text: 'Dose' + NB + '?', t: 4.24, bottle: 2, L: 110, a0: 5 },
+    { text: '%' + NB + 'VNR' + NB + '?', t: 4.95, bottle: 3, L: 240, a0: 9 },
+  ];
+  const tagsEl = $('#tags'), strings = $('#strings');
+  TAGS.forEach((g) => {
+    const d = document.createElement('div'); d.className = 'tag'; d.textContent = g.text; tagsEl.appendChild(d); g.el = d;
+    const ln = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    ln.setAttribute('stroke', '#3C3A37'); ln.setAttribute('stroke-width', '2.6'); ln.setAttribute('fill', 'none'); ln.setAttribute('stroke-linecap', 'round');
+    strings.appendChild(ln); g.ln = ln;
+  });
+
+  // camera of the problem half: screen = p * s + T
+  function camAt(t) {
+    const sA = lerp(1.0, 1.04, seg(t, 0.6, 3.3, ease.inOutSine));
+    const C = [540, 760];
+    const TA = [C[0] * (1 - sA), C[1] * (1 - sA)];
+    const sB = 1.75, TB = [540 - 530 * sB, 700 - 800 * sB];
+    const z = seg(t, 3.22, 4.1, ease.inOutCubic);
+    const drift = seg(t, 4.1, 6.3, ease.linear);
+    let s = lerp(sA, sB, z) * (1 + 0.025 * drift);
+    let T = [lerp(TA[0], TB[0], z) - 10 * drift, lerp(TA[1], TB[1], z) - 22 * drift];
+    // exit: bottles leave the frame upwards with the divider
+    const ex = seg(t, 6.26, 6.85, ease.inCubic);
+    T[1] -= ex * 820; s *= 1 + 0.08 * ex;
+    return { s, T };
+  }
+
+  // ================================================================ deterministic dust + rays + capsules
+  const dustC = $('#dust').getContext('2d');
+  const RD = SK.rng(7);
+  const dots = Array.from({ length: 46 }, () => ({ x: RD() * 1080, y: 400 + RD() * 1400, r: 1.6 + RD() * 3.6, s: 6 + RD() * 18, ph: RD() * 6.28, a: 0.25 + RD() * 0.45 }));
+  function drawDust(t, alpha) {
+    dustC.clearRect(0, 0, 1080, 1920);
+    if (alpha <= 0.001) return;
+    for (const d of dots) {
+      const y = ((d.y - t * d.s) % 1920 + 1920) % 1920, x = d.x + Math.sin(t * 0.5 + d.ph) * 16;
+      dustC.globalAlpha = alpha * d.a * (0.6 + 0.4 * Math.sin(t * 1.7 + d.ph));
+      dustC.fillStyle = '#FFF4E0';
+      dustC.beginPath(); dustC.arc(x, y, d.r, 0, Math.PI * 2); dustC.fill();
+    }
+    dustC.globalAlpha = 1;
+  }
+  function buildRays() {
+    const c = $('#rays'), x = c.getContext('2d'), S = 850, cx = S / 2;
+    const g = x.createConicGradient(0, cx, cx);
+    const n = 14;
+    for (let i = 0; i < n; i++) {
+      const a = i / n, w = 0.5 / n;
+      g.addColorStop(a, 'rgba(255,236,200,0)');
+      g.addColorStop(a + w * 0.5, 'rgba(255,236,200,' + (0.35 + 0.3 * ((i * 7) % 3) / 2) + ')');
+      g.addColorStop(a + w, 'rgba(255,236,200,0)');
+    }
+    x.fillStyle = g; x.fillRect(0, 0, S, S);
+    x.globalCompositeOperation = 'destination-in';
+    const r = x.createRadialGradient(cx, cx, 30, cx, cx, cx);
+    r.addColorStop(0, 'rgba(0,0,0,.0)'); r.addColorStop(0.18, 'rgba(0,0,0,.9)'); r.addColorStop(0.55, 'rgba(0,0,0,.45)'); r.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = r; x.fillRect(0, 0, S, S);
+    c.style.width = '1700px'; c.style.height = '1700px';
+  }
+  const CAPS = [
+    // layer, x, y, width, rotation, blur, parallax, drift
+    { layer: 'back', x: 846, y: 610, w: 120, r: 28, blur: 3, k: 0.4, ph: 0.3 },
+    { layer: 'back', x: 92, y: 760, w: 104, r: -34, blur: 3.5, k: 0.4, ph: 2.1 },
+    { layer: 'front', x: 40, y: 1440, w: 280, r: -18, blur: 9, k: 1.6, ph: 4.0 },
+    { layer: 'front', x: 860, y: 1330, w: 210, r: 22, blur: 7, k: 1.3, ph: 1.2 },
+  ];
+  async function buildCaps() {
+    const im = await SK.loadImage(A.assets.capsulePng);
+    for (const c of CAPS) {
+      const h = c.w * im.naturalHeight / im.naturalWidth, pad = c.blur * 3;
+      const cv = document.createElement('canvas'); cv.width = Math.round(c.w + pad * 2); cv.height = Math.round(h + pad * 2);
+      const x = cv.getContext('2d'); x.filter = `blur(${c.blur}px)`; x.drawImage(im, pad, pad, c.w, h);
+      cv.className = 'cap'; cv.style.width = cv.width + 'px'; cv.style.height = cv.height + 'px';
+      $(c.layer === 'back' ? '#capsBack' : '#capsFront').appendChild(cv); c.el = cv; c.cw = cv.width; c.ch = cv.height;
+    }
+  }
+
+  // ================================================================ layout helpers
+  const JAR = { w: 583, h: 700, bottom: 0.894, top: 0.117 };   // packshot1200 drawn at 583x700
+  // jar pose: centre x, bottom y, scale
+  const POSE_WAIT = { cx: 540, by: 1528, s: 0.66 };
+  const POSE_HERO = { cx: 372, by: 1222, s: 1.0 };
+  const POSE_CLAIM = { cx: 380, by: 1012, s: 0.93 };
+  const POSE_END = { cx: 540, by: 792, s: 0.5 };
+  const jarPoint = (pose, u, v) => ({ x: pose.cx + (u - 0.5) * JAR.w * pose.s, y: pose.by - (JAR.bottom - v) * JAR.h * pose.s });
+  const lerpPose = (a, b, p) => ({ cx: lerp(a.cx, b.cx, p), by: lerp(a.by, b.by, p), s: lerp(a.s, b.s, p) });
+
+  let chipH = [], claimH = 0, legalH = 0, ctaH = 0, grain = null;
+  const CHIP_X = 600, CHIP_TOP_HERO = 750, CHIP_GAP_HERO = 22, CHIP_TOP_CLAIM = 520, CHIP_GAP_CLAIM = 12;
+  const END = { claimY: 836, ctaY: 964, legalY: 1086 };
+
+  SK.scene({
+    stage: '#stage', width: 1080, height: 1920, duration: DUR,
+    async ready() {
+      buildRays();
+      $('#shelf').style.top = (SHELF_Y - 6) + 'px';
+      await buildCaps();
+      // bottles -> 2x canvases (body + blurred label lines)
+      const host = $('#bottles');
+      for (const b of BOT) {
+        const { bodySvg, linesSvg } = bottleSVG(b);
+        const el = document.createElement('div'); el.className = 'bottle'; el.style.width = b.w + 'px'; el.style.height = b.h + 'px';
+        const sh = document.createElement('div'); sh.className = 'bshadow';
+        sh.style.cssText = `left:${b.x - b.w * 0.7}px;top:${SHELF_Y - 9}px;width:${b.w * 1.4}px`;
+        $('#cam').insertBefore(sh, host);
+        const bc = await toCanvas(svgUrl(bodySvg), b.w, b.h, 2.4);
+        const lc = await toCanvas(svgUrl(linesSvg), b.w, b.h, 2.4);
+        el.appendChild(bc); el.appendChild(lc); host.appendChild(el);
+        b.el = el; b.lines = lc; b.sh = sh;
+      }
+      // pre-blurred jar for the "waiting" state
+      const jim = await SK.loadImage(A.assets.packshot1200);
+      const jb = $('#jarBlur').getContext('2d'); jb.filter = 'blur(6px)'; jb.drawImage(jim, 0, 0, 583, 700);
+      // grain on the problem half only
+      grain = new SK.Grain($('#pgrain'), { amount: 0.1 });
+      // measure text blocks
+      await document.fonts.ready;
+      chipH = CHIPS.map((c) => c.el.offsetHeight);
+      claimH = $('#claim').offsetHeight; legalH = $('#legal').offsetHeight; ctaH = $('#ctaWrap').offsetHeight;
+      window.__layout = { chipH, claimH, legalH, ctaH };
+    },
+    seek(t, ctx) {
+      // ------------------------------------------------ split build + divider
+      const off = 250 * (1 - seg(t, 0, 0.55, ease.outCubic));
+      const sw = seg(t, 6.26, 6.85, ease.inOutCubic);
+      const yL = lerp(1018, -260, sw), yR = lerp(966, -330, sw);
+      const prob = $('#prob'), warm = $('#warm');
+      if (t < 6.86) {
+        prob.style.display = '';
+        prob.style.clipPath = `polygon(0px ${-off - 50}px, 1080px ${-off - 50}px, 1080px ${yR - off}px, 0px ${yL - off}px)`;
+        $('#probIn').style.transform = `translateY(${(-off).toFixed(2)}px)`;
+        warm.style.clipPath = `polygon(0px ${yL}px, 1080px ${yR}px, 1080px 2200px, 0px 2200px)`;
+        warm.style.transform = `translateY(${off.toFixed(2)}px)`;
+      } else {
+        prob.style.display = 'none'; warm.style.clipPath = 'none'; warm.style.transform = 'none';
+      }
+      const dl = $('#divLine'), dg = $('#divGlow');
+      for (const l of [dl, dg]) { l.setAttribute('y1', (yL - off).toFixed(1)); l.setAttribute('y2', (yR - off).toFixed(1)); }
+      const divO = t < 6.86 ? 1 : 0;
+      dl.setAttribute('opacity', divO); dg.setAttribute('opacity', (0.28 + 0.4 * Math.sin(Math.PI * sw)) * divO);
+      dg.setAttribute('stroke-width', 26 + 40 * Math.sin(Math.PI * sw));
+
+      // ------------------------------------------------ problem half
+      if (t < 6.86) {
+        const cam = camAt(t);
+        $('#cam').style.transform = `translate(${cam.T[0].toFixed(2)}px,${cam.T[1].toFixed(2)}px) scale(${cam.s.toFixed(4)})`;
+        const tremble = seg(t, 3.3, 3.8, ease.linear) * (1 - seg(t, 6.1, 6.3, ease.linear));
+        BOT.forEach((b, i) => {
+          const ti = IMPACT[i], dt = t - ti;
+          let y = 0, sx = 1, sy = 1, o = 1;
+          if (dt < 0) { const p = prog(t, ti - 0.3, ti); y = -760 * (1 - ease.inQuad(p)); o = p > 0 ? 1 : 0; }
+          else if (dt < 0.08) { const q = Math.sin(Math.PI * dt / 0.08); sy = 1 - 0.09 * q; sx = 1 + 0.06 * q; }
+          else if (dt < 0.28) { y = -24 * Math.sin(Math.PI * (dt - 0.08) / 0.2); }
+          else if (dt < 0.36) { const q = Math.sin(Math.PI * (dt - 0.28) / 0.08); sy = 1 - 0.03 * q; sx = 1 + 0.02 * q; }
+          b.el.style.transform = `translate(${(b.x - b.w / 2).toFixed(2)}px,${(SHELF_Y - b.h + y).toFixed(2)}px) scale(${sx.toFixed(4)},${sy.toFixed(4)})`;
+          b.el.style.opacity = o;
+          const shp = dt < 0 ? clamp(1 - (-y) / 500) * prog(t, ti - 0.3, ti) : 1 - 0.35 * clamp(-y / 24);
+          b.sh.style.opacity = (shp * 0.9).toFixed(3);
+          // illegible lines tremble
+          if (tremble > 0) {
+            const jx = SK.noise1(t * 22, i * 3 + 1) * 2.4 * tremble, jy = SK.noise1(t * 19, i * 5 + 2) * 1.6 * tremble;
+            b.lines.style.transform = `translate(${jx.toFixed(2)}px,${jy.toFixed(2)}px) skewX(${(SK.noise1(t * 9, i + 40) * 3 * tremble).toFixed(2)}deg)`;
+            b.lines.style.filter = `blur(${(0.4 + 0.6 * tremble * (0.5 + 0.5 * Math.sin(t * 13 + i))).toFixed(2)}px)`;
+          } else { b.lines.style.transform = 'none'; b.lines.style.filter = 'none'; }
+        });
+        // tags hang from the bottle necks (screen coords from the camera)
+        TAGS.forEach((g) => {
+          const b = BOT[g.bottle];
+          const neck = [b.x * cam.s + cam.T[0], (SHELF_Y - b.h + (b.type === 'dropper' ? 56 : b.type === 'pill' || b.type === 'squat' ? 10 : 30)) * cam.s + cam.T[1]];
+          const dt = t - g.t, on = dt >= 0;
+          g.el.style.opacity = on ? 1 : 0; g.ln.setAttribute('opacity', on ? 1 : 0);
+          if (!on) return;
+          const pop = ease.outBack(prog(t, g.t, g.t + 0.22), 2.2);
+          const swing = g.a0 + 14 * Math.exp(-dt * 3.2) * Math.sin(dt * 9) + 1.2 * Math.sin(t * 2.1 + g.t);
+          const L = g.L * lerp(0.4, 1, ease.outCubic(prog(t, g.t, g.t + 0.25)));
+          const rad = swing * Math.PI / 180;
+          const hole = [neck[0] - Math.sin(rad) * L, neck[1] + Math.cos(rad) * L];
+          const w = g.el.offsetWidth;
+          g.el.style.transform = `translate(${(hole[0] - w / 2).toFixed(2)}px,${(hole[1] - 15).toFixed(2)}px) rotate(${swing.toFixed(2)}deg) scale(${pop.toFixed(4)})`;
+          g.ln.setAttribute('d', `M${neck[0].toFixed(1)},${neck[1].toFixed(1)} L${hole[0].toFixed(1)},${hole[1].toFixed(1)}`);
+        });
+        // hook headline
+        const hA = $('#hookA').children, hB = $('#hookB').children;
+        const outA = seg(t, 1.12, 1.34, ease.inCubic);
+        for (let i = 0; i < hA.length; i++) {
+          const a = 0.2 + i * 0.13, p = ease.outBack(prog(t, a, a + 0.32), 1.5);
+          set(hA[i], { y: (1 - p) * 70 - outA * 60, o: prog(t, a, a + 0.14) * (1 - outA) });
+        }
+        const outB = seg(t, 3.24, 3.5, ease.inCubic);
+        for (let i = 0; i < hB.length; i++) {
+          const a = 1.24 + i * 0.07, p = ease.outBack(prog(t, a, a + 0.32), 1.5);
+          set(hB[i], { y: (1 - p) * 70 - outB * 50, o: prog(t, a, a + 0.14) * (1 - outB) });
+        }
+        if (grain) grain.draw(t, ctx.fps);
+      }
+
+      // ------------------------------------------------ warm half: jar pose
+      let pose;
+      const rise = t < 6.45 ? 0 : spring(t, 6.45, 1.25, 0.55);
+      const hx = seg(t, 6.45, 6.95, ease.outCubic);
+      pose = { cx: lerp(POSE_WAIT.cx, POSE_HERO.cx, hx), by: lerp(POSE_WAIT.by, POSE_HERO.by, rise), s: lerp(POSE_WAIT.s, POSE_HERO.s, Math.min(1.04, rise)) };
+      const cl = seg(t, 9.0, 9.55, ease.inOutCubic);
+      if (cl > 0) pose = lerpPose(pose, POSE_CLAIM, cl);
+      const en = seg(t, 10.34, 10.84, ease.inOutCubic);
+      if (en > 0) pose = lerpPose(pose, POSE_END, en);
+      // waiting float, push-in, handheld (fades out on the end card)
+      const live = 1 - en;
+      const hh = SK.handheld(t, 2.6, 0.6, 11);
+      const floatY = Math.sin(t * 1.3) * (t < 6.3 ? 5 : 6) * live;
+      const push = 1 + 0.035 * seg(t, 6.9, 10.5, ease.linear) * live;
+      const par = 1 + 0.02 * Math.sin((t - 9.0) * 1.6) * seg(t, 9.0, 9.5, ease.linear) * live;   // claim beat parallax
+      const S = pose.s * push * par;
+      set($('#jarWrap'), { x: pose.cx - 291.5 + hh.x * live, y: pose.by - 626 + floatY + hh.y * live, r: hh.r * live, s: S });
+      const sharp = seg(t, 6.3, 6.68, ease.inOutSine);
+      $('#jarBlur').style.opacity = (1 - sharp).toFixed(3);
+      $('#jarSharp').style.opacity = sharp.toFixed(3);
+      $('#jarWrap').style.opacity = lerp(0.5, 1, sharp).toFixed(3);
+      $('#jarShadow').style.opacity = lerp(0.5, 1, sharp).toFixed(3);
+      // light sweep on the glass (hero reveal + end card)
+      const sh1 = prog(t, 6.75, 7.65), sh2 = prog(t, 11.0, 11.9);
+      const shp = sh1 > 0 && sh1 < 1 ? sh1 : sh2 > 0 && sh2 < 1 ? sh2 : -1;
+      $('#sheen').style.opacity = shp < 0 ? 0 : 1;
+      if (shp >= 0) $('#sheen').style.backgroundPosition = `${lerp(110, -10, ease.inOutSine(shp)).toFixed(2)}% 0`;
+
+      // halo + rays follow the jar with parallax
+      const jc = jarPoint(pose, 0.5, 0.5);
+      const glow = lerp(0.72, 1, sharp) * lerp(1, 0.7, en);
+      set($('#halo'), { x: lerp(540, jc.x, 0.7) - 750 + Math.sin(t * 0.4) * 20, y: lerp(1330, jc.y, 0.7) - 820 - 40 * sharp, s: lerp(0.62, 1.06, sharp) * lerp(1, 0.85, en), o: glow });
+      set($('#rays'), { x: jc.x - 850 - 150, y: jc.y - 850 - 260, r: t * 4, s: lerp(0.7, 1.08, sharp), o: lerp(0.25, 0.6, sharp) * lerp(1, 0.4, en) });
+      drawDust(t, lerp(0.5, 1, sharp) * lerp(1, 0.55, en));
+      CAPS.forEach((c, i) => {
+        const dy = Math.sin(t * 0.7 + c.ph) * 14, dx = Math.cos(t * 0.5 + c.ph) * 8;
+        const camx = (jc.x - 540) * 0.06 * c.k, camy = (jc.y - 960) * 0.08 * c.k;
+        const enter = c.layer === 'front' ? seg(t, 6.4, 7.2, ease.outCubic) : 1;
+        set(c.el, { x: c.x - c.cw / 2 + dx - camx, y: c.y - c.ch / 2 + dy - camy + (1 - enter) * 260 * c.k, r: c.r + Math.sin(t * 0.6 + c.ph) * 6,
+                    s: 1 + 0.03 * Math.sin(t + c.ph), o: (c.layer === 'front' ? enter * 0.78 : 0.75) * lerp(1, 0.35, en) });
+      });
+
+      // ------------------------------------------------ title "1 pot. Tout est écrit."
+      const tw = $('#title').querySelectorAll('.w');
+      const tOut = seg(t, 9.0, 9.3, ease.inCubic);
+      tw.forEach((w, i) => {
+        const a = 6.86 + i * 0.11, p = ease.outBack(prog(t, a, a + 0.36), 1.6);
+        set(w, { y: (1 - p) * 64 - tOut * 70, o: prog(t, a, a + 0.15) * (1 - tOut) });
+      });
+
+      // ------------------------------------------------ chips + leader lines
+      const chipOut = seg(t, 10.18, 10.44, ease.inCubic);
+      let yAcc = lerp(CHIP_TOP_HERO, CHIP_TOP_CLAIM, cl);
+      const gap = lerp(CHIP_GAP_HERO, CHIP_GAP_CLAIM, cl), cs = lerp(1, 0.92, cl);
+      CHIPS.forEach((c, i) => {
+        const tc = 7.4 + i * 0.3;
+        const h = chipH[i] * cs;
+        const cy = yAcc + h / 2; yAcc += h + gap;
+        const p = t < tc ? 0 : spring(t, tc + 0.08, 1.6, 0.6);
+        const o = prog(t, tc + 0.08, tc + 0.2) * (1 - chipOut);
+        const cx = CHIP_X + lerp(0, -18, cl);
+        set(c.el, { x: cx + (1 - p) * 60, y: cy - chipH[i] / 2, s: cs * lerp(0.85, 1, Math.min(1, p)) * lerp(1, 0.9, chipOut), o });
+        const an = jarPoint(pose, c.anchor[0], c.anchor[1]);
+        const ax = pose.cx - 291.5 + 291.5 + (an.x - pose.cx) * push * par + hh.x * live, ay = (pose.by + floatY + hh.y * live) - (pose.by - an.y) * push * par;
+        const lp = seg(t, tc - 0.06, tc + 0.18, ease.outCubic) * (1 - chipOut);
+        const ex = lerp(ax, cx, lp), ey = lerp(ay, cy, lp);
+        c.ln.setAttribute('x1', ax.toFixed(1)); c.ln.setAttribute('y1', ay.toFixed(1));
+        c.ln.setAttribute('x2', ex.toFixed(1)); c.ln.setAttribute('y2', ey.toFixed(1));
+        c.ln.setAttribute('opacity', lp > 0 ? 0.85 : 0);
+        const dp = ease.outBack(prog(t, tc - 0.06, tc + 0.12), 2.5) * (1 - chipOut);
+        c.dot.setAttribute('cx', ax.toFixed(1)); c.dot.setAttribute('cy', ay.toFixed(1)); c.dot.setAttribute('r', (7.5 * dp).toFixed(2));
+        c.dot.setAttribute('opacity', dp > 0.01 ? 1 : 0);
+        const rp = prog(t, tc - 0.02, tc + 0.5);
+        c.ring.setAttribute('cx', ax.toFixed(1)); c.ring.setAttribute('cy', ay.toFixed(1)); c.ring.setAttribute('r', (9 + 26 * ease.outCubic(rp)).toFixed(2));
+        c.ring.setAttribute('opacity', rp > 0 && rp < 1 ? (1 - rp) * 0.9 : 0);
+      });
+
+      // ------------------------------------------------ claim band -> end card
+      const bandIn = seg(t, 9.28, 9.6, ease.outCubic);
+      const bandOut = seg(t, 10.3, 10.6, ease.inOutCubic);
+      set($('#band'), { sx: bandIn, o: (bandIn > 0 ? 1 : 0) * (1 - bandOut) });
+      const cIn = seg(t, 9.36, 9.66, ease.outCubic);
+      const bandCy = 1046 + 196 / 2 + 3, endCy = END.claimY + claimH * 0.818 / 2;
+      const ccy = lerp(bandCy, endCy, en), csc = lerp(1, 0.818, en);
+      set($('#claim'), { x: (1 - cIn) * -40, y: ccy - claimH / 2, s: csc, o: cIn });
+
+      // logo, CTA, legal (legal static from 10.95 s to the end: >= 4 s)
+      const lg = seg(t, 10.74, 10.98, ease.outCubic);
+      set($('#endlogo'), { y: (1 - lg) * 30, o: lg });
+      const ctaP = t < 10.8 ? 0 : spring(t, 10.8, 1.5, 0.6);
+      const pulse = Math.exp(-Math.pow((t - 13.55) / 0.16, 2));
+      set($('#ctaWrap'), { y: END.ctaY + (1 - Math.min(1, ctaP)) * 40, s: lerp(0.92, 1, Math.min(1.03, ctaP)) * (1 + 0.05 * pulse), o: prog(t, 10.8, 10.96) });
+      set($('#legal'), { y: END.legalY + (1 - lg) * 24, o: lg });
+
+      // ------------------------------------------------ captions + mentions
+      $('#captions').style.top = (t < 6.32 ? 1030 : 1262) + 'px';
+      captions.update(t);
+      set($('#disclosure'), { o: win(t, 0, 2.2, 0, 0.3) });
+      set($('#badge'), { o: 1 });
+    },
+  });
+})();
+</script>
+</body>
+</html>

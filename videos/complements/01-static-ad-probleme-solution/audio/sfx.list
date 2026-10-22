@@ -1,0 +1,22 @@
+# start_s  file  gain_dB   (V1 sound design, synced to scene.html)
+# bottles hit the shelf (IMPACT = 0.62 + 0.15 k)
+0.62 tick.wav -5
+0.77 tick.wav -6
+0.92 tick.wav -5
+1.07 tick.wav -6
+1.22 tick.wav -5
+# question tags pop (Forme / Dose / % VNR)
+3.42 pop.wav -4
+4.24 pop.wav -4
+4.95 pop.wav -4
+# divider sweeps up (whoosh peak ~0.35 s after start = sweep midpoint)
+6.21 whoosh.wav -3
+# jar settles (spring first crossing at 6.45 + 0.2)
+6.64 thud.wav -2
+# callouts (chip pops at 7.48 + 0.3 k)
+7.48 tick.wav -6
+7.78 tick.wav -6
+8.08 tick.wav -6
+8.38 tick.wav -6
+# end card
+10.78 chime.wav -14

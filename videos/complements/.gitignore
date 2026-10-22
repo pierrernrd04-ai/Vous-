@@ -4,3 +4,9 @@
 **/.frames*/
 **/tmp/
 *.partial.mp4
+
+# Masters haute qualité (lourds) : seules les versions -web.mp4 sont versionnées
+*/0?-*[!b].mp4
+**/out/
+**/*.wav
+!**/vo/*.wav
