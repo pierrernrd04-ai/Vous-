@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" role="img" aria-labelledby="t d">
+  <title id="t">Fiche casting 01 : Inès, 41 ans (personnage fictif)</title>
+  <desc id="d">Silhouette sans visage d’un acteur fictif pour les vidéos UGC IA de la marque fictive Ambrel. Témoignage « ma routine du soir ».</desc>
+  <defs>
+    <radialGradient id="halo" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#EDB467" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#EFE5D6" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="panel"><rect x="80" y="150" width="740" height="500" rx="28"/></clipPath>
+  </defs>
+  <rect width="900" height="1200" fill="#F6EFE4"/>
+  <rect x="24" y="24" width="852" height="1152" rx="36" fill="none" stroke="#D8CEBF" stroke-width="3"/>
+  <text x="72" y="104" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="24" font-weight="800" letter-spacing="4" fill="#7E3F14">CASTING UGC IA · AMBREL</text>
+  <text x="828" y="104" text-anchor="end" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="600" fill="#C46F28">01</text>
+  <g clip-path="url(#panel)">
+    <rect x="80" y="150" width="740" height="500" fill="#EFE5D6"/>
+    <rect x="80" y="150" width="740" height="500" fill="url(#halo)"/>
+    <g transform="translate(80 150)">
+    <path d="M150 500 C160 405 235 360 370 352 C505 360 580 405 590 500 Z" fill="#6E5A45"/>
+    <path d="M318 352 Q370 382 422 352 L414 336 Q370 352 326 336 Z" fill="#B9B3AC" opacity=".35"/>
+    <rect x="344" y="300" width="52" height="56" rx="20" fill="#6E5A45"/>
+    <ellipse cx="370" cy="226" rx="74" ry="92" fill="#6E5A45"/>
+    <path d="M286 262 C276 168 318 120 376 122 C444 124 470 176 458 262 C452 290 440 300 430 300 L432 230 C420 190 380 176 330 196 L314 300 C300 296 290 284 286 262 Z" fill="#B9B3AC"/>
+    </g>
+  </g>
+  <rect x="104" y="174" width="262" height="44" rx="22" fill="#F6EFE4" opacity=".92"/>
+  <text x="235" y="203" text-anchor="middle" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="1" fill="#211B16">PERSONNAGE FICTIF</text>
+  <text x="72" y="748" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="60" font-weight="600" fill="#211B16">Inès, 41 ans</text>
+  <text x="72" y="796" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="700" fill="#C46F28">Témoignage « ma routine du soir »</text>
+  <line x1="72" y1="826" x2="828" y2="826" stroke="#D8CEBF" stroke-width="2"/>
+    <text x="72" y="866" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">CHEVEUX</text>
+    <text x="250" y="866" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">carré court gris argent, raie sur le côté</text>
+    <text x="72" y="906" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">YEUX, PEAU</text>
+    <text x="250" y="906" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">marron foncé ; peau brune, ridules d’expression</text>
+    <text x="72" y="946" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">SIGNE</text>
+    <text x="250" y="946" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">lunettes rondes fines, monture miel</text>
+    <text x="72" y="986" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">TENUE</text>
+    <text x="250" y="986" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">pull en maille couleur lin, anneaux dorés</text>
+    <text x="72" y="1026" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">VOIX</text>
+    <text x="250" y="1026" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">posée, chaleureuse, débit calme</text>
+    <text x="72" y="1066" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">DÉCOR</text>
+    <text x="250" y="1066" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">cuisine claire, table en bois, dîner</text>
+  <path d="M24 1096 H876 V1140 a36 36 0 0 1 -36 36 H60 a36 36 0 0 1 -36 -36 Z" fill="#7E3F14"/>
+  <text x="450" y="1130" text-anchor="middle" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="21" font-weight="700" fill="#F6EFE4">Images virtuelles · aucune ressemblance avec une personne réelle</text>
+  <text x="450" y="1160" text-anchor="middle" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="19" font-weight="600" fill="#EDB467">Ambrel est une marque fictive (démonstration).</text>
+</svg>

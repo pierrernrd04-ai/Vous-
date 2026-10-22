@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" role="img" aria-labelledby="t d">
+  <title id="t">Fiche casting 02 : Bastien, 36 ans (personnage fictif)</title>
+  <desc id="d">Silhouette sans visage d’un acteur fictif pour les vidéos UGC IA de la marque fictive Ambrel. Unboxing.</desc>
+  <defs>
+    <radialGradient id="halo" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#C7D2DA" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#EFE5D6" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="panel"><rect x="80" y="150" width="740" height="500" rx="28"/></clipPath>
+  </defs>
+  <rect width="900" height="1200" fill="#F6EFE4"/>
+  <rect x="24" y="24" width="852" height="1152" rx="36" fill="none" stroke="#D8CEBF" stroke-width="3"/>
+  <text x="72" y="104" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="24" font-weight="800" letter-spacing="4" fill="#7E3F14">CASTING UGC IA · AMBREL</text>
+  <text x="828" y="104" text-anchor="end" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="600" fill="#C46F28">02</text>
+  <g clip-path="url(#panel)">
+    <rect x="80" y="150" width="740" height="500" fill="#EFE5D6"/>
+    <rect x="80" y="150" width="740" height="500" fill="url(#halo)"/>
+    <g transform="translate(80 150)">
+    <path d="M130 500 C142 400 228 352 370 344 C512 352 598 400 610 500 Z" fill="#4F6175"/>
+    <path d="M318 346 L370 412 L422 346 L408 340 L370 384 L332 340 Z" fill="#211B16" opacity=".45"/>
+    <rect x="340" y="296" width="60" height="58" rx="22" fill="#4F6175"/>
+    <ellipse cx="370" cy="222" rx="76" ry="94" fill="#4F6175"/>
+    <path d="M296 250 Q300 310 370 318 Q440 310 444 250 Q430 292 370 296 Q310 292 296 250 Z" fill="#211B16" opacity=".55"/>
+    <path d="M292 210 C286 150 322 118 372 116 C424 116 456 146 450 206 C440 176 420 160 386 158 C350 158 318 172 292 210 Z" fill="#211B16"/>
+    </g>
+  </g>
+  <rect x="104" y="174" width="262" height="44" rx="22" fill="#F6EFE4" opacity=".92"/>
+  <text x="235" y="203" text-anchor="middle" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="1" fill="#211B16">PERSONNAGE FICTIF</text>
+  <text x="72" y="748" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="60" font-weight="600" fill="#211B16">Bastien, 36 ans</text>
+  <text x="72" y="796" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="700" fill="#C46F28">Unboxing</text>
+  <line x1="72" y1="826" x2="828" y2="826" stroke="#D8CEBF" stroke-width="2"/>
+    <text x="72" y="866" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">CHEVEUX</text>
+    <text x="250" y="866" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">châtain foncé court, barbe de 3 jours</text>
+    <text x="72" y="906" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">YEUX, PEAU</text>
+    <text x="250" y="906" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">gris-vert ; peau claire légèrement hâlée</text>
+    <text x="72" y="946" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">SIGNE</text>
+    <text x="250" y="946" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">fine cicatrice au sourcil gauche</text>
+    <text x="72" y="986" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">TENUE</text>
+    <text x="250" y="986" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">chemise en lin pierre, manches relevées</text>
+    <text x="72" y="1026" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">VOIX</text>
+    <text x="250" y="1026" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">grave, spontanée, souriante</text>
+    <text x="72" y="1066" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#7E3F14">DÉCOR</text>
+    <text x="250" y="1066" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="25" font-weight="600" fill="#211B16">salon lumineux, colis kraft sur table basse</text>
+  <path d="M24 1096 H876 V1140 a36 36 0 0 1 -36 36 H60 a36 36 0 0 1 -36 -36 Z" fill="#7E3F14"/>
+  <text x="450" y="1130" text-anchor="middle" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="21" font-weight="700" fill="#F6EFE4">Images virtuelles · aucune ressemblance avec une personne réelle</text>
+  <text x="450" y="1160" text-anchor="middle" font-family="Manrope, 'Helvetica Neue', Arial, sans-serif" font-size="19" font-weight="600" fill="#EDB467">Ambrel est une marque fictive (démonstration).</text>
+</svg>
