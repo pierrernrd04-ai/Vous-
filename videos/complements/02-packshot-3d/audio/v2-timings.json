@@ -1,0 +1,47 @@
+{
+  "duration": 10,
+  "voice": "female",
+  "source": "v2.vo.json",
+  "cues": [
+    {
+      "id": "name",
+      "start": 2.6,
+      "end": 6.538,
+      "text": "Ambrel. Magnésium bisglycinate et vitamine B6.",
+      "spoken": "Ambrel. Magnésium bisglycinate et vitamine B6.",
+      "file": "lines/name-9167d656.wav",
+      "words": [
+        {
+          "w": "Ambrel.",
+          "start": 2.65,
+          "end": 3.21
+        },
+        {
+          "w": "Magnésium",
+          "start": 3.71,
+          "end": 4.46
+        },
+        {
+          "w": "bisglycinate",
+          "start": 4.46,
+          "end": 5.29
+        },
+        {
+          "w": "et",
+          "start": 5.29,
+          "end": 5.53
+        },
+        {
+          "w": "vitamine",
+          "start": 5.53,
+          "end": 6.2
+        },
+        {
+          "w": "B6.",
+          "start": 6.2,
+          "end": 6.42
+        }
+      ]
+    }
+  ]
+}

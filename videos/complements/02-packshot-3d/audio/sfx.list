@@ -1,0 +1,8 @@
+# V2 sound effects (offset s, file, gain dB), synthesized with tools/sfx.sh
+0.00 sfx-whoosh.wav -4
+1.35 sfx-pop.wav -7
+1.65 sfx-pop.wav -8
+2.10 sfx-drop.wav -6
+3.00 sfx-glass.wav -7
+5.43 sfx-thud.wav -3
+6.05 sfx-chime.wav -7

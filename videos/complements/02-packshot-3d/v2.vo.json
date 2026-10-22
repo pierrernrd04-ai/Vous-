@@ -1,0 +1,6 @@
+{
+  "voice": "female", "length_scale": 1.0, "duration": 10,
+  "lines": [
+    { "id": "name", "start": 2.60, "text": "Ambrel. Magnésium bisglycinate et vitamine B6." }
+  ]
+}

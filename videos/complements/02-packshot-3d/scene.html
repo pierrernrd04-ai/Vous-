@@ -1,0 +1,665 @@
+<!doctype html>
+<!--
+  Ambrel V2 · « Packshot 3D dynamique » (9:16, 1080x1920, 10 s, 30 fps). Brief: brand/brand-system.md §14 V2.
+  0.0-1.0  contre-jour on deep amber that warms to cream, jar turns 30°, vertical glint lights up
+  1.0-2.5  lid lifts 120 px and tilts 6°, two capsules float out, crystals / drops / molecules open into orbit
+  2.5-6.0  full 360° turn of the label (front, composition, usage), particles in front of and behind the jar,
+           light sweep 3.0-3.6, lid comes back and screws on at 5.4; VO-synced headline (word by word)
+  6.0-10.0 end card: jar front on a stone pedestal, honey halo, slow particles, facts, CTA, legal.short
+  Texts come from brand/brand.js (AMBREL.*). Jar renderer: ./jar-v2.js.
+  Render: node tools/render.mjs 02-packshot-3d/scene.html 02-packshot-3d/out/v2-video.mp4 --w 1080 --h 1920 --fps 30 --dur 10
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ambrel · V2 packshot 3D dynamique</title>
+<link rel="stylesheet" href="../brand/brand.css">
+<script src="../brand/brand.js"></script>
+<script src="../tools/lib/scene-kit.js"></script>
+<script src="jar-v2.js"></script>
+<script src="audio/v2-timings.js"></script>
+<style>
+  #cv { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  #head { position: absolute; left: 80px; width: 870px; top: 470px; text-align: center; transform-origin: 50% 0; z-index: 20; }
+  #hlogo { position: absolute; left: 395px; top: 366px; width: 290px; height: auto; transform-origin: 50% 0; z-index: 20; }
+  .hl { font-family: var(--font-display); font-size: 88px; line-height: 0.98; letter-spacing: -0.02em;
+        font-variation-settings: 'opsz' 144; color: var(--ink); }
+  #hl1 { font-weight: 500; }
+  #hl2 { font-style: italic; font-weight: 400; color: var(--amber-deep); margin-top: -4px; }
+  #hl3 { margin-top: 18px; font: 800 34px/1.1 var(--font-ui); letter-spacing: 0.17em; text-transform: uppercase; color: var(--amber-deep); }
+  .wd { position: relative; display: inline-block; }
+  .wd .tx { position: relative; }
+  .wd .mk { position: absolute; left: -0.06em; right: -0.06em; bottom: 0.08em; height: 0.34em; border-radius: 0.08em;
+            background: var(--honey); transform-origin: 0 50%; transform: scaleX(0); opacity: 0; }
+  #hl3 .wd .mk { bottom: -0.02em; height: 0.5em; }
+  #chip { position: absolute; left: 718px; top: 1010px; z-index: 20; display: flex; align-items: center; gap: 12px;
+          padding: 12px 22px 14px 20px; border-radius: 20px; background: rgba(255, 255, 255, 0.94);
+          box-shadow: 0 14px 34px rgba(60, 35, 15, 0.16); transform-origin: 0 50%; }
+  #chip b { font: 600 80px/0.9 var(--font-display); font-variation-settings: 'opsz' 144; color: var(--amber-deep); }
+  #chip span { font: 800 29px/1.08 var(--font-ui); color: var(--ink); }
+  #chip::before { content: ''; position: absolute; left: -46px; top: 50%; width: 46px; height: 3px; margin-top: -1.5px;
+                  background: var(--honey); border-radius: 2px; }
+  #chip::after { content: ''; position: absolute; left: -54px; top: 50%; width: 14px; height: 14px; margin-top: -7px;
+                 border-radius: 50%; background: var(--honey); box-shadow: 0 0 0 5px rgba(237, 180, 103, 0.35); }
+  #facts { position: absolute; left: 548px; width: 402px; top: 616px; z-index: 20; }
+  .fact { padding: 16px 0 18px; border-top: 2px solid rgba(196, 111, 40, 0.42); }
+  .fact:first-child { border-top: 0; padding-top: 0; }
+  .fact .v { font: 600 62px/1 var(--font-display); font-variation-settings: 'opsz' 144; letter-spacing: -0.015em; color: var(--amber-deep); }
+  .fact .l { margin-top: 8px; font: 700 29px/1.22 var(--font-ui); color: var(--ink); }
+  #ctaWrap { position: absolute; left: 80px; width: 870px; top: 1112px; text-align: center; z-index: 20; }
+  #legal { position: absolute; left: 80px; width: 870px; top: 1222px; z-index: 20; }
+</style>
+</head>
+<body>
+<div id="stage" class="ak-stage">
+  <canvas id="cv" width="1080" height="1920"></canvas>
+  <img id="hlogo" alt="">
+  <div id="head">
+    <div id="hl1" class="hl"></div>
+    <div id="hl2" class="hl"></div>
+    <div id="hl3"></div>
+  </div>
+  <div id="chip"><b></b><span></span></div>
+  <div id="facts"></div>
+  <div id="ctaWrap"><div id="cta" class="ak-cta"></div></div>
+  <div id="legal" class="ak-legal"></div>
+  <div id="badge" class="ak-badge"></div>
+  <div id="disclosure" class="ak-disclosure"></div>
+</div>
+<script>
+(function () {
+  'use strict';
+  const A = window.AMBREL, $ = (s) => document.querySelector(s);
+  const { prog, seg, ease, kf, win, spring, set, lerp, clamp } = SK;
+  const DUR = 10, PI = Math.PI, TAU = Math.PI * 2;
+  const W = 1080, H = 1920;
+  const COVER_MODE = SK.params.qs.get('cover') === '1';
+  const smooth = (a, b, x) => { const p = clamp((x - a) / (b - a)); return p * p * (3 - 2 * p); };
+
+  // ------------------------------------------------------------------ copy (from brand.js only)
+  const wordSpan = (w) => `<span class="wd"><i class="mk"></i><span class="tx">${w}</span></span>`;
+  const [pName, pPlus] = A.product.name.split(' + ');          // 'Magnésium bisglycinate', 'vitamine B6'
+  const [w1, w2] = pName.split(' ');
+  $('#hlogo').src = A.assets.logo;
+  $('#hl1').innerHTML = wordSpan(w1);
+  $('#hl2').innerHTML = wordSpan(w2);
+  $('#hl3').innerHTML = ['+'].concat(pPlus.split(' ')).map(wordSpan).join(' ');
+  $('#hl3 .mk').remove();                                      // no highlight on the "+" sign
+  const dose = A.product.dose.match(/^(\d+)\s(.+)$/);           // '3', 'gélules par jour'
+  $('#chip b').textContent = dose[1];
+  $('#chip span').innerHTML = dose[2].replace(' par ', '<br>par ');
+  function splitFact(s) {                                       // '300 mg de magnésium (80 % VNR)'
+    const m = s.match(/^(\S+\s\S+)\s(.+?)\s\((.+)\)$/);
+    return { v: m[1], l: m[2] + ' · ' + m[3] };
+  }
+  const fmt = A.product.format.match(/^(\d+)\s(.+)$/);          // '60', 'gélules végétales'
+  const facts = [splitFact(A.product.magnesium), splitFact(A.product.b6), { v: fmt[1], l: fmt[2] }];
+  $('#facts').innerHTML = facts.map((f) => `<div class="fact"><div class="v">${f.v}</div><div class="l">${f.l}</div></div>`).join('');
+  $('#cta').textContent = A.cta.main;
+  $('#legal').innerHTML = `${A.legal.short}<span class="ak-fictive">${A.legal.fictive}</span>`;
+  $('#badge').textContent = A.mentions.v2.badge;
+  $('#disclosure').textContent = A.mentions.v2.open;
+
+  // ------------------------------------------------------------------ VO word timings (vo-build output)
+  const vw = (window.VO_TIMINGS && VO_TIMINGS.cues[0].words) || SK.estimateWords('Ambrel. Magnésium bisglycinate et vitamine B6.', 2.6, 6.5);
+  const VO_END = window.VO_TIMINGS ? VO_TIMINGS.cues[0].end : 6.5;
+  // on-screen units: logo <- "Ambrel.", hl1 <- "Magnésium", hl2 <- "bisglycinate", "+" <- "et", "vitamine", "B6"
+  const HW = [];   // {el, mk, start, end}
+
+  // ------------------------------------------------------------------ timeline
+  const T = { introEnd: 1.0, lidUp: 1.0, cap1: 1.35, cap2: 1.65, spin0: 2.5, spin1: 5.9, sweep0: 3.0, sweep1: 3.6,
+    lidDown0: 4.95, screw0: 5.06, lidLand: 5.42, move0: 5.55, move1: 6.3, legal0: 5.8, legal1: 6.0 };
+
+  function hermite(p0, v0, p1, v1, dt, s) {
+    const s2 = s * s, s3 = s2 * s;
+    return (2 * s3 - 3 * s2 + 1) * p0 + (s3 - 2 * s2 + s) * dt * v0 + (-2 * s3 + 3 * s2) * p1 + (s3 - s2) * dt * v1;
+  }
+  // jar rotation (rad): 30° in the intro, slow drift while the lid opens, then one full turn
+  function theta(t) {
+    if (t < T.introEnd) return 0.52 * (1 - ease.outCubic(t / T.introEnd));
+    if (t < T.spin0) { const p = (t - T.introEnd) / (T.spin0 - T.introEnd); return -0.25 * p * p; }
+    if (t < T.spin1) return hermite(-0.25, -0.5 / (T.spin0 - T.introEnd), -TAU, 0, T.spin1 - T.spin0, (t - T.spin0) / (T.spin1 - T.spin0));
+    return -TAU;
+  }
+  function solveTheta(target) { // first t in the spin where theta crosses target
+    let a = T.spin0, b = T.spin1;
+    for (let i = 0; i < 40; i++) { const m = (a + b) / 2; if (theta(m) > target) a = m; else b = m; }
+    return a;
+  }
+  const tUsage = solveTheta(-TAU + 2.1);        // usage / precautions panel faces the camera
+  const CHIP = { a: Math.max(4.25, tUsage - 0.2), b: 5.62 };
+
+  // eased time for the particles: slows to 40 % on the end card ("au ralenti")
+  function tau(t) {
+    const a = 5.5, d = 0.8, x = clamp((t - a) / d);
+    const S = t < a ? 0 : t < a + d ? d * (x * x * x - x * x * x * x / 2) : d * 0.5 + (t - a - d);
+    return t - 0.6 * S;
+  }
+
+  // lid: lift (screen px), tilt (deg), rotation (integrated angular speed table)
+  function lidLiftPx(t) {
+    const up = t < T.lidUp ? 0 : 120 * (1 - Math.exp(-6.5 * (t - T.lidUp)) * Math.cos(5.2 * (t - T.lidUp)));
+    const down = seg(t, T.lidDown0, T.lidLand, ease.inOutCubic);
+    const hover = Math.sin((t - 1.6) * 2.3) * 7 * smooth(1.4, 2.0, t);
+    const settle = 48 * seg(t, 2.6, 3.5, ease.inOutSine);           // hovers lower while the headline builds
+    return Math.max(0, (up + hover - settle) * (1 - down));
+  }
+  function lidTilt(t) {
+    const up = smooth(T.lidUp, 1.7, t), down = seg(t, T.lidDown0, T.lidLand - 0.06, ease.inOutCubic);
+    return (6 * up + Math.sin((t - 1.7) * 1.9) * 2.2 * smooth(1.7, 2.3, t)) * (1 - down);
+  }
+  const LID_TAB = []; {
+    const dt = 1 / 600; let r = 0;
+    for (let i = 0; i <= DUR * 600 + 1; i++) {
+      const t = i * dt; LID_TAB.push(r);
+      const attached = t < T.lidUp + 0.02 || t >= T.lidLand;
+      let w;
+      if (attached) w = -(theta(t + dt) - theta(t)) / dt;            // turns with the jar
+      else if (t < T.screw0) w = 0.45 + 0.25 * Math.sin(t * 1.3);   // floats, slow spin
+      else w = -7.5 * Math.sin(PI * prog(t, T.screw0, T.lidLand));  // screw (clockwise seen from above)
+      r += w * dt;
+    }
+  }
+  const lidRot = (t) => LID_TAB[Math.min(LID_TAB.length - 1, Math.round(t * 600))];
+
+  // jar placement: axis x, body-bottom y, scale
+  function jarPlace(t) {
+    const p0 = seg(t, 0, 2.5, ease.outCubic), pe = seg(t, T.move0, T.move1, ease.inOutCubic);
+    const ax = lerp(540, 300, pe);
+    const by = lerp(lerp(1352, 1306, p0), 1004, pe);
+    const s = lerp(lerp(0.665, 0.56, p0), 0.40, pe);
+    const floatAmt = 1 - pe;
+    const bob = Math.sin(t * 2.35) * 7 * floatAmt;
+    const land = t > T.lidLand ? 5 * Math.exp(-9 * (t - T.lidLand)) * Math.sin(26 * (t - T.lidLand)) : 0; // lid thud
+    const settle = t > T.move1 - 0.12 ? -4 * Math.exp(-7 * (t - T.move1 + 0.12)) * Math.sin(18 * (t - T.move1 + 0.12)) : 0;
+    return { ax, by: by + bob + land * floatAmt + settle, s, pe, bob };
+  }
+  function jarOpts(t) {
+    const P = jarPlace(t);
+    return { x0: P.ax - 500 * P.s, y0: P.by - 1073 * P.s, s: P.s, P };
+  }
+
+  // ------------------------------------------------------------------ assets / sprites
+  const cv = $('#cv'), ctx = cv.getContext('2d');
+  let jar, IM, bgWarm, bgAmber, pedestal, grainTiles = [];
+  const spheres = {};
+  function mk(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  function sphereSprite(base, dark) {
+    const c = mk(96, 96), x = c.getContext('2d');
+    const g = x.createRadialGradient(36, 32, 4, 48, 48, 47);
+    g.addColorStop(0, '#FFFFFF'); g.addColorStop(0.28, base); g.addColorStop(0.85, dark); g.addColorStop(1, dark);
+    x.fillStyle = g; x.beginPath(); x.arc(48, 48, 46, 0, TAU); x.fill();
+    return c;
+  }
+  function buildBackgrounds() {
+    bgWarm = mk(W, H); let x = bgWarm.getContext('2d');
+    let g = x.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#F6EFE4'); g.addColorStop(0.6, '#EFE3D2'); g.addColorStop(1, '#E2D3BF');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    // key light from the upper left: soft diagonal beam
+    x.save(); x.translate(160, 140); x.rotate(0.62);
+    g = x.createLinearGradient(-260, 0, 260, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,252,246,.42)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g; x.fillRect(-260, -200, 520, 2600); x.restore();
+    // vignette
+    g = x.createRadialGradient(540, 1000, 500, 540, 1000, 1250);
+    g.addColorStop(0, 'rgba(110,70,35,0)'); g.addColorStop(1, 'rgba(110,70,35,.16)');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+
+    bgAmber = mk(W, H); x = bgAmber.getContext('2d');
+    g = x.createRadialGradient(540, 1020, 40, 540, 1020, 1250);
+    g.addColorStop(0, '#E0904A'); g.addColorStop(0.22, '#B5601F'); g.addColorStop(0.5, '#7E3F14'); g.addColorStop(1, '#2C1406');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+
+    // stone pedestal (pre-rendered, fades into the floor)
+    const PW = 420, PH = 190, rx = 195, ry = 24, cx = PW / 2, top = 30;
+    pedestal = mk(PW, PH); x = pedestal.getContext('2d');
+    g = x.createLinearGradient(cx - rx, 0, cx + rx, 0);
+    g.addColorStop(0, '#A89A86'); g.addColorStop(0.3, '#D9CFC0'); g.addColorStop(0.5, '#E2D9CC'); g.addColorStop(0.78, '#C9BCAA'); g.addColorStop(1, '#978873');
+    x.fillStyle = g; x.fillRect(cx - rx, top, 2 * rx, PH - top);
+    // stone grain on the side
+    const sr = SK.rng(77);
+    for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(${sr() < 0.5 ? '255,255,255' : '90,70,50'},${(0.04 + sr() * 0.06).toFixed(3)})`; x.fillRect(cx - rx + sr() * 2 * rx, top + sr() * (PH - top), 1 + sr() * 2, 1 + sr() * 2); }
+    // top face
+    x.beginPath(); x.ellipse(cx, top, rx, ry, 0, 0, TAU);
+    g = x.createLinearGradient(0, top - ry, 0, top + ry);
+    g.addColorStop(0, '#DCD2C3'); g.addColorStop(1, '#F1EBE1');
+    x.fillStyle = g; x.fill();
+    g = x.createRadialGradient(cx - 50, top - 4, 6, cx - 20, top, rx);
+    g.addColorStop(0, 'rgba(255,255,255,.6)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g; x.fill();
+    x.lineWidth = 2; x.strokeStyle = 'rgba(255,255,255,.75)';
+    x.beginPath(); x.ellipse(cx, top, rx - 1, ry - 1, 0, PI, TAU); x.stroke();
+    x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = 2.5;
+    x.beginPath(); x.ellipse(cx, top, rx - 1, ry - 1, 0, 0.05, PI - 0.05); x.stroke();
+    x.strokeStyle = 'rgba(110,90,70,.22)'; x.lineWidth = 2;
+    x.beginPath(); x.ellipse(cx, top + 3, rx - 1, ry - 1, 0, 0.1, PI - 0.1); x.stroke();
+    x.globalCompositeOperation = 'destination-in';
+    g = x.createLinearGradient(0, top + 34, 0, PH);
+    g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = g; x.fillRect(0, 0, PW, PH); x.globalCompositeOperation = 'source-over';
+    pedestal.meta = { cx, top, rx, ry };
+
+    // film grain tiles (deterministic)
+    const r = SK.rng(99);
+    for (let k = 0; k < 6; k++) {
+      const c = mk(192, 192), cx2 = c.getContext('2d'), id = cx2.createImageData(192, 192);
+      for (let i = 0; i < id.data.length; i += 4) { const v = (r() * 255) | 0; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
+      cx2.putImageData(id, 0, 0); grainTiles.push(c);
+    }
+  }
+
+  // ------------------------------------------------------------------ 3D helpers
+  function rotMat(ax, ay, az) {
+    const ca = Math.cos(ax), sa = Math.sin(ax), cb = Math.cos(ay), sb = Math.sin(ay), cc = Math.cos(az), sc = Math.sin(az);
+    // R = Ry(ay) * Rx(ax) * Rz(az)
+    const Rz = [cc, -sc, 0, sc, cc, 0, 0, 0, 1], Rx = [1, 0, 0, 0, ca, -sa, 0, sa, ca], Ry = [cb, 0, sb, 0, 1, 0, -sb, 0, cb];
+    return mul(Ry, mul(Rx, Rz));
+  }
+  function mul(a, b) {
+    const o = new Array(9);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) o[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+    return o;
+  }
+  const ap = (m, v) => [m[0] * v[0] + m[1] * v[1] + m[2] * v[2], m[3] * v[0] + m[4] * v[1] + m[5] * v[2], m[6] * v[0] + m[7] * v[1] + m[8] * v[2]];
+  const norm3 = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+  const LIGHT = norm3([-0.55, -0.7, 0.55]);          // upper-left-front key (screen y down, z to camera)
+  const HALF = norm3([LIGHT[0], LIGHT[1], LIGHT[2] + 1]);
+
+  // faceted mineral crystal (quartz-like hexagonal prism, one or two points)
+  function crystalMesh(rnd) {
+    const n = 6, v = [], f = [];
+    const h = 0.8 + rnd() * 0.7, tip = 0.7 + rnd() * 0.5, base = rnd() < 0.5 ? 0.55 + rnd() * 0.3 : 0.08;
+    const rads = Array.from({ length: n }, () => 0.82 + rnd() * 0.3);
+    for (let i = 0; i < n; i++) { const a = (i / n) * TAU + rnd() * 0.12; v.push([Math.cos(a) * rads[i], -h, Math.sin(a) * rads[i]]); }
+    for (let i = 0; i < n; i++) { const a = (i / n) * TAU + rnd() * 0.12; v.push([Math.cos(a) * rads[i] * 0.97, h * 0.6, Math.sin(a) * rads[i] * 0.97]); }
+    v.push([rnd() * 0.15, -h - tip, rnd() * 0.15]); v.push([0, h * 0.6 + base, 0]);
+    const TOP = 2 * n, BOT = 2 * n + 1;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      f.push([i, j, n + j, n + i]);         // side
+      f.push([j, i, TOP]);                  // upper point
+      f.push([n + i, n + j, BOT]);          // lower point / broken base
+    }
+    // orient faces outward
+    f.forEach((face, k) => {
+      const c = face.reduce((s, idx) => [s[0] + v[idx][0], s[1] + v[idx][1], s[2] + v[idx][2]], [0, 0, 0]).map((q) => q / face.length);
+      const nn = faceNormal(v, face);
+      if (nn[0] * c[0] + nn[1] * c[1] + nn[2] * c[2] < 0) f[k] = face.slice().reverse();
+    });
+    return { v, f };
+  }
+  function faceNormal(v, face) {
+    const a = v[face[0]], b = v[face[1]], c = v[face[2]];
+    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], w = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    return norm3([u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]]);
+  }
+  const C_DARK = [150, 168, 182], C_LITE = [255, 255, 255], C_WARM = [255, 214, 160];
+  function drawCrystal(c, mesh, m, size, glint, warm) {
+    const pv = mesh.v.map((p) => ap(m, p));
+    const faces = [];
+    mesh.f.forEach((face) => {
+      const nn = faceNormal(pv, face);
+      if (nn[2] <= 0.0) return;
+      const z = face.reduce((s, i) => s + pv[i][2], 0) / face.length;
+      faces.push({ face, nn, z });
+    });
+    faces.sort((a, b) => a.z - b.z);
+    c.lineJoin = 'round';
+    faces.forEach(({ face, nn }) => {
+      const d = Math.max(0, nn[0] * LIGHT[0] + nn[1] * LIGHT[1] + nn[2] * LIGHT[2]);
+      const sp = Math.pow(Math.max(0, nn[0] * HALF[0] + nn[1] * HALF[1] + nn[2] * HALF[2]), 28) * (0.85 + glint * 1.5);
+      const k = 0.18 + 0.82 * d, wv = Math.max(0, nn[1]) * 0.55 * warm;      // faces looking down pick up warm bounce light
+      const col = [0, 1, 2].map((i) => Math.min(255, lerp(lerp(C_DARK[i], C_LITE[i], k), C_WARM[i], wv) + sp * 255));
+      c.beginPath();
+      face.forEach((i, j) => { const p = pv[i]; j ? c.lineTo(p[0] * size, p[1] * size) : c.moveTo(p[0] * size, p[1] * size); });
+      c.closePath();
+      c.fillStyle = `rgba(${col[0] | 0},${col[1] | 0},${col[2] | 0},0.9)`; c.fill();
+      c.strokeStyle = `rgba(255,255,255,${(0.35 + 0.4 * d).toFixed(2)})`; c.lineWidth = Math.max(0.8, size * 0.035); c.stroke();
+    });
+  }
+  function drawDrop(c, r, wob) {
+    c.save(); c.scale(1 + wob, 1 - wob);
+    let g = c.createRadialGradient(-0.25 * r, -0.3 * r, 0.05 * r, 0, 0, r);
+    g.addColorStop(0, 'rgba(255,255,255,0.10)'); g.addColorStop(0.66, 'rgba(255,250,244,0.08)');
+    g.addColorStop(0.9, 'rgba(110,62,24,0.22)'); g.addColorStop(1, 'rgba(70,36,12,0.42)');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill();
+    g = c.createRadialGradient(0.22 * r, 0.42 * r, 0, 0.22 * r, 0.42 * r, 0.55 * r);
+    g.addColorStop(0, 'rgba(255,248,232,0.75)'); g.addColorStop(1, 'rgba(255,248,232,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 0.96, 0, TAU); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = Math.max(1, r * 0.07);
+    c.beginPath(); c.arc(0, 0, r * 0.9, 0.25 * PI, 0.85 * PI); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.95)';
+    c.beginPath(); c.ellipse(-0.36 * r, -0.4 * r, 0.24 * r, 0.14 * r, -0.65, 0, TAU); c.fill();
+    c.beginPath(); c.arc(0.3 * r, -0.12 * r, 0.06 * r, 0, TAU); c.fill();
+    c.restore();
+  }
+  // stylised molecule: Mg (amber) bonded to two glycines (small spheres)
+  const MOL = (() => {
+    const atoms = [{ p: [0, 0, 0], r: 13, k: 'mg' }];
+    const arm = [[19, -7, 5, 7.5, 'n'], [33, 4, -3, 6.5, 'c'], [48, -4, 6, 6.5, 'c'], [60, 7, 2, 7, 'o'], [55, -18, 10, 6, 'o']];
+    const bonds = [];
+    [1, -1].forEach((sg) => {
+      const base = atoms.length;
+      arm.forEach((a) => atoms.push({ p: [a[0] * sg, a[1] * sg, a[2] * sg], r: a[3], k: a[4] }));
+      bonds.push([0, base], [base, base + 1], [base + 1, base + 2], [base + 2, base + 3], [base + 2, base + 4]);
+    });
+    return { atoms, bonds };
+  })();
+  function drawMolecule(c, m, size) {
+    const pts = MOL.atoms.map((a) => ({ a, q: ap(m, a.p) }));
+    c.strokeStyle = 'rgba(126,92,62,0.55)'; c.lineCap = 'round'; c.lineWidth = 3.2 * size;
+    MOL.bonds.forEach(([i, j]) => { c.beginPath(); c.moveTo(pts[i].q[0] * size, pts[i].q[1] * size); c.lineTo(pts[j].q[0] * size, pts[j].q[1] * size); c.stroke(); });
+    pts.sort((a, b) => a.q[2] - b.q[2]).forEach(({ a, q }) => {
+      const r = a.r * size * (1 + q[2] / 400);
+      c.drawImage(spheres[a.k], q[0] * size - r, q[1] * size - r, 2 * r, 2 * r);
+    });
+  }
+
+  // ------------------------------------------------------------------ particles (orbit around the jar axis)
+  const PARTS = [];
+  {
+    const r = SK.rng(2026);
+    const add = (type, n, o) => { for (let i = 0; i < n; i++) PARTS.push(Object.assign({ type, i }, o(r, i))); };
+    // crystals: spread on two tilted rings, sizes vary
+    add('crystal', 11, (r, i) => ({ rr: 290 + r() * 150, yOff: -300 + (i / 10) * 610 + (r() - 0.5) * 60, phi0: (i * 2.39) % TAU, sp: 0.8 + r() * 0.45,
+      size: 17 + r() * 20, mesh: crystalMesh(r), rx: r() * TAU, ry: r() * TAU, rz: r() * TAU, wx: (r() - 0.5) * 1.4, wy: 0.4 + r() * 0.9 }));
+    add('drop', 7, (r, i) => ({ rr: 270 + r() * 170, yOff: -250 + r() * 520, phi0: (i * 0.9 + 0.5 + r() * 0.5) % TAU, sp: 0.85 + r() * 0.4,
+      size: 11 + r() * 13, wobF: 3 + r() * 3, wobP: r() * TAU }));
+    add('mol', 4, (r, i) => ({ rr: 320 + r() * 110, yOff: [-260, 170, -40, 300][i], phi0: (i * 1.62 + 1.1) % TAU, sp: 0.75 + r() * 0.3,
+      size: 0.95 + r() * 0.35, rx: r() * TAU, ry: r() * TAU, rz: r() * TAU, wx: 0.5 + r() * 0.5, wy: 0.6 + r() * 0.6 }));
+    // the big near drop that wobbles on the "drop" cue (2.1 s)
+    PARTS.push({ type: 'drop', hero: true, rr: 360, yOff: 190, phi0: 2.15, sp: 0.9, size: 25, wobF: 4, wobP: 0 });
+  }
+  const DUST = Array.from({ length: 46 }, (_, i) => { const r = SK.rng(500 + i); return { x: r() * W, y: r() * H, rad: 1.2 + r() * 3.4, sp: 6 + r() * 20, ph: r() * TAU, a: 0.18 + r() * 0.42 }; });
+
+  function orbitRadiusMul(t) {
+    const open = lerp(0.8, 1, ease.outCubic(prog(t, T.lidUp, 2.3)));
+    return lerp(open, 0.62, seg(t, T.move0, T.move1, ease.inOutCubic));
+  }
+  // orbit pose of a particle at time t, centred on the jar
+  function orbit(p, t, J) {
+    const P = J.P, c = { x: P.ax, y: P.by - 767 * 0.5 * P.s - 40 * P.s };
+    const ks = P.s / 0.56;
+    const phi = p.phi0 + p.sp * (0.62 * theta(t) - 0.16 * tau(t));
+    const rr = p.rr * orbitRadiusMul(t) * lerp(1, 0.9, P.pe);
+    const z = rr * Math.sin(phi), x = rr * Math.cos(phi);
+    const ps = 1500 / (1500 - z);
+    const yo = p.yOff * lerp(ks, 0.62, P.pe);
+    return { x: c.x + x * ps, y: c.y + (yo + 0.13 * z) * ps + Math.sin(t * 1.3 + p.phi0 * 3) * 9, z, ps };
+  }
+
+  // two capsules that leave the jar and land on the pedestal
+  const HERO = [
+    { te: T.cap1, side: -1, orb: { rr: 330, yOff: -250, phi0: 0, sp: 0.85 }, rest: { x: 186, y: 1003, ang: -0.2 }, tum: [0.7, 0.35, 0.2] },
+    { te: T.cap2, side: 1, orb: { rr: 345, yOff: 225, phi0: 0, sp: 0.9 }, rest: { x: 250, y: 1013, ang: 0.26 }, tum: [-0.5, 0.45, 1.1] },
+  ];
+  // choose each orbit phase so the capsule joins its orbit on its own side
+  HERO.forEach((h) => {
+    const tj = h.te + 1.1, want = h.side < 0 ? PI - 0.35 : 0.3;
+    h.orb.phi0 = want - h.orb.sp * (0.62 * theta(tj) - 0.16 * tau(tj));
+  });
+  function normAng(a) { while (a > PI / 2) a -= PI; while (a < -PI / 2) a += PI; return a; }
+  function heroPose(h, t, J) {
+    if (t < h.te) return null;
+    const P = J.P, m = jar.mouth(J), k = t - h.te, sc = P.s / 0.56;
+    const L = 116, D = 41;
+    // emergence path (screen px)
+    const pA = ease.outCubic(prog(k, 0, 0.34)), pB = ease.inOutSine(prog(k, 0.22, 0.8));
+    let x = m.x + h.side * (6 + 190 * pB) * sc;
+    let y = m.y + (34 - 82 * pA - 60 * pB) * sc;
+    let ang = h.side < 0 ? lerp(1.3, 0.45, pB) : lerp(-1.3, -0.5, pB);
+    let len = L * sc, dia = D * sc, z = 20 + 140 * pB, ps = 1;
+    // orbit
+    const o = orbit(h.orb, t, J);
+    const ax = rotMat(h.tum[0] * t + 0.4, h.tum[1] * t + h.side, h.tum[2] * t * 0.3);
+    const v = ap(ax, [1, 0, 0]), lf = Math.min(1, Math.hypot(v[0], v[1]));
+    const oAng = normAng(Math.atan2(v[1], v[0]));
+    const pC = ease.inOutCubic(prog(k, 0.55, 1.45));
+    x = lerp(x, o.x, pC); y = lerp(y, o.y, pC); z = lerp(z, o.z, pC); ps = lerp(1, o.ps, pC);
+    ang = lerp(ang, oAng, pC);
+    const lfx = lerp(1, Math.max(0.42, lf), pC);
+    len = lerp(len, (D + (L - D) * lfx) * sc, pC);
+    // rest on the pedestal
+    const pR = ease.inOutCubic(prog(t, T.move0 + 0.05 * (h.side + 1), T.move1 + 0.05));
+    if (pR > 0) {
+      const ped = pedY(t);
+      x = lerp(x, h.rest.x, pR); y = lerp(y, h.rest.y + ped, pR); z = lerp(z, 300, pR); ps = lerp(ps, 1, pR);
+      ang = lerp(ang, h.rest.ang, pR); len = lerp(len, 84, pR); dia = lerp(dia, 30, pR);
+    }
+    return { x, y, z, ps, ang, len: len * ps, dia: dia * ps, clip: k < 0.36 ? m.y : null, early: k < 0.8 && pR === 0 };
+  }
+  function drawCapsule(c, cap) {
+    c.save(); c.translate(cap.x, cap.y); c.rotate(cap.ang);
+    const w = cap.len * 320 / 296, hh = cap.dia * 120 / 104;
+    c.drawImage(IM.capsule, -w / 2, -hh / 2, w, hh);
+    c.restore();
+  }
+
+  // pedestal rises during the move to the end card
+  const pedY = (t) => (1 - seg(t, T.move0, T.move1 + 0.05, ease.outCubic)) * 420;
+
+  // ------------------------------------------------------------------ scratch canvas for blurred (near) particles
+  const scratch = mk(260, 260), sctx = scratch.getContext('2d');
+  function drawParticle(c, p, pose, t, alpha, glintAmt) {
+    const blur = Math.max(0, (pose.ps - 1.17) * 20);
+    const target = blur > 0.4 ? sctx : c;
+    if (target === sctx) { sctx.setTransform(1, 0, 0, 1, 0, 0); sctx.clearRect(0, 0, 260, 260); sctx.translate(130, 130); }
+    else { c.save(); c.translate(pose.x, pose.y); }
+    if (target === sctx) sctx.globalAlpha = 1;
+    const tt = tau(t);
+    if (p.type === 'crystal') {
+      const m = rotMat(p.rx + p.wx * tt, p.ry + p.wy * tt + theta(t) * 0.3, p.rz);
+      drawCrystal(target, p.mesh, m, p.size * pose.ps, glintAmt, 1);
+    } else if (p.type === 'drop') {
+      let wob = 0.05 * Math.sin(p.wobF * t + p.wobP);
+      if (p.hero) wob += 0.16 * Math.exp(-6 * Math.max(0, t - 2.1)) * Math.sin(30 * Math.max(0, t - 2.1)) * (t > 2.1 ? 1 : 0);
+      drawDrop(target, p.size * pose.ps, wob);
+    } else if (p.type === 'mol') {
+      const m = rotMat(p.rx + p.wx * tt, p.ry + p.wy * tt, p.rz + 0.2 * tt);
+      drawMolecule(target, m, p.size * pose.ps);
+    }
+    if (target === sctx) {
+      c.save(); c.globalAlpha = alpha; c.filter = `blur(${blur.toFixed(1)}px)`;
+      c.drawImage(scratch, pose.x - 130, pose.y - 130); c.restore();
+    } else c.restore();
+  }
+
+  // ------------------------------------------------------------------ frame
+  function drawFrame(t) {
+    const J = jarOpts(t), P = J.P;
+    const cam = SK.handheld(t, 3, 0.55, 4);
+    const camK = 1 - P.pe * 0.85;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.filter = 'none';
+    // background: deep amber contre-jour that warms up to cream
+    ctx.drawImage(bgWarm, 0, 0);
+    const amb = 1 - seg(t, 0.3, 1.35, ease.inOutSine);
+    if (amb > 0.001) { ctx.globalAlpha = amb; ctx.drawImage(bgAmber, 0, 0); ctx.globalAlpha = 1; }
+    ctx.setTransform(1, 0, 0, 1, cam.x * camK, cam.y * camK);
+
+    const jc = { x: P.ax, y: P.by - 400 * P.s };
+    // honey halo behind the jar (very bright backlight in the intro)
+    const flood = Math.sin(PI * prog(t, 0.25, 1.9));
+    const haloR = (lerp(560, 470, P.pe) + 520 * flood) * (1 + 0.03 * Math.sin(t * 1.7));
+    let g = ctx.createRadialGradient(jc.x, jc.y, 10, jc.x, jc.y, haloR);
+    const back = amb;
+    g.addColorStop(0, `rgba(255,${(226 + 20 * back) | 0},${(178 + 40 * back) | 0},${(0.85 + 0.15 * back).toFixed(3)})`);
+    g.addColorStop(0.35, `rgba(237,180,103,${(0.55 + 0.25 * back + 0.15 * flood).toFixed(3)})`);
+    g.addColorStop(1, 'rgba(237,180,103,0)');
+    ctx.fillStyle = g; ctx.fillRect(jc.x - haloR, jc.y - haloR, haloR * 2, haloR * 2);
+
+    // dust in the light
+    const pIn = prog(t, 0, 0.7);
+    for (const d of DUST) {
+      const y = ((d.y - tau(t) * d.sp) % H + H) % H, x = d.x + Math.sin(t * 0.5 + d.ph) * 16;
+      ctx.globalAlpha = d.a * pIn * (0.55 + 0.45 * Math.sin(t * 1.8 + d.ph)) * (1 - 0.35 * P.pe);
+      ctx.fillStyle = back > 0.5 ? '#FFD9A0' : '#FFF6E6';
+      ctx.beginPath(); ctx.arc(x, y, d.rad, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // particle poses
+    const sweepP = prog(t, T.sweep0, T.sweep1), sweepX = lerp(80, 1000, ease.inOutSine(sweepP)), sweepA = Math.sin(PI * sweepP);
+    const fadeIn = ease.outCubic(prog(t, 0.05, 0.9));
+    const items = PARTS.map((p) => {
+      const pose = orbit(p, t, J);
+      let a = fadeIn * (pose.z < 0 ? lerp(0.62, 0.9, (pose.z + 450) / 450) : 1);
+      // end card: keep the facts column, headline and legal clean
+      a *= 1 - P.pe * smooth(440, 520, pose.x) - P.pe * smooth(990, 1040, pose.y) - P.pe * (1 - smooth(610, 670, pose.y));
+      const inJar = 1 - smooth(0, 40, Math.max(Math.abs(pose.x - P.ax) - 125 * P.s / 0.4, Math.abs(pose.y - (P.by - 475 * P.s)) - 525 * P.s));
+      if (pose.z >= 0) a *= 1 - (COVER_MODE ? 1 : P.pe) * inJar;
+      const glint = sweepA * Math.exp(-Math.pow((pose.x - sweepX) / 90, 2));
+      return { p, pose, a: clamp(a), glint };
+    });
+    const heroes = HERO.map((h) => ({ h, cap: heroPose(h, t, J) })).filter((o) => o.cap);
+
+    function drawSet(front) {
+      const list = items.filter((it) => (it.pose.z >= 0) === front && it.a > 0.01).sort((a, b) => a.pose.z - b.pose.z);
+      const hs = heroes.filter((o) => !o.cap.early && (o.cap.z >= 0) === front);
+      const all = list.map((it) => ({ z: it.pose.z, f: () => { ctx.save(); ctx.globalAlpha = it.a; drawParticle(ctx, it.p, it.pose, t, it.a, it.glint); ctx.restore(); } }))
+        .concat(hs.map((o) => ({ z: o.cap.z, f: () => drawCapsule(ctx, o.cap) })));
+      all.sort((a, b) => a.z - b.z).forEach((o) => o.f());
+    }
+    drawSet(false);
+
+    // floating shadow (spin) / pedestal (end card)
+    const py = pedY(t);
+    if (P.pe < 0.98) {
+      const hgt = clamp((P.bob + 7) / 14);
+      const sy = lerp(1395, 1080, P.pe);
+      g = ctx.createRadialGradient(P.ax, sy, 4, P.ax, sy, 210 * P.s / 0.56);
+      g.addColorStop(0, `rgba(70,40,18,${(0.24 - 0.06 * hgt) * (1 - P.pe) * (1 - amb * 0.6)})`); g.addColorStop(1, 'rgba(70,40,18,0)');
+      ctx.save(); ctx.translate(P.ax, sy); ctx.scale(1, 0.13); ctx.translate(-P.ax, -sy);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P.ax, sy, 210 * P.s / 0.56, 0, TAU); ctx.fill(); ctx.restore();
+    }
+    if (py < 419) {
+      const M = pedestal.meta, px = 300 - M.cx, pyTop = 1004 + py - M.top;
+      ctx.save(); ctx.globalAlpha = 1 - py / 420;
+      ctx.drawImage(pedestal, px, pyTop);
+      // amber light through the glass on the stone + contact shadow
+      const land = smooth(T.move1 - 0.25, T.move1 + 0.05, t);
+      g = ctx.createRadialGradient(392, 1004 + py, 2, 392, 1004 + py, 120);
+      g.addColorStop(0, `rgba(214,120,40,${0.28 * land})`); g.addColorStop(1, 'rgba(214,120,40,0)');
+      ctx.save(); ctx.translate(392, 1004 + py); ctx.scale(1, 0.16); ctx.translate(-392, -(1004 + py));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(392, 1004 + py, 120, 0, TAU); ctx.fill(); ctx.restore();
+      g = ctx.createRadialGradient(300, 1006 + py, 2, 300, 1006 + py, 128);
+      g.addColorStop(0, `rgba(58,34,16,${0.5 * land})`); g.addColorStop(0.7, `rgba(58,34,16,${0.18 * land})`); g.addColorStop(1, 'rgba(58,34,16,0)');
+      ctx.save(); ctx.translate(300, 1006 + py); ctx.scale(1, 0.12); ctx.translate(-300, -(1006 + py));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(300, 1006 + py, 128, 0, TAU); ctx.fill(); ctx.restore();
+      ctx.restore();
+    }
+
+    // the jar
+    const dark = 1 - seg(t, 0.15, 1.2, ease.inOutSine);
+    const rim = lerp(0.18, 1, dark) * (1 - P.pe * 0.8);
+    const glint = Math.min(1, ease.outCubic(prog(t, 0.3, 0.75)) * 1.0) * lerp(1, 0.35, seg(t, 0.9, 2.2)) * (1 - P.pe * 0.5);
+    const liftPx = lidLiftPx(t);
+    const endSweep = ease.inOutSine(prog(t, 7.3, 8.5));      // slow reflection across the glass on the end card
+    jar.draw(ctx, {
+      x0: J.x0, y0: J.y0, s: J.s, rot: theta(t), lidLift: liftPx / J.s, lidTilt: lidTilt(t), lidRot: lidRot(t),
+      light: sweepP > 0 && sweepP < 1 ? sweepP : (endSweep > 0 && endSweep < 1 ? endSweep : undefined), glint, dark: dark * 0.85, rim,
+      beforeLid() {
+        heroes.filter((o) => o.cap.early).forEach((o) => {
+          ctx.save();
+          if (o.cap.clip !== null) { ctx.beginPath(); ctx.rect(-50, -50, W + 100, o.cap.clip + 50); ctx.clip(); }
+          drawCapsule(ctx, o.cap); ctx.restore();
+        });
+      },
+    });
+
+    // static crystal cluster on the pedestal (end card)
+    if (py < 419) {
+      ctx.save(); ctx.globalAlpha = 1 - py / 420;
+      [[436, 990, 26, 0.15, 0.4, 0.06], [468, 1004, 17, -0.5, 1.1, 0.5]].forEach(([x, y, s, a, b, cc], i) => {
+        ctx.save(); ctx.translate(x, y + py); drawCrystal(ctx, PARTS[i].mesh, rotMat(a, b + 0.15 * Math.sin(t * 0.6 + i), cc), s, 0, 1); ctx.restore();
+      });
+      ctx.restore();
+    }
+    drawSet(true);
+
+    // light sweep across the frame (3.0-3.6 s)
+    if (sweepA > 0.001) {
+      ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.translate(sweepX, 960); ctx.rotate(0.32);
+      g = ctx.createLinearGradient(-170, 0, 170, 0);
+      g.addColorStop(0, 'rgba(255,240,215,0)'); g.addColorStop(0.5, `rgba(255,240,215,${(0.22 * sweepA).toFixed(3)})`); g.addColorStop(1, 'rgba(255,240,215,0)');
+      ctx.fillStyle = g; ctx.fillRect(-170, -1300, 340, 2600); ctx.restore();
+    }
+
+    // grain (texture), very light
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const f = Math.round(t * 30), tile = grainTiles[f % grainTiles.length];
+    ctx.save(); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.05;
+    ctx.translate((f * 37) % 192, (f * 91) % 192); ctx.fillStyle = ctx.createPattern(tile, 'repeat');
+    ctx.fillRect(-192, -192, W + 384, H + 384); ctx.restore();
+  }
+
+  // ------------------------------------------------------------------ DOM text
+  const COVER = COVER_MODE;                          // cover still: full headline, no chip / markers
+  function drawText(t) {
+    const pe = seg(t, T.move0, T.move1, ease.inOutCubic);
+    if (COVER) {
+      set($('#disclosure'), { o: 0 }); set($('#badge'), { o: 1 }); set($('#chip'), { o: 0 });
+      set($('#hlogo'), { o: 1 }); HW.slice(1).forEach((w) => { set(w.el, { o: 1 }); if (w.mk) w.mk.style.opacity = 0; });
+      ['#facts', '#ctaWrap', '#legal'].forEach((q) => set($(q), { o: 0 }));
+      return;
+    }
+    // opening disclosure 0-2.2 s, permanent badge
+    set($('#disclosure'), { o: t < 1.9 ? 1 : 1 - prog(t, 1.9, 2.2) });
+    set($('#badge'), { o: 1 });
+
+    // headline synced to the VO, word by word; shrinks into the end card title
+    const lw = HW[0];
+    const pl = spring(t, lw.start - 0.06, 1.7, 0.55);
+    set($('#hlogo'), { y: (1 - Math.min(1, pl)) * 26, s: lerp(0.86, 1, Math.min(1.04, pl)) * lerp(1, 0.82, pe), o: prog(t, lw.start - 0.06, lw.start + 0.12) });
+    HW.slice(1).forEach((w) => {
+      if (!w.mk) { const a = w.start - 0.07, p = ease.outBack(prog(t, a, a + 0.32), 1.5); set(w.el, { y: (1 - p) * 46, o: prog(t, a, a + 0.16) }); return; }
+      const a = w.start - 0.07;
+      const p = ease.outBack(prog(t, a, a + 0.32), 1.5);
+      set(w.el, { y: (1 - p) * 46, o: prog(t, a, a + 0.16), s: lerp(0.94, 1, clamp(p)) });
+      const on = prog(t, a, a + Math.min(0.32, w.end - w.start));
+      const off = 1 - seg(t, w.end + 0.08, w.end + 0.5, ease.inOutSine);
+      w.mk.style.transform = `scaleX(${ease.outCubic(on).toFixed(3)})`;
+      w.mk.style.opacity = (0.75 * Math.min(on * 3, 1) * off).toFixed(3);
+    });
+    set($('#head'), { s: lerp(1, 0.58, pe), y: lerp(0, -26, pe) });
+
+    // "3 gélules par jour" when the usage panel faces the camera
+    const cIn = ease.outBack(prog(t, CHIP.a, CHIP.a + 0.36), 1.4), cOut = seg(t, CHIP.b - 0.25, CHIP.b, ease.inCubic);
+    set($('#chip'), { x: (1 - cIn) * 30 - cOut * 20, s: lerp(0.82, 1, clamp(cIn)), o: prog(t, CHIP.a, CHIP.a + 0.14) * (1 - cOut) });
+
+    // end card: facts (staggered), CTA, legal (fully on screen from 6.0 s, then static)
+    document.querySelectorAll('.fact').forEach((el, i) => {
+      const a = 5.98 + i * 0.14, p = ease.outCubic(prog(t, a, a + 0.42));
+      set(el, { x: (1 - p) * 50, o: prog(t, a, a + 0.28) });
+    });
+    const pc = ease.outBack(prog(t, 6.4, 6.78), 1.5);
+    set($('#ctaWrap'), { y: (1 - pc) * 34, s: lerp(0.9, 1, clamp(pc)), o: prog(t, 6.4, 6.55) });
+    const pl2 = ease.outCubic(prog(t, T.legal0, T.legal1));
+    set($('#legal'), { y: (1 - pl2) * 24, o: pl2 });
+  }
+
+  SK.scene({
+    stage: '#stage', width: W, height: H, duration: DUR,
+    async ready() {
+      IM = await SK.loadImages({ label: A.assets.labelWrap, capsule: A.assets.capsulePng });
+      jar = new JarV2(IM);
+      spheres.mg = sphereSprite('#D98535', '#7E3F14');
+      spheres.n = sphereSprite('#C7D2DA', '#6F8293');
+      spheres.c = sphereSprite('#B9A58C', '#6E5A45');
+      spheres.o = sphereSprite('#F6EFE4', '#B8A68E');
+      buildBackgrounds();
+      // map VO words to the headline units
+      const units = [$('#hlogo'), $('#hl1 .wd'), $('#hl2 .wd')].concat(Array.from(document.querySelectorAll('#hl3 .wd')));
+      units.forEach((el, i) => { const w = vw[i] || vw[vw.length - 1]; HW.push({ el, mk: el.querySelector('.mk'), start: w.start, end: w.end }); });
+    },
+    seek(t) {
+      drawFrame(t);
+      drawText(t);
+    },
+  });
+  window.__V2 = { theta, tUsage, CHIP, VO_END };
+})();
+</script>
+</body>
+</html>
