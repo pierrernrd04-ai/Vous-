@@ -60,6 +60,8 @@ input.inp{width:100%;font:700 24px/1.2 ui-monospace,Consolas,monospace;letter-sp
 @media (max-width:520px){.pair{grid-template-columns:1fr;justify-items:center;text-align:center}}
 /* tablette : l'écran du PC en plein écran */
 #screen{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none}
+body.fill #screen{object-fit:cover}
+#hud .tip{width:100%;text-align:center;font-weight:600;color:#fff;font-size:15px}
 body.live{background:#000;overflow:hidden}
 body.live #screen{display:block}
 body.live #app{display:none}
@@ -96,8 +98,9 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const fmt = (c) => c.slice(0, 4) + '-' + c.slice(4);
 const isTabletUA = /Android|iPad|Tablet/i.test(navigator.userAgent);
 
-const st = { role: store.get('miroir-role'), code: store.get('miroir-code'), quality: store.get('miroir-q') || 'fluide', sound: store.get('miroir-son') === '1' };
-function save() { store.set('miroir-role', st.role); store.set('miroir-code', st.code); store.set('miroir-q', st.quality); store.set('miroir-son', st.sound ? '1' : ''); }
+const st = { role: store.get('miroir-role'), code: store.get('miroir-code'), quality: store.get('miroir-q') || 'fluide', sound: store.get('miroir-son') === '1',
+  src: store.get('miroir-src') || 'onglet', fill: store.get('miroir-fill') === '1' };
+function save() { store.set('miroir-role', st.role); store.set('miroir-code', st.code); store.set('miroir-q', st.quality); store.set('miroir-son', st.sound ? '1' : ''); store.set('miroir-src', st.src); store.set('miroir-fill', st.fill ? '1' : ''); }
 
 /* lien d'appairage scanné sur la tablette : …/miroir/#t=CODE */
 const hm = location.hash.match(/[#&]t=([A-Za-z0-9]{8})\b/);
@@ -163,6 +166,8 @@ async function readStats(conn, dir) {
   const parts = [];
   if (rtp && rtp.frameWidth) parts.push(`${rtp.frameWidth}×${rtp.frameHeight}`);
   if (rtp && rtp.framesPerSecond) parts.push(`${Math.round(rtp.framesPerSecond)} i/s`);
+  const codec = rtp && rtp.codecId && r.get(rtp.codecId);
+  if (codec && codec.mimeType) parts.push(codec.mimeType.split('/')[1]);
   if (rtp) {
     const bytes = dir === 'outbound-rtp' ? rtp.bytesSent : rtp.bytesReceived, prev = statPrev.get(conn);
     if (prev && rtp.timestamp > prev.t) parts.push(`${((bytes - prev.b) * 8 / (rtp.timestamp - prev.t) / 1000).toFixed(1).replace('.', ',')} Mb/s`);
@@ -204,9 +209,12 @@ async function share() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { toast("Ce navigateur ne sait pas partager l'écran : ouvre Miroir dans Chrome."); return; }
   let s;
   try {
+    const tabMode = st.src === 'onglet';
     s = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: { ideal: 30, max: 60 }, width: { max: 1920 }, height: { max: 1080 } },
-      audio: true, systemAudio: 'include', selfBrowserSurface: 'exclude', surfaceSwitching: 'include', monitorTypeSurfaces: 'include',
+      video: { displaySurface: tabMode ? 'browser' : 'monitor', frameRate: { ideal: 60, max: 60 }, width: { ideal: 1920, max: 2560 }, height: { ideal: 1080, max: 1440 } },
+      // onglet : le son ne sort plus du PC, seulement de la tablette, en même temps que l'image
+      audio: tabMode ? { suppressLocalAudioPlayback: true } : true,
+      systemAudio: 'include', selfBrowserSurface: 'exclude', surfaceSwitching: 'include', monitorTypeSurfaces: 'include', preferCurrentTab: false,
     });
   } catch (e) {
     toast(e && e.name === 'NotAllowedError' ? 'Partage annulé.' : "Impossible de capturer l'écran : " + (e && e.message || e));
@@ -248,17 +256,24 @@ function callTablet() {
   c.on('close', () => endCall(c));
   c.on('error', () => endCall(c));
 }
-/* Fluide : priorité aux images/s (vidéos) ; Net : priorité à la netteté (texte, documents) */
+/* Fluide : vidéos, jusqu'à 60 i/s et 16 Mb/s ; Net : texte, définition maximale à 30 i/s */
 function applyQuality() {
   const fl = st.quality === 'fluide', v = pc.stream && pc.stream.getVideoTracks()[0];
-  if (v && 'contentHint' in v) v.contentHint = fl ? 'motion' : 'detail';
+  if (v) {
+    if ('contentHint' in v) v.contentHint = fl ? 'motion' : 'detail';
+    v.applyConstraints({ frameRate: { ideal: fl ? 60 : 30, max: 60 } }).catch(() => {});
+  }
   const conn = pc.call && pc.call.peerConnection; if (!conn) return;
   for (const s of conn.getSenders()) {
     if (!s.track || s.track.kind !== 'video') continue;
-    const p = s.getParameters();
-    if (!p.encodings || !p.encodings.length) continue;
-    p.encodings[0].maxBitrate = fl ? 8000000 : 5000000;
-    s.setParameters(p).catch(() => {});
+    const set = (withPref) => {
+      const p = s.getParameters();
+      if (!p.encodings || !p.encodings.length) return Promise.resolve();
+      Object.assign(p.encodings[0], { maxBitrate: fl ? 16000000 : 12000000, maxFramerate: fl ? 60 : 30, scaleResolutionDownBy: 1 });
+      if (withPref) p.degradationPreference = fl ? 'balanced' : 'maintain-resolution';
+      return s.setParameters(p);
+    };
+    set(true).catch(() => set(false)).catch(() => {});
   }
 }
 function renderPc() {
@@ -266,7 +281,10 @@ function renderPc() {
   document.body.className = '';
   const sharing = !!pc.stream, audio = sharing && pc.stream.getAudioTracks().length > 0;
   let title, text;
-  if (!sharing) { title = 'Prêt à dupliquer'; text = "Clique sur <b>Dupliquer l'écran</b>, choisis l'onglet <b>Écran entier</b> et active le <b>son du système</b> (interrupteur en bas de la fenêtre) si tu veux le son sur la tablette. Lance ensuite ta vidéo : la tablette affiche tout, automatiquement."; }
+  const tabMode = st.src === 'onglet', surf = sharing ? (pc.stream.getVideoTracks()[0].getSettings().displaySurface || '') : '';
+  if (!sharing && tabMode) { title = 'Prêt à dupliquer ta vidéo'; text = "Ouvre ta vidéo (YouTube…) dans un onglet Chrome. Clique sur <b>Dupliquer la vidéo</b>, choisis <b>cet onglet</b> et laisse le <b>son de l'onglet</b> activé. Puis mets la vidéo en plein écran (touche <b>F</b>) : la tablette l'affiche en plein écran, sans les barres de Chrome ni de Windows, avec le son."; }
+  else if (!sharing) { title = 'Prêt à dupliquer'; text = "Clique sur <b>Dupliquer l'écran</b>, choisis l'onglet <b>Écran entier</b> et active le <b>son du système</b> (interrupteur en bas de la fenêtre) si tu veux le son sur la tablette. Lance ensuite ta vidéo : la tablette affiche tout, automatiquement."; }
+  else if (pc.linked && surf === 'browser') { title = 'Vidéo envoyée à la tablette'; text = `Seul l'onglet choisi apparaît sur la tablette. Mets la vidéo en plein écran (touche <b>F</b>) pour qu'elle remplisse la tablette.${audio ? ' Le son sort de la tablette, synchronisé avec l\'image.' : ' Sans le son (non activé au moment du partage).'}`; }
   else if (pc.linked) { title = 'Duplication en cours'; text = `Tout ce qui s'affiche sur ce PC apparaît sur la tablette.${audio ? ' Son envoyé à la tablette.' : ' Sans le son (non coché au moment du partage).'} Tu peux réduire cette fenêtre.`; }
   else if (pc.missing) { title = 'En attente de la tablette'; text = 'Ouvre <b>Miroir</b> sur la tablette : elle se connecte toute seule, inutile de toucher au PC.'; }
   else { title = 'Connexion à la tablette…'; text = 'Quelques secondes.'; }
@@ -275,7 +293,11 @@ function renderPc() {
   <div class="card">
     <div class="state"><span class="dot ${sharing && pc.linked ? 'ok' : sharing ? '' : 'off'}" style="${sharing ? '' : 'background:var(--muted)'}"></span><h2>${title}</h2></div>
     <p>${text}</p>
-    ${sharing ? '<button class="btn big stop" data-a="stop">■ Arrêter la duplication</button>' : `<button class="btn big" data-a="share" ${net.ready ? '' : 'disabled'}>▶ Dupliquer l'écran</button>`}
+    ${sharing ? '' : `<div class="seg" role="group" aria-label="Ce qui est envoyé" style="margin:0 0 12px">
+      <button class="${tabMode ? 'on' : ''}" data-a="src" data-v="onglet" aria-pressed="${tabMode}">Vidéo · un onglet (conseillé)</button>
+      <button class="${tabMode ? '' : 'on'}" data-a="src" data-v="ecran" aria-pressed="${!tabMode}">Écran entier</button>
+    </div>`}
+    ${sharing ? '<button class="btn big stop" data-a="stop">■ Arrêter la duplication</button>' : `<button class="btn big" data-a="share" ${net.ready ? '' : 'disabled'}>▶ ${tabMode ? 'Dupliquer la vidéo' : "Dupliquer l'écran"}</button>`}
     <div class="seg" role="group" aria-label="Qualité de l'image">
       <button class="${st.quality === 'fluide' ? 'on' : ''}" data-a="q" data-v="fluide" aria-pressed="${st.quality === 'fluide'}">Fluide · vidéos</button>
       <button class="${st.quality === 'net' ? 'on' : ''}" data-a="q" data-v="net" aria-pressed="${st.quality === 'net'}">Net · texte</button>
@@ -290,7 +312,7 @@ function renderPc() {
   </div>
   <div class="card"><h3>Astuces</h3><ul>
     <li><b>Ouvrir Miroir en un clic :</b> dans Chrome, menu ⋮ › Caster, enregistrer et partager › Installer la page en tant qu'application (ou l'icône d'installation au bout de la barre d'adresse). Miroir arrive sur le bureau et dans le menu Démarrer.</li>
-    <li><b>Son :</b> le PC continue aussi de jouer le son. Baisse le volume du PC ; selon la carte son, cela peut aussi baisser le son reçu par la tablette.</li>
+    <li><b>Son :</b> en mode Vidéo, le son sort seulement de la tablette. En mode Écran entier, le PC le joue aussi : baisse son volume (selon la carte son, cela peut aussi baisser le son de la tablette).</li>
     <li><b>Image saccadée ?</b> Rapproche la tablette de la box et préfère le Wi-Fi 5 GHz. « Wi-Fi direct » doit s'afficher sous le bouton.</li>
   </ul></div>
   <div class="foot"><button class="link" data-a="role" data-v="tab">Cet appareil est en fait la tablette</button></div>`;
@@ -310,7 +332,7 @@ function onCall(c) {
   tab.call = c;
   c.answer(undefined, { sdpTransform: fastStart }); // réception seule
   const end = () => { if (tab.call !== c) return; tab.call = null; tab.live = false; video.srcObject = null; renderTab(); wake(); };
-  c.on('stream', (s) => { if (tab.call !== c) return; video.srcObject = s; play(); tab.live = true; renderTab(); wake(); showHud(); });
+  c.on('stream', (s) => { if (tab.call !== c) return; lowLatency(c.peerConnection); video.srcObject = s; play(); tab.live = true; renderTab(); wake(); showHud(); });
   c.on('close', end); c.on('error', end);
   const conn = c.peerConnection; let lost = 0;
   if (conn) conn.addEventListener('connectionstatechange', () => {
@@ -324,12 +346,32 @@ function onCall(c) {
    ces paramètres (lus par Chrome/Edge côté PC dans la réponse de la tablette) donnent tout de suite une image nette */
 function fastStart(sdp) {
   const pts = [...sdp.matchAll(/^a=rtpmap:(\d+) (?:VP8|VP9|H264|AV1)\/90000/gm)].map((m) => m[1]);
-  const extra = 'x-google-start-bitrate=6000;x-google-min-bitrate=1500;x-google-max-bitrate=10000';
+  const extra = 'x-google-start-bitrate=8000;x-google-min-bitrate=2500;x-google-max-bitrate=20000';
   for (const pt of pts) {
     const fmtp = new RegExp('^a=fmtp:' + pt + ' (.*)$', 'm');
     sdp = fmtp.test(sdp) ? sdp.replace(fmtp, (l) => l + ';' + extra) : sdp.replace(new RegExp('^(a=rtpmap:' + pt + ' .*)$', 'm'), '$1\r\na=fmtp:' + pt + ' ' + extra);
   }
-  return sdp;
+  return preferH264(sdp);
+}
+/* le PC envoie avec le premier codec de la réponse : H.264 (profil de base, le mieux décodé par les tablettes) */
+function preferH264(sdp) {
+  const h = [...sdp.matchAll(/^a=rtpmap:(\d+) H264\/90000/gm)].map((m) => m[1]);
+  if (!h.length) return sdp;
+  const fmtpOf = (pt) => (sdp.match(new RegExp('^a=fmtp:' + pt + ' (.*)$', 'm')) || [])[1] || '';
+  const rank = (pt) => { const f = fmtpOf(pt); return (/packetization-mode=1/.test(f) ? 0 : 2) + (/profile-level-id=42e0/i.test(f) ? 0 : 1); };
+  h.sort((a, b) => rank(a) - rank(b));
+  return sdp.replace(/^(m=video \S+ \S+)((?: \d+)+)$/m, (all, head, list) => {
+    const rest = list.trim().split(' ').filter((pt) => !h.includes(pt));
+    return head + ' ' + h.filter((pt) => list.split(' ').includes(pt)).concat(rest).join(' ');
+  });
+}
+/* afficher chaque image dès qu'elle arrive : tampon de réception minimal */
+function lowLatency(conn) {
+  if (!conn) return;
+  for (const r of conn.getReceivers()) {
+    try { if ('jitterBufferTarget' in r) r.jitterBufferTarget = 0; } catch {}
+    try { if ('playoutDelayHint' in r) r.playoutDelayHint = 0; } catch {}
+  }
 }
 function play() {
   video.muted = !st.sound;
@@ -344,11 +386,22 @@ async function wake() {
 }
 function renderHud() {
   const fs = !!document.fullscreenElement;
-  hud.innerHTML = `<button class="btn" data-a="sound">${video.muted ? '🔇 Activer le son' : '🔊 Couper le son'}</button>
+  document.body.classList.toggle('fill', st.fill);
+  hud.innerHTML = `${fs ? '' : '<div class="tip">Touche l\'image : plein écran et son</div>'}
+    <button class="btn" data-a="sound">${video.muted ? '🔇 Activer le son' : '🔊 Couper le son'}</button>
     <button class="btn" data-a="fs">${fs ? '⤡ Quitter le plein écran' : '⤢ Plein écran'}</button>
+    <button class="btn" data-a="fill">${st.fill ? '▣ Image entière' : '⛶ Remplir l\'écran'}</button>
     <div class="info" id="hudInfo">${esc(tab.stats || "Écran de l'ordinateur")}</div>`;
 }
-function showHud() { renderHud(); hud.classList.remove('hide'); clearTimeout(tab.hudT); tab.hudT = setTimeout(() => hud.classList.add('hide'), 4000); }
+/* hors plein écran, les commandes restent visibles ; en plein écran, elles disparaissent après 3 s */
+function showHud() {
+  renderHud(); hud.classList.remove('hide'); clearTimeout(tab.hudT);
+  if (document.fullscreenElement) tab.hudT = setTimeout(() => hud.classList.add('hide'), 3000);
+}
+async function enterFullscreen() {
+  try { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); } catch {}
+  try { await screen.orientation.lock('landscape'); } catch {}
+}
 function renderTab() {
   if (st.role !== 'tab') return;
   if (!st.code) {
@@ -370,7 +423,7 @@ function renderTab() {
     <p style="font-size:14px">Code d'appairage : <b>${fmt(st.code)}</b></p>
     <div class="card" style="text-align:left;margin-top:12px"><h3>Pour un vrai mode « appli »</h3><ul>
       <li>Dans Chrome, menu ⋮ › <b>Ajouter à l'écran d'accueil</b> : Miroir s'ouvrira en plein écran, comme une application.</li>
-      <li>Touche l'écran pendant la duplication pour le son, le plein écran et l'état de la connexion.</li>
+      <li>Pendant la duplication, touche l'image : plein écran et son d'un coup. Touche à nouveau pour « Remplir l'écran » et l'état de la connexion.</li>
     </ul></div>
     <div class="foot"><button class="link" data-a="unpair">Changer de code</button><button class="link" data-a="role" data-v="pc">Cet appareil est en fait l'ordinateur</button></div>
   </div>`;
@@ -394,17 +447,22 @@ const ACT = {
   unpair() { st.code = ''; save(); drop(); renderTab(); },
   sound() { st.sound = video.muted; save(); video.muted = !st.sound; if (!video.muted) video.play().catch(() => {}); showHud(); },
   async fs() {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); try { await screen.orientation.lock('landscape'); } catch {} }
-    } catch {}
+    if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch {} } else await enterFullscreen();
     showHud();
   },
+  fill() { st.fill = !st.fill; save(); showHud(); },
+  src(t) { st.src = t.dataset.v; save(); renderPc(); },
 };
 document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-a]');
   if (t) { e.preventDefault(); ACT[t.dataset.a] && ACT[t.dataset.a](t); return; }
-  if (tab.live) showHud();
+  if (!tab.live) return;
+  if (!document.fullscreenElement && (e.target === video || hud.contains(e.target))) {
+    if (video.muted) { st.sound = true; save(); video.muted = false; video.play().catch(() => {}); }
+    enterFullscreen().then(showHud);
+    return;
+  }
+  showHud();
 });
 document.addEventListener('submit', (e) => {
   if (e.target.dataset.f !== 'pair') return;
