@@ -20,6 +20,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin && url.pathname.startsWith('/api/')) return;
+  // les autres applis du même site (miroir/) ne passent pas par ce cache
+  if (url.origin === location.origin && url.pathname.startsWith(new URL('./miroir/', self.location).pathname)) return;
   if (req.mode === 'navigate') {
     // réseau d'abord (mises à jour immédiates), cache si hors ligne
     e.respondWith(
