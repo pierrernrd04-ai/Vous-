@@ -12,7 +12,7 @@ self.addEventListener('install', (e) => {
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('rp-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
   );
 });
 self.addEventListener('fetch', (e) => {
@@ -20,8 +20,9 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin && url.pathname.startsWith('/api/')) return;
-  // les autres applis du même site (miroir/) ne passent pas par ce cache
-  if (url.origin === location.origin && url.pathname.startsWith(new URL('./miroir/', self.location).pathname)) return;
+  // les autres applis du même site (miroir/, foxbank/…) ont leur propre cache : seul icons/ est un dossier du tracker
+  const rel = url.pathname.slice(new URL('./', self.location).pathname.length);
+  if (url.origin === location.origin && rel.includes('/') && !rel.startsWith('icons/')) return;
   if (req.mode === 'navigate') {
     // réseau d'abord (mises à jour immédiates), cache si hors ligne
     e.respondWith(
