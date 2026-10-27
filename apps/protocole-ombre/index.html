@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#07090d">
+<meta name="description" content="Protocole Ombre : jeu de tir tactique futuriste en 3D, solo contre bots et multijoueur en ligne. Mobile, tablette et ordinateur.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Protocole Ombre</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
+</script>
+<script src="lib/peerjs.min.js" defer></script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<!-- ═══════════════ Chargement ═══════════════ -->
+<section id="boot" class="screen">
+  <div class="boot-logo"><span>PROTOCOLE</span><b>OMBRE</b></div>
+  <div class="boot-bar"><i id="bootFill"></i></div>
+  <p id="bootText">Initialisation…</p>
+</section>
+
+<!-- ═══════════════ Menu principal ═══════════════ -->
+<section id="menu" class="screen" hidden>
+  <header class="brand">
+    <div class="logo"><span>PROTOCOLE</span><b>OMBRE</b></div>
+    <p class="tag">Opérations spéciales · 2071</p>
+  </header>
+  <nav class="main-nav">
+    <button class="nav-btn primary" data-go="play"><b>JOUER</b><span>Solo contre bots</span></button>
+    <button class="nav-btn" data-go="mp"><b>MULTIJOUEUR</b><span>Salon en ligne avec tes amis</span></button>
+    <button class="nav-btn" data-go="armory"><b>ARMURERIE</b><span>18 armes · ton équipement</span></button>
+    <button class="nav-btn" data-go="settings"><b>PARAMÈTRES</b><span>Commandes, graphismes, son</span></button>
+    <button class="nav-btn" data-go="howto"><b>COMMENT JOUER</b><span>Commandes et astuces</span></button>
+  </nav>
+  <aside class="player-card">
+    <div class="rank" id="pcRank">1</div>
+    <div class="pc-info">
+      <input id="pcName" maxlength="16" spellcheck="false" aria-label="Nom de joueur">
+      <div class="xp"><i id="pcXp"></i></div>
+      <small id="pcStats"></small>
+    </div>
+    <div class="pc-loadout" id="pcLoadout"></div>
+  </aside>
+  <footer class="menu-foot">Univers original inspiré des jeux de tir futuristes. Non affilié à Activision ni à Call of Duty.</footer>
+</section>
+
+<!-- ═══════════════ Partie solo ═══════════════ -->
+<section id="play" class="screen panel-screen" hidden>
+  <div class="panel wide">
+    <div class="panel-head"><button class="back" data-go="menu">‹</button><h2>PARTIE CONTRE BOTS</h2></div>
+    <h4>Carte</h4>
+    <div class="maps" id="soloMaps"></div>
+    <div class="opts">
+      <div class="opt"><h4>Mode</h4><div class="seg" id="soloMode"></div></div>
+      <div class="opt"><h4>Difficulté des bots</h4><div class="seg" id="soloDiff"></div></div>
+      <div class="opt"><h4 id="soloSizeLabel">Taille des équipes</h4><div class="seg" id="soloSize"></div></div>
+    </div>
+    <button class="cta" id="soloStart">DÉPLOYER</button>
+  </div>
+</section>
+
+<!-- ═══════════════ Multijoueur ═══════════════ -->
+<section id="mp" class="screen panel-screen" hidden>
+  <div class="panel wide">
+    <div class="panel-head"><button class="back" data-go="menu" id="mpBack">‹</button><h2>MULTIJOUEUR</h2></div>
+    <div id="mpHome">
+      <p class="note">Joue en ligne avec tes amis qui ont Protocole Ombre (navigateur, mobile ou ordinateur). Un joueur crée le salon et partage le code ; les places vides sont remplies par des bots.</p>
+      <div class="mp-actions">
+        <button class="cta" id="mpCreate">CRÉER UN SALON</button>
+        <div class="join">
+          <input id="mpCode" maxlength="5" placeholder="CODE" autocapitalize="characters" spellcheck="false" aria-label="Code du salon">
+          <button class="cta alt" id="mpJoin">REJOINDRE</button>
+        </div>
+      </div>
+      <p class="error" id="mpError" hidden></p>
+    </div>
+    <div id="mpLobby" hidden>
+      <div class="lobby-top">
+        <div class="code-box"><small>CODE DU SALON</small><b id="lobbyCode">-----</b><button class="mini" id="lobbyShare">Partager</button></div>
+        <div class="lobby-players"><h4>Opérateurs</h4><ul id="lobbyPlayers"></ul></div>
+      </div>
+      <div id="lobbyHostOpts">
+        <h4>Carte</h4>
+        <div class="maps small" id="mpMaps"></div>
+        <div class="opts">
+          <div class="opt"><h4>Mode</h4><div class="seg" id="mpMode"></div></div>
+          <div class="opt"><h4>Bots</h4><div class="seg" id="mpDiff"></div></div>
+          <div class="opt"><h4>Équipes</h4><div class="seg" id="mpSize"></div></div>
+          <div class="opt"><h4>Humains</h4><div class="seg" id="mpCoop"></div></div>
+        </div>
+        <button class="cta" id="lobbyStart">LANCER LA PARTIE</button>
+      </div>
+      <p class="note" id="lobbyWait" hidden>En attente de l'hôte… <span id="lobbyCfg"></span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Armurerie ═══════════════ -->
+<section id="armory" class="screen" hidden>
+  <div class="armory-ui">
+    <div class="panel-head"><button class="back" data-go="menu">‹</button><h2>ARMURERIE</h2></div>
+    <div class="slots"><button class="slot on" data-slot="primary">PRINCIPALE</button><button class="slot" data-slot="secondary">SECONDAIRE</button></div>
+    <div class="tabs" id="armTabs"></div>
+    <div class="wlist" id="armList"></div>
+  </div>
+  <div class="armory-detail">
+    <small id="armClass"></small>
+    <h3 id="armName"></h3>
+    <p id="armDesc"></p>
+    <div class="stats" id="armStats"></div>
+    <div class="facts" id="armFacts"></div>
+    <button class="cta" id="armEquip">ÉQUIPER</button>
+  </div>
+</section>
+
+<!-- ═══════════════ Paramètres ═══════════════ -->
+<section id="settings" class="screen panel-screen" hidden>
+  <div class="panel">
+    <div class="panel-head"><button class="back" id="setBack">‹</button><h2>PARAMÈTRES</h2></div>
+    <label class="row"><span>Sensibilité</span><input type="range" id="setSens" min="0.2" max="3" step="0.05"><output id="setSensV"></output></label>
+    <label class="row"><span>Champ de vision</span><input type="range" id="setFov" min="65" max="105" step="1"><output id="setFovV"></output></label>
+    <label class="row"><span>Volume</span><input type="range" id="setVol" min="0" max="1" step="0.05"><output id="setVolV"></output></label>
+    <label class="row"><span>Qualité graphique</span><select id="setQuality"><option value="auto">Auto</option><option value="low">Basse</option><option value="medium">Moyenne</option><option value="high">Élevée</option></select></label>
+    <label class="row check"><span>Tir automatique (tactile)<small>Tire seul quand le réticule est sur un ennemi</small></span><input type="checkbox" id="setAuto"></label>
+    <label class="row check"><span>Visée assistée<small>Tactile et manette</small></span><input type="checkbox" id="setAssist"></label>
+    <label class="row check"><span>Inverser l'axe vertical</span><input type="checkbox" id="setInvert"></label>
+    <label class="row check"><span>Afficher les FPS</span><input type="checkbox" id="setFps"></label>
+    <p class="note small">La qualité graphique s'applique à la prochaine partie.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ Comment jouer ═══════════════ -->
+<section id="howto" class="screen panel-screen" hidden>
+  <div class="panel wide">
+    <div class="panel-head"><button class="back" data-go="menu">‹</button><h2>COMMENT JOUER</h2></div>
+    <div class="howto">
+      <div><h4>Tactile</h4><ul>
+        <li><b>Joystick gauche</b> (n'importe où à gauche) : se déplacer. Pousse-le à fond vers le haut pour sprinter.</li>
+        <li><b>Glisser à droite</b> : viser.</li>
+        <li><b>Gros bouton</b> : tirer (on peut viser en le faisant glisser). Le tir automatique est activé par défaut.</li>
+        <li><b>Viseur</b> : viser avec l'arme. <b>Saut</b> deux fois : propulseur. <b>Accroupi</b> en sprint : glissade.</li>
+      </ul></div>
+      <div><h4>Clavier et souris</h4><ul>
+        <li><b>ZQSD</b> ou <b>WASD</b> : se déplacer · <b>Maj</b> : sprinter</li>
+        <li><b>Clic gauche</b> : tirer · <b>Clic droit</b> : viser</li>
+        <li><b>Espace</b> : sauter (deux fois : propulseur)</li>
+        <li><b>C</b> / <b>Ctrl</b> : s'accroupir, glisser en sprint</li>
+        <li><b>R</b> recharger · <b>1</b>/<b>2</b>/molette changer d'arme · <b>G</b> grenade · <b>E</b> Impulsion · <b>Tab</b> scores · <b>Échap</b> pause</li>
+      </ul></div>
+      <div><h4>Manette</h4><ul>
+        <li><b>Gâchettes</b> : viser / tirer · <b>A</b> sauter · <b>B</b> accroupi · <b>X</b> recharger · <b>Y</b> changer d'arme</li>
+        <li><b>LB</b> grenade · <b>RB</b> Impulsion · <b>L3</b> sprint · <b>Start</b> pause</li>
+      </ul></div>
+      <div><h4>Astuces</h4><ul>
+        <li>3 éliminations sans mourir : <b>Drone de reconnaissance</b>. 6 : <b>Surcharge</b>.</li>
+        <li><b>Impulsion</b> révèle les ennemis à travers les murs. Elle se recharge avec le temps et les éliminations.</li>
+        <li>La santé se régénère quand tu évites les dégâts quelques secondes.</li>
+        <li>Les tirs à la tête infligent des dégâts supplémentaires.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ HUD ═══════════════ -->
+<div id="hud" hidden>
+  <div id="dmgVignette"></div>
+  <div class="hud-top">
+    <div class="score ally"><small id="teamA">ALLIÉS</small><b id="scoreA">0</b></div>
+    <div class="timer-box"><b id="timer">8:00</b><small id="modeLabel"></small></div>
+    <div class="score foe"><small id="teamB">ENNEMIS</small><b id="scoreB">0</b></div>
+  </div>
+  <canvas id="minimap" width="180" height="180"></canvas>
+  <div id="killfeed"></div>
+  <div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+  <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+  <div id="dmgArrows"></div>
+  <div id="markers"></div>
+  <div id="scope" hidden><div class="scope-ring"></div></div>
+  <div id="popups"></div>
+  <div id="toasts"></div>
+  <div id="center" hidden></div>
+  <div class="hud-bl">
+    <div class="hp"><b id="hpText">100</b><div class="hpbar"><i id="hpFill"></i></div></div>
+    <div class="ability"><small>IMPULSION <kbd>E</kbd></small><div class="abar"><i id="abilityFill"></i></div></div>
+    <div class="streak" id="streakPips"></div>
+  </div>
+  <div class="hud-br">
+    <div class="wname" id="weaponName"></div>
+    <div class="ammo"><b id="ammoMag">30</b><span>/</span><small id="ammoRes">120</small></div>
+    <div class="nades" id="nades">◆◆</div>
+  </div>
+  <div id="lowAmmo" hidden>RECHARGER</div>
+  <div id="reloadHint" hidden>RECHARGEMENT…</div>
+  <div id="scoreboard" hidden></div>
+  <div id="death" hidden>
+    <small>ÉLIMINÉ PAR</small>
+    <b id="deathKiller"></b>
+    <span id="deathWeapon"></span>
+    <em id="deathTimer"></em>
+  </div>
+  <div id="fps" hidden></div>
+</div>
+
+<!-- ═══════════════ Commandes tactiles ═══════════════ -->
+<div id="touch" hidden>
+  <div id="joyBase"><div id="joyKnob"></div></div>
+  <button class="tb pause" data-act="pause" aria-label="Pause">❚❚</button>
+  <button class="tb score" data-act="score" aria-label="Scores">☰</button>
+  <button class="tb fire2" data-act="fire2" aria-label="Tirer">◎</button>
+  <button class="tb fire" data-act="fire" aria-label="Tirer"><span>◎</span></button>
+  <button class="tb ads" data-act="ads" aria-label="Viser">⌖</button>
+  <button class="tb jump" data-act="jump" aria-label="Sauter">▲</button>
+  <button class="tb crouch" data-act="crouch" aria-label="S'accroupir">▼</button>
+  <button class="tb reload" data-act="reload" aria-label="Recharger">↻</button>
+  <button class="tb swap" data-act="swap" aria-label="Changer d'arme">⇄</button>
+  <button class="tb nade" data-act="nade" aria-label="Grenade">✸</button>
+  <button class="tb ability" data-act="ability" aria-label="Impulsion"><i id="abilityBtnFill"></i><span>◉</span></button>
+</div>
+
+<!-- ═══════════════ Pause / Résultats ═══════════════ -->
+<section id="pause" class="screen panel-screen" hidden>
+  <div class="panel narrow">
+    <h2>PAUSE</h2>
+    <button class="cta" id="pauseResume">REPRENDRE</button>
+    <button class="cta alt" id="pauseSettings">PARAMÈTRES</button>
+    <button class="cta danger" id="pauseQuit">QUITTER LA PARTIE</button>
+  </div>
+</section>
+
+<section id="results" class="screen panel-screen" hidden>
+  <div class="panel wide">
+    <h1 id="resTitle">VICTOIRE</h1>
+    <p id="resSub"></p>
+    <div class="res-xp"><span id="resXpText"></span><div class="xp"><i id="resXp"></i></div></div>
+    <div id="resTable"></div>
+    <div class="res-actions">
+      <button class="cta" id="resAgain">REJOUER</button>
+      <button class="cta alt" id="resMenu">MENU</button>
+    </div>
+  </div>
+</section>
+
+<div id="rotate"><b>⟳</b><p>Tourne ton appareil en mode paysage</p></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
