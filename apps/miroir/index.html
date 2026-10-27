@@ -43,6 +43,7 @@ p b,li b{color:var(--text)}
 .seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-top:14px}
 .seg button{flex:1;border:0;border-radius:9px;padding:10px 8px;background:transparent;color:var(--muted);font:600 14px/1.2 inherit;cursor:pointer}
 .seg button.on{background:var(--card);color:var(--text);box-shadow:0 0 0 1px var(--line)}
+.warn{display:block;margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,200,107,.12);border:1px solid rgba(255,200,107,.4);color:var(--text)}
 .stats{font-size:13px;color:var(--muted);margin:12px 0 0;min-height:20px;font-variant-numeric:tabular-nums}
 .state{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .pair{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
@@ -114,7 +115,7 @@ let toastT = 0;
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3200); }
 
 /* ---------- connexion au service de mise en relation (PeerJS), avec reconnexion automatique ---------- */
-const net = { peer: null, id: '', ready: false, fails: 0, timer: 0, onCall: null, onMissing: null };
+const net = { peer: null, id: '', ready: false, fails: 0, timer: 0, onCall: null, onMissing: null, onData: null };
 /* détache l'ancienne connexion avant de la fermer, pour que ses événements ne relancent rien */
 function drop() {
   clearTimeout(net.timer);
@@ -127,6 +128,7 @@ function connect(id) {
   net.peer = p; net.ready = false; changed();
   p.on('open', () => { if (net.peer !== p) return; net.ready = true; net.fails = 0; changed(); });
   p.on('call', (c) => { if (net.peer === p && net.onCall) net.onCall(c); });
+  p.on('connection', (dc) => { if (net.peer === p && net.onData) dc.on('data', (m) => net.onData(m)); else dc.close(); });
   p.on('disconnected', () => { if (net.peer !== p) return; net.ready = false; changed(); retry(); });
   p.on('error', (e) => {
     if (net.peer !== p) return;
@@ -155,32 +157,46 @@ const head = (sub) => `<header><img src="icons/icon-192.png" alt=""><h1>Miroir d
 /* statistiques WebRTC : définition, images/s, débit, chemin (Wi-Fi direct ou relais Internet) */
 const statPrev = new WeakMap();
 async function readStats(conn, dir) {
-  if (!conn) return '';
-  const r = await conn.getStats().catch(() => null); if (!r) return '';
+  const out = { text: '', relay: false, rtt: null };
+  if (!conn) return out;
+  const r = await conn.getStats().catch(() => null); if (!r) return out;
   let rtp = null, pair = null;
   r.forEach((x) => {
     if (x.type === dir && x.kind === 'video') rtp = x;
     if (x.type === 'transport' && x.selectedCandidatePairId) pair = r.get(x.selectedCandidatePairId);
   });
   if (!pair) r.forEach((x) => { if (x.type === 'candidate-pair' && x.nominated && x.state === 'succeeded') pair = x; });
-  const parts = [];
+  const parts = [], prev = statPrev.get(conn) || {};
+  if (pair && pair.currentRoundTripTime != null) out.rtt = pair.currentRoundTripTime * 1000;
+  // tablette : délai estimé = moitié de l'aller-retour réseau + tampon de réception + décodage + une image d'affichage + ~20 ms d'encodage
+  if (rtp && dir === 'inbound-rtp' && rtp.jitterBufferEmittedCount && rtp.framesDecoded) {
+    const dJb = rtp.jitterBufferDelay - (prev.jb || 0), dJn = rtp.jitterBufferEmittedCount - (prev.jn || 0);
+    const dDec = rtp.totalDecodeTime - (prev.dec || 0), dFr = rtp.framesDecoded - (prev.fr || 0);
+    if (dJn > 0 && dFr > 0) {
+      const ms = (out.rtt || 0) / 2 + (dJb / dJn) * 1000 + (dDec / dFr) * 1000 + 1000 / Math.max(15, rtp.framesPerSecond || 30) + 20;
+      parts.push(`délai ≈ ${Math.round(ms / 10) * 10} ms`);
+    }
+    Object.assign(prev, { jb: rtp.jitterBufferDelay, jn: rtp.jitterBufferEmittedCount, dec: rtp.totalDecodeTime, fr: rtp.framesDecoded });
+  }
   if (rtp && rtp.frameWidth) parts.push(`${rtp.frameWidth}×${rtp.frameHeight}`);
   if (rtp && rtp.framesPerSecond) parts.push(`${Math.round(rtp.framesPerSecond)} i/s`);
   const codec = rtp && rtp.codecId && r.get(rtp.codecId);
   if (codec && codec.mimeType) parts.push(codec.mimeType.split('/')[1]);
   if (rtp) {
-    const bytes = dir === 'outbound-rtp' ? rtp.bytesSent : rtp.bytesReceived, prev = statPrev.get(conn);
-    if (prev && rtp.timestamp > prev.t) parts.push(`${((bytes - prev.b) * 8 / (rtp.timestamp - prev.t) / 1000).toFixed(1).replace('.', ',')} Mb/s`);
-    statPrev.set(conn, { b: bytes, t: rtp.timestamp });
+    const bytes = dir === 'outbound-rtp' ? rtp.bytesSent : rtp.bytesReceived;
+    if (prev.t && rtp.timestamp > prev.t) parts.push(`${((bytes - prev.b) * 8 / (rtp.timestamp - prev.t) / 1000).toFixed(1).replace('.', ',')} Mb/s`);
+    Object.assign(prev, { b: bytes, t: rtp.timestamp });
   }
+  statPrev.set(conn, prev);
   if (pair) {
     const loc = r.get(pair.localCandidateId), rem = r.get(pair.remoteCandidateId);
-    const relay = (loc && loc.candidateType === 'relay') || (rem && rem.candidateType === 'relay');
+    out.relay = !!((loc && loc.candidateType === 'relay') || (rem && rem.candidateType === 'relay'));
     const direct = loc && rem && loc.candidateType === 'host' && rem.candidateType === 'host';
-    parts.push(relay ? 'via un relais Internet' : direct ? 'Wi-Fi direct' : 'connexion directe');
-    if (pair.currentRoundTripTime != null) parts.push(`latence réseau ${Math.round(pair.currentRoundTripTime * 1000)} ms`);
+    parts.push(out.relay ? '⚠ via un relais Internet' : direct ? 'Wi-Fi direct' : 'connexion directe');
+    if (out.rtt != null) parts.push(`réseau ${Math.round(out.rtt)} ms`);
   }
-  return parts.join(' · ');
+  out.text = parts.join(' · ');
+  return out;
 }
 
 /* ---------- choix de l'appareil ---------- */
@@ -195,15 +211,24 @@ function renderRoles() {
 }
 
 /* ---------- ordinateur : capture et envoi ---------- */
-const pc = { stream: null, call: null, linked: false, missing: false, timer: 0, stats: '', statsT: 0 };
+const pc = { stream: null, call: null, linked: false, missing: false, timer: 0, stats: '', statsT: 0, guardT: 0, relay: false, tabLong: 0 };
 const tabId = () => PREFIX + st.code + '-tab';
 function startPc() {
   if (!st.code) { st.code = newCode(); save(); }
   net.onCall = (c) => c.close(); // l'ordinateur ne reçoit pas d'appel
   net.onMissing = () => { if (pc.linked) return; pc.missing = true; endCall(pc.call, 3000); renderPc(); };
+  // la tablette donne la définition de son écran : inutile d'envoyer plus de pixels qu'elle n'en affiche
+  net.onData = (m) => { if (m && m.type === 'screen' && m.long > 0) { pc.tabLong = m.long; applyQuality(); } };
   connect(PREFIX + st.code + '-pc');
   clearInterval(pc.statsT);
-  pc.statsT = setInterval(async () => { if (pc.linked) { pc.stats = await readStats(pc.call && pc.call.peerConnection, 'outbound-rtp'); const el = $('#stats'); if (el) el.textContent = pc.stats; } }, 2000);
+  pc.statsT = setInterval(async () => {
+    if (!pc.linked) return;
+    const r = await readStats(pc.call && pc.call.peerConnection, 'outbound-rtp');
+    pc.stats = r.text;
+    if (r.relay !== pc.relay) { pc.relay = r.relay; renderPc(); }
+    const el = $('#stats'); if (el) el.textContent = pc.stats;
+  }, 2000);
+  clearInterval(pc.guardT); pc.guardT = setInterval(latencyGuard, 1000);
 }
 async function share() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { toast("Ce navigateur ne sait pas partager l'écran : ouvre Miroir dans Chrome."); return; }
@@ -211,7 +236,7 @@ async function share() {
   try {
     const tabMode = st.src === 'onglet';
     s = await navigator.mediaDevices.getDisplayMedia({
-      video: { displaySurface: tabMode ? 'browser' : 'monitor', frameRate: { ideal: 60, max: 60 }, width: { ideal: 1920, max: 2560 }, height: { ideal: 1080, max: 1440 } },
+      video: { displaySurface: tabMode ? 'browser' : 'monitor', frameRate: { ideal: 30, max: 30 }, width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1200 } },
       // onglet : le son ne sort plus du PC, seulement de la tablette, en même temps que l'image
       audio: tabMode ? { suppressLocalAudioPlayback: true } : true,
       systemAudio: 'include', selfBrowserSurface: 'exclude', surfaceSwitching: 'include', monitorTypeSurfaces: 'include', preferCurrentTab: false,
@@ -243,25 +268,67 @@ function callTablet() {
   if (!net.ready) { pc.timer = setTimeout(callTablet, 1500); return; }
   const c = net.peer.call(tabId(), pc.stream);
   if (!c) { pc.timer = setTimeout(callTablet, 3000); return; }
-  pc.call = c; pc.linked = false; renderPc();
+  pc.call = c; pc.linked = false; pc.relay = false; Object.assign(guard, { cap: 0, minRtt: Infinity, calm: 0, last: null }); renderPc();
   const conn = c.peerConnection;
-  const guard = setTimeout(() => { if (pc.call === c && !pc.linked) endCall(c); }, 20000);
+  const giveUp = setTimeout(() => { if (pc.call === c && !pc.linked) endCall(c); }, 20000);
   let lost = 0;
   if (conn) conn.addEventListener('connectionstatechange', () => {
     const s = conn.connectionState;
-    if (s === 'connected') { clearTimeout(guard); clearTimeout(lost); if (pc.call === c) { pc.linked = true; pc.missing = false; applyQuality(); renderPc(); } }
+    if (s === 'connected') { clearTimeout(giveUp); clearTimeout(lost); if (pc.call === c) { pc.linked = true; pc.missing = false; applyQuality(); renderPc(); } }
     else if (s === 'failed' || s === 'closed') endCall(c);
     else if (s === 'disconnected') { clearTimeout(lost); lost = setTimeout(() => { if (conn.connectionState !== 'connected') endCall(c); }, 6000); }
   });
   c.on('close', () => endCall(c));
   c.on('error', () => endCall(c));
 }
-/* Fluide : vidéos, jusqu'à 60 i/s et 16 Mb/s ; Net : texte, définition maximale à 30 i/s */
+/* Garde-fou de délai : si l'aller-retour réseau grimpe (images qui s'entassent dans le Wi-Fi),
+   le PC baisse aussitôt son débit sous ce qui passe vraiment, puis remonte doucement quand tout est fluide. */
+const guard = { cap: 0, minRtt: Infinity, calm: 0, last: null };
+const topBitrate = () => (st.quality === 'fluide' ? 16000000 : 12000000);
+function scaleDown() {
+  const v = pc.stream && pc.stream.getVideoTracks()[0], c = v && v.getSettings();
+  const long = c ? Math.max(c.width || 0, c.height || 0) : 0;
+  return long && pc.tabLong ? Math.max(1, long / pc.tabLong) : 1;
+}
+function setMaxBitrate(bps) {
+  const conn = pc.call && pc.call.peerConnection; if (!conn) return;
+  for (const s of conn.getSenders()) {
+    if (!s.track || s.track.kind !== 'video') continue;
+    const p = s.getParameters();
+    if (!p.encodings || !p.encodings.length) continue;
+    p.encodings[0].maxBitrate = Math.round(bps);
+    s.setParameters(p).catch(() => {});
+  }
+}
+async function latencyGuard() {
+  const conn = pc.linked && pc.call && pc.call.peerConnection; if (!conn) return;
+  const r = await conn.getStats().catch(() => null); if (!r) return;
+  let rtt = null, out = null, pair = null;
+  r.forEach((x) => {
+    if (x.type === 'remote-inbound-rtp' && x.kind === 'video' && x.roundTripTime != null) rtt = x.roundTripTime * 1000;
+    if (x.type === 'outbound-rtp' && x.kind === 'video') out = x;
+    if (x.type === 'transport' && x.selectedCandidatePairId) pair = r.get(x.selectedCandidatePairId);
+  });
+  if (pair && pair.currentRoundTripTime != null) rtt = Math.max(rtt || 0, pair.currentRoundTripTime * 1000);
+  if (rtt == null || !out) return;
+  const prev = guard.last; guard.last = { b: out.bytesSent, t: out.timestamp };
+  if (!prev || out.timestamp <= prev.t) return;
+  const bps = (out.bytesSent - prev.b) * 8000 / (out.timestamp - prev.t), top = topBitrate();
+  guard.minRtt = Math.min(guard.minRtt, rtt);
+  if (rtt > guard.minRtt + 80) { guard.cap = Math.max(400000, Math.min(guard.cap || top, bps) * 0.7); guard.calm = 0; setMaxBitrate(guard.cap); }
+  else if (guard.cap && rtt < guard.minRtt + 30 && ++guard.calm >= 3) {
+    guard.calm = 0; guard.cap *= 1.2;
+    if (guard.cap >= top) guard.cap = 0;
+    setMaxBitrate(guard.cap || top);
+  }
+}
+/* 30 i/s suffisent aux vidéos (YouTube : 24 à 30 i/s) et donnent deux fois plus de débit à chaque image qu'à 60 i/s.
+   Fluide : la fluidité d'abord si le réseau faiblit ; Net : la définition d'abord (texte) */
 function applyQuality() {
   const fl = st.quality === 'fluide', v = pc.stream && pc.stream.getVideoTracks()[0];
   if (v) {
     if ('contentHint' in v) v.contentHint = fl ? 'motion' : 'detail';
-    v.applyConstraints({ frameRate: { ideal: fl ? 60 : 30, max: 60 } }).catch(() => {});
+    v.applyConstraints({ frameRate: { ideal: 30, max: 30 } }).catch(() => {});
   }
   const conn = pc.call && pc.call.peerConnection; if (!conn) return;
   for (const s of conn.getSenders()) {
@@ -269,7 +336,7 @@ function applyQuality() {
     const set = (withPref) => {
       const p = s.getParameters();
       if (!p.encodings || !p.encodings.length) return Promise.resolve();
-      Object.assign(p.encodings[0], { maxBitrate: fl ? 16000000 : 12000000, maxFramerate: fl ? 60 : 30, scaleResolutionDownBy: 1 });
+      Object.assign(p.encodings[0], { maxBitrate: Math.min(topBitrate(), guard.cap || Infinity), maxFramerate: 30, scaleResolutionDownBy: scaleDown() });
       if (withPref) p.degradationPreference = fl ? 'balanced' : 'maintain-resolution';
       return s.setParameters(p);
     };
@@ -286,6 +353,7 @@ function renderPc() {
   else if (!sharing) { title = 'Prêt à dupliquer'; text = "Clique sur <b>Dupliquer l'écran</b>, choisis l'onglet <b>Écran entier</b> et active le <b>son du système</b> (interrupteur en bas de la fenêtre) si tu veux le son sur la tablette. Lance ensuite ta vidéo : la tablette affiche tout, automatiquement."; }
   else if (pc.linked && surf === 'browser') { title = 'Vidéo envoyée à la tablette'; text = `Seul l'onglet choisi apparaît sur la tablette. Mets la vidéo en plein écran (touche <b>F</b>) pour qu'elle remplisse la tablette.${audio ? ' Le son sort de la tablette, synchronisé avec l\'image.' : ' Sans le son (non activé au moment du partage).'}`; }
   else if (pc.linked) { title = 'Duplication en cours'; text = `Tout ce qui s'affiche sur ce PC apparaît sur la tablette.${audio ? ' Son envoyé à la tablette.' : ' Sans le son (non coché au moment du partage).'} Tu peux réduire cette fenêtre.`; }
+  if (pc.linked && pc.relay) text += `<span class="warn"><b>La connexion passe par un relais Internet</b> au lieu du Wi-Fi : plus de délai, image moins nette. Mets le PC et la tablette sur le <b>même Wi-Fi</b> (pas le Wi-Fi invité), et dans Windows, Paramètres › Réseau et Internet › Wi-Fi › ton réseau, choisis <b>Réseau privé</b>. Puis relance la duplication.</span>`;
   else if (pc.missing) { title = 'En attente de la tablette'; text = 'Ouvre <b>Miroir</b> sur la tablette : elle se connecte toute seule, inutile de toucher au PC.'; }
   else { title = 'Connexion à la tablette…'; text = 'Quelques secondes.'; }
   const qr = (() => { try { const q = qrcode(0, 'M'); q.addData(pairUrl()); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true, alt: 'QR code pour appairer la tablette' }); } catch { return ''; } })();
@@ -325,14 +393,14 @@ function startTab() {
   net.onCall = onCall;
   connect(PREFIX + st.code + '-tab');
   clearInterval(tab.statsT);
-  tab.statsT = setInterval(async () => { if (tab.live && !hud.classList.contains('hide')) { tab.stats = await readStats(tab.call && tab.call.peerConnection, 'inbound-rtp'); const el = $('#hudInfo'); if (el) el.textContent = tab.stats; } }, 2000);
+  tab.statsT = setInterval(async () => { if (tab.live && !hud.classList.contains('hide')) { tab.stats = (await readStats(tab.call && tab.call.peerConnection, 'inbound-rtp')).text; const el = $('#hudInfo'); if (el) el.textContent = tab.stats; } }, 2000);
 }
 function onCall(c) {
   if (tab.call && tab.call !== c) { try { tab.call.close(); } catch {} }
   tab.call = c;
   c.answer(undefined, { sdpTransform: fastStart }); // réception seule
   const end = () => { if (tab.call !== c) return; tab.call = null; tab.live = false; video.srcObject = null; renderTab(); wake(); };
-  c.on('stream', (s) => { if (tab.call !== c) return; lowLatency(c.peerConnection); video.srcObject = s; play(); tab.live = true; renderTab(); wake(); showHud(); });
+  c.on('stream', (s) => { if (tab.call !== c) return; lowLatency(c.peerConnection); sendScreen(); video.srcObject = s; play(); tab.live = true; renderTab(); wake(); showHud(); });
   c.on('close', end); c.on('error', end);
   const conn = c.peerConnection; let lost = 0;
   if (conn) conn.addEventListener('connectionstatechange', () => {
@@ -343,10 +411,11 @@ function onCall(c) {
   });
 }
 /* sur un réseau local, inutile de démarrer à 0,3 Mb/s et de monter doucement :
-   ces paramètres (lus par Chrome/Edge côté PC dans la réponse de la tablette) donnent tout de suite une image nette */
+   ces paramètres (lus par Chrome côté PC dans la réponse de la tablette) donnent vite une image nette */
 function fastStart(sdp) {
   const pts = [...sdp.matchAll(/^a=rtpmap:(\d+) (?:VP8|VP9|H264|AV1)\/90000/gm)].map((m) => m[1]);
-  const extra = 'x-google-start-bitrate=8000;x-google-min-bitrate=2500;x-google-max-bitrate=20000';
+  // pas de débit minimum : s'il dépasse ce que le Wi-Fi laisse passer, les images s'entassent et le délai grimpe à plusieurs secondes
+  const extra = 'x-google-start-bitrate=2500;x-google-max-bitrate=20000';
   for (const pt of pts) {
     const fmtp = new RegExp('^a=fmtp:' + pt + ' (.*)$', 'm');
     sdp = fmtp.test(sdp) ? sdp.replace(fmtp, (l) => l + ';' + extra) : sdp.replace(new RegExp('^(a=rtpmap:' + pt + ' .*)$', 'm'), '$1\r\na=fmtp:' + pt + ' ' + extra);
@@ -364,6 +433,14 @@ function preferH264(sdp) {
     const rest = list.trim().split(' ').filter((pt) => !h.includes(pt));
     return head + ' ' + h.filter((pt) => list.split(' ').includes(pt)).concat(rest).join(' ');
   });
+}
+/* dire au PC combien de pixels l'écran de la tablette affiche vraiment */
+function sendScreen() {
+  const long = Math.round(Math.max(screen.width, screen.height) * (window.devicePixelRatio || 1));
+  try {
+    const dc = net.peer.connect(PREFIX + st.code + '-pc');
+    dc.on('open', () => { dc.send({ type: 'screen', long }); setTimeout(() => dc.close(), 3000); });
+  } catch {}
 }
 /* afficher chaque image dès qu'elle arrive : tampon de réception minimal */
 function lowLatency(conn) {
