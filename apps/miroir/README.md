@@ -6,13 +6,13 @@ Adresse : **https://pierrernrd04-ai.github.io/Vous-/miroir/**
 
 ## Utilisation
 
-1. **PC (Edge ou Chrome)** : ouvre l'adresse, choisis « Ordinateur ». Un QR code et un code à 8 caractères s'affichent.
+1. **PC (Chrome)** : ouvre l'adresse, choisis « Ordinateur ». Un QR code et un code à 8 caractères s'affichent.
 2. **Tablette (Chrome)** : scanne le QR code avec l'appareil photo. Ou ouvre l'adresse, choisis « Tablette » et tape le code. L'appairage est mémorisé sur les deux appareils.
-3. **PC** : clique sur « Dupliquer l'écran », choisis « Écran entier ». Coche « Partager aussi l'audio du système » pour avoir le son.
+3. **PC** : clique sur « Dupliquer l'écran », choisis l'onglet « Écran entier ». Active le son du système (interrupteur en bas de la fenêtre) pour avoir le son.
 4. Lance ta vidéo : tout s'affiche sur la tablette. Elle se reconnecte toute seule si la page est rechargée ou si le Wi-Fi coupe un instant.
 
 Pour un usage quotidien :
-- **Sur le PC** : Edge › ⋯ › Applications › « Installer ce site en tant qu'application », pour avoir une icône Miroir sur le bureau.
+- **Sur le PC** : Chrome › ⋮ › Caster, enregistrer et partager › « Installer la page en tant qu'application », pour avoir une icône Miroir sur le bureau.
 - **Sur la tablette** : Chrome › ⋮ › « Ajouter à l'écran d'accueil », pour qu'elle s'ouvre en plein écran.
 
 Si la tablette est ouverte et que le PC partage, l'image arrive en 1 à 3 secondes, sans rien toucher.

@@ -201,7 +201,7 @@ function startPc() {
   pc.statsT = setInterval(async () => { if (pc.linked) { pc.stats = await readStats(pc.call && pc.call.peerConnection, 'outbound-rtp'); const el = $('#stats'); if (el) el.textContent = pc.stats; } }, 2000);
 }
 async function share() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { toast("Ce navigateur ne sait pas partager l'écran : ouvre Miroir dans Edge ou Chrome."); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { toast("Ce navigateur ne sait pas partager l'écran : ouvre Miroir dans Chrome."); return; }
   let s;
   try {
     s = await navigator.mediaDevices.getDisplayMedia({
@@ -266,7 +266,7 @@ function renderPc() {
   document.body.className = '';
   const sharing = !!pc.stream, audio = sharing && pc.stream.getAudioTracks().length > 0;
   let title, text;
-  if (!sharing) { title = 'Prêt à dupliquer'; text = "Clique sur <b>Dupliquer l'écran</b>, choisis <b>Écran entier</b> et coche <b>Partager aussi l'audio du système</b> si tu veux le son sur la tablette. Lance ensuite ta vidéo : la tablette affiche tout, automatiquement."; }
+  if (!sharing) { title = 'Prêt à dupliquer'; text = "Clique sur <b>Dupliquer l'écran</b>, choisis l'onglet <b>Écran entier</b> et active le <b>son du système</b> (interrupteur en bas de la fenêtre) si tu veux le son sur la tablette. Lance ensuite ta vidéo : la tablette affiche tout, automatiquement."; }
   else if (pc.linked) { title = 'Duplication en cours'; text = `Tout ce qui s'affiche sur ce PC apparaît sur la tablette.${audio ? ' Son envoyé à la tablette.' : ' Sans le son (non coché au moment du partage).'} Tu peux réduire cette fenêtre.`; }
   else if (pc.missing) { title = 'En attente de la tablette'; text = 'Ouvre <b>Miroir</b> sur la tablette : elle se connecte toute seule, inutile de toucher au PC.'; }
   else { title = 'Connexion à la tablette…'; text = 'Quelques secondes.'; }
@@ -289,7 +289,7 @@ function renderPc() {
       <button class="link" data-a="newcode">Générer un nouveau code</button></div></div>
   </div>
   <div class="card"><h3>Astuces</h3><ul>
-    <li><b>Ouvrir Miroir en un clic :</b> dans Edge, menu ⋯ › Applications › Installer ce site en tant qu'application. Une icône Miroir arrive sur le bureau et dans le menu Démarrer.</li>
+    <li><b>Ouvrir Miroir en un clic :</b> dans Chrome, menu ⋮ › Caster, enregistrer et partager › Installer la page en tant qu'application (ou l'icône d'installation au bout de la barre d'adresse). Miroir arrive sur le bureau et dans le menu Démarrer.</li>
     <li><b>Son :</b> le PC continue aussi de jouer le son. Baisse le volume du PC ; selon la carte son, cela peut aussi baisser le son reçu par la tablette.</li>
     <li><b>Image saccadée ?</b> Rapproche la tablette de la box et préfère le Wi-Fi 5 GHz. « Wi-Fi direct » doit s'afficher sous le bouton.</li>
   </ul></div>
