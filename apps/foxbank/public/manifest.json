@@ -1,0 +1,16 @@
+{
+  "name": "Fox Bank",
+  "short_name": "Fox Bank",
+  "description": "Ton compte, ton budget et tes virements, rusés comme un renard.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F4F7",
+  "theme_color": "#121926",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
