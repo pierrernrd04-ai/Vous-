@@ -1,5 +1,5 @@
 // Widgets du tracker : la page s'ouvre même si le PC démarre sans réseau (les données affichées sont gardées sur le PC).
-const CACHE = 'vw-1';
+const CACHE = 'vw-2';
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './link.js']).catch(() => {})).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('vw-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));

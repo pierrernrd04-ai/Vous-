@@ -588,7 +588,7 @@ svg{display:block;overflow:visible}
   setInterval(quote, 45000);
 
   /* ---------- état de la liaison ---------- */
-  var live = 'off', bad = false;
+  var live = 'off', bad = false, pinged = 0;
   function ago(ms) {
     var s = Math.round((Date.now() - ms) / 1000);
     return s < 45 ? "à l'instant" : s < 3600 ? 'il y a ' + Math.max(1, Math.round(s / 60)) + ' min' : s < 86400 ? 'il y a ' + Math.round(s / 3600) + ' h' : 'le ' + new Date(ms).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
@@ -596,8 +596,10 @@ svg{display:block;overflow:visible}
   function state() {
     var el = document.getElementById('state'), t = document.getElementById('stateTxt');
     el.classList.toggle('live', live === 'live' && !bad); el.classList.toggle('bad', bad);
-    t.textContent = bad ? 'Code incorrect : vérifie le code du tracker' : !CODE ? 'Pas relié' : live !== 'live' ? 'Connexion au tracker…'
-      : SUM ? 'En direct · tracker mis à jour ' + ago(SUM.at) : 'En direct · ouvre le tracker sur ton iPhone';
+    var cs = CODE ? ' · code …' + CODE.slice(-4) : '';
+    if (pinged && Date.now() - pinged < 8000) { el.classList.add('live'); t.textContent = 'Test reçu de ton iPhone ✓' + cs; return; }
+    t.textContent = bad ? 'Code incorrect : vérifie le code du tracker' + cs : !CODE ? 'Pas relié' : live !== 'live' ? 'Connexion au tracker…' + cs
+      : SUM ? 'En direct · iPhone ' + ago(SUM.at) + cs : 'En direct · ouvre le tracker sur ton iPhone' + cs;
   }
   setInterval(state, 15000);
 
@@ -634,6 +636,8 @@ svg{display:block;overflow:visible}
       onData: function (m, info) {
         bad = false;
         if (!m || m.v !== 1 || m.dev === DEV) return;
+        // « Tester la liaison » sur l'iPhone : le voyant le confirme et tous les widgets s'illuminent
+        if (m.k === 'ping') { if (Date.now() - m.at < 60000) { pinged = Date.now(); state(); setTimeout(state, 8200); W.forEach(function (x) { flash(x.id); }); } return; }
         if (m.sum && better(m.sum, SUM)) { SUM = m.sum; paint(SUM, true); }
         if (m.docs) keepDocs(m);
         if (m.k === 's') lastSnap = Math.max(lastSnap, m.at || 0);
@@ -647,9 +651,9 @@ svg{display:block;overflow:visible}
       },
     });
     // rien de récent : on demande au tracker (le téléphone répond dès qu'il est ouvert)
-    // (le téléphone envoie de toute façon un résumé frais à sa première ouverture de la journée)
+    // (le téléphone envoie de toute façon un résumé frais chaque fois qu'on revient dans l'appli)
     function ask() {
-      if (live !== 'live' || (SUM && Object.keys(DOCS).length && Date.now() - SUM.at < 6 * 3600e3) || Date.now() - asked < 6 * 3600e3) return;
+      if (live !== 'live' || (SUM && Object.keys(DOCS).length && Date.now() - SUM.at < 3600e3) || Date.now() - asked < 30 * 60e3) return;
       asked = Date.now();
       conn.send({ v: 1, k: 'h', want: Object.keys(DOCS).length ? 'sum' : 'all', dev: DEV, at: Date.now() }).catch(function () {});
     }
@@ -697,6 +701,16 @@ svg{display:block;overflow:visible}
     });
     b.querySelector('#x').addEventListener('click', function () { b.remove(); });
   }
+  /* mise à jour automatique : la page reste ouverte des jours dans Lively, elle se recharge quand une nouvelle version est en ligne */
+  var VER = null;
+  function checkVersion() {
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.v) return;
+      if (VER === null) VER = j.v; else if (j.v !== VER) location.reload();
+    }).catch(function () {});
+  }
+  checkVersion(); setInterval(checkVersion, 20 * 60e3);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) checkVersion(); });
   if (!CODE) setup();
   else { start(); if (!IN_LIVELY) livelyBar(); }
   if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
