@@ -7,7 +7,7 @@
     out.innerHTML = '<p class="muted">Vérification…</p>';
     try {
       const [res, catalog] = await Promise.all([
-        fetch(`/api/cert?id=${encodeURIComponent(id)}`),
+        fetch(`${document.body.dataset.api || ''}/api/cert?id=${encodeURIComponent(id)}`),
         fetch('/assets/catalog.json').then((r) => r.json()).catch(() => ({})),
       ]);
       out.innerHTML = '';

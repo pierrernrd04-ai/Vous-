@@ -5,10 +5,16 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT = process.env.CONTENT_DIR || join(ROOT, 'content');
-const DIST = join(ROOT, 'dist');
+
 const cfg = JSON.parse(readFileSync(join(ROOT, 'config.json'), 'utf8'));
+// MIRROR=1 : copie statique (Tiiny Host…) dont les statistiques, certificats et formulaires restent servis par Netlify.
+const MIRROR = process.env.MIRROR === '1';
+const API = MIRROR ? cfg.siteUrl : '';
+const DIST_DIR = MIRROR ? 'dist-mirror' : 'dist';
+const DIST = join(ROOT, DIST_DIR);
 
 let tokens = {};
 if (process.env.ACCESS_TOKENS) tokens = JSON.parse(process.env.ACCESS_TOKENS);
@@ -53,6 +59,12 @@ const ICONS = {
   'Bien-être & Efficacité': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 };
 const icon = (cat, size = 28) => `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[cat] || ICONS['IA & Tech']}</svg>`;
+const CAT_CLASS = {
+  'IA & Tech': 'cat-ia', 'Argent & Patrimoine': 'cat-argent', 'Carrière & Business': 'cat-carriere',
+  'Vie numérique': 'cat-numerique', 'Maison & Énergie': 'cat-maison', 'Bien-être & Efficacité': 'cat-bienetre',
+};
+const catClass = (cat) => CAT_CLASS[cat] || 'cat-ia';
+const cover = (c, extra = '') => `<div class="cover ${catClass(c.category)} ${extra}" aria-hidden="true"><span class="cover-icon">${icon(c.category, 120)}</span><span class="cover-kicker">Masterclass · ${esc(c.duration)}</span><span class="cover-title">${esc(c.title)}</span><span class="cover-brand">Kairos Académie</span></div>`;
 const check = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
 // ---------- chargement du contenu ----------
@@ -84,8 +96,9 @@ const bySlug = Object.fromEntries(courses.map((c) => [c.slug, c]));
 const passLink = cfg.paymentLinks['pass-integral'] || '';
 
 // ---------- gabarit ----------
-function layout({ title, description, path, body, page, course = '', noindex = false, jsonld = '', scripts = [] }) {
+function layout({ title, description, path, body, page, course = '', noindex = false, jsonld = '', scripts = [], og = 'home' }) {
   const url = cfg.siteUrl + path;
+  const ogImage = existsSync(join(ROOT, 'src', 'og', `${og}.jpg`)) ? `${cfg.siteUrl}/assets/og/${og}.jpg` : '';
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -100,12 +113,13 @@ ${noindex ? '<meta name="robots" content="noindex, nofollow">' : `<link rel="can
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${url}">
 <meta property="og:locale" content="fr_FR">
+${ogImage ? `<meta property="og:image" content="${ogImage}">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta name="twitter:card" content="summary_large_image">` : ''}
 <meta name="theme-color" content="#14213d">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/assets/style.css">
 ${jsonld ? `<script type="application/ld+json">${jsonld}</script>` : ''}
 </head>
-<body data-page="${page}" data-course="${esc(course)}">
+<body data-page="${page}" data-course="${esc(course)}" data-api="${API}">
 <a class="skip" href="#contenu">Aller au contenu</a>
 <header class="site-header">
   <div class="wrap header-inner">
@@ -114,6 +128,7 @@ ${jsonld ? `<script type="application/ld+json">${jsonld}</script>` : ''}
       <a href="/#catalogue">Masterclasses</a>
       <a href="/#pass">Pass intégral</a>
       <a href="/certificat/">Certificats</a>
+      <a class="btn btn-primary btn-sm nav-cta" href="/#pass">Pass intégral · ${euro(cfg.passPrice)}</a>
       <button class="text-size" type="button" data-text-size aria-label="Agrandir ou réduire le texte">A<span>A</span></button>
     </nav>
   </div>
@@ -156,6 +171,7 @@ const buyButton = (slug, label, cls = 'btn btn-primary btn-lg') =>
 
 const courseCard = (c) => `
 <article class="card course-card">
+  <a class="cover-link" href="/formations/${c.slug}/" tabindex="-1">${cover(c, 'cover-card')}</a>
   <div class="card-top"><span class="cat">${icon(c.category, 22)} ${esc(c.category)}</span><span class="pill">${esc(c.duration)}</span></div>
   <h3><a href="/formations/${c.slug}/">${esc(c.title)}</a></h3>
   <p>${esc(c.subtitle)}</p>
@@ -196,7 +212,7 @@ const checkoutDialog = () => `
   </div>
   <div data-checkout-waitlist hidden>
     <p>Le paiement en ligne de cette masterclass ouvre dans quelques heures. Laissez votre e-mail : vous recevez le lien d'achat en priorité.</p>
-    <form name="liste-attente" method="POST" action="/merci-message/" data-netlify="true" netlify-honeypot="site-web">
+    <form name="liste-attente" method="POST" action="${API}/merci-message/" data-netlify="true" netlify-honeypot="site-web">
       <input type="hidden" name="form-name" value="liste-attente">
       <input type="hidden" name="masterclass" data-waitlist-course>
       <p hidden><label>Ne pas remplir : <input name="site-web"></label></p>
@@ -211,7 +227,8 @@ function homePage() {
   const cats = [...new Set(courses.map((c) => c.category))];
   const body = `
 <section class="hero">
-  <div class="wrap hero-inner">
+  <div class="wrap hero-grid">
+  <div class="hero-inner">
     <p class="eyebrow">${courses.length} masterclasses professionnelles · ${euro(cfg.price)} chacune</p>
     <h1>Comprendre les grands sujets du moment. Vraiment. En un après-midi.</h1>
     <p class="lead">IA, arnaques en ligne, épargne, retraite, énergie, carrière, démarches numériques : chaque masterclass Kairos Académie condense ce qu'il faut savoir en 2 h 30 de lecture guidée, d'exercices et de quiz, avec un certificat de réussite à la clé.</p>
@@ -225,6 +242,21 @@ function homePage() {
       <li>${check} Certificat de réussite vérifiable</li>
       <li>${check} Texte agrandissable, lecture confortable</li>
     </ul>
+  </div>
+  <div class="hero-visual" aria-hidden="true">
+    ${courses.slice(0, 3).map((c, i) => cover(c, `cover-stack cover-stack-${i}`)).join('')}
+    <div class="hero-cert"><p class="cert-mini-brand">Certificat de réussite</p><p class="hero-cert-score">18/20</p><p class="small">Exemple · N° KA-XXXX-XXXX</p></div>
+  </div>
+  </div>
+</section>
+
+<section class="stats-strip" aria-label="Kairos Académie en chiffres">
+  <div class="wrap stats-grid">
+    <p><strong>${courses.length}</strong><span>masterclasses</span></p>
+    <p><strong>${courses.length * 8}</strong><span>modules</span></p>
+    <p><strong>${courses.reduce((n, c) => n + (c.quiz || []).length, 0)}</strong><span>questions de quiz corrigées</span></p>
+    <p><strong>${Math.round(courses.reduce((n, c) => n + c.totalWords, 0) / 1000)} 000</strong><span>mots de contenu</span></p>
+    <p><strong>${euro(cfg.price)}</strong><span>par masterclass, accès à vie</span></p>
   </div>
 </section>
 
@@ -274,7 +306,7 @@ ${passBlock()}
   <div class="wrap narrow center">
     <h2>Recevez nos nouvelles masterclasses</h2>
     <p>Un e-mail par mois au plus, avec les nouveautés et les mises à jour importantes. Désinscription en un clic.</p>
-    <form class="inline-form" name="newsletter" method="POST" action="/merci-message/" data-netlify="true" netlify-honeypot="site-web">
+    <form class="inline-form" name="newsletter" method="POST" action="${API}/merci-message/" data-netlify="true" netlify-honeypot="site-web">
       <input type="hidden" name="form-name" value="newsletter">
       <p hidden><label>Ne pas remplir : <input name="site-web"></label></p>
       <label class="sr-only" for="nl-email">Votre e-mail</label>
@@ -332,6 +364,7 @@ function salesPage(c) {
       </ul>
     </div>
     <aside class="price-box sticky-box" aria-label="Acheter">
+      ${cover(c, 'cover-box')}
       <p class="price-big">${euro(cfg.price)}</p>
       <p class="muted">Paiement unique · accès immédiat et à vie</p>
       ${buyButton(c.slug, 'Accéder à la masterclass')}
@@ -440,7 +473,7 @@ ${checkoutDialog()}`;
   });
   write(`formations/${c.slug}/index.html`, layout({
     title: c.seo?.title ? `${c.seo.title} · ${cfg.brand}` : `${c.title} · ${cfg.brand}`,
-    description: c.seo?.description || c.subtitle, path: `/formations/${c.slug}/`, page: 'sales', course: c.slug, body, jsonld,
+    description: c.seo?.description || c.subtitle, path: `/formations/${c.slug}/`, page: 'sales', course: c.slug, body, jsonld, og: c.slug,
   }));
 }
 
@@ -449,6 +482,7 @@ function coursePage(c, token) {
   const mods = c.modules;
   const quiz = (c.quiz || []).map((q) => ({ q: q.q, choices: q.choices, answer: q.answer, explanation: q.explanation }));
   const body = `
+<div class="read-bar" aria-hidden="true"><span data-read-bar></span></div>
 <div class="course-app" data-slug="${c.slug}" data-token="${token}" data-title="${esc(c.title)}" data-duration="${esc(c.duration)}">
   <aside class="course-nav" aria-label="Sommaire de la masterclass">
     <p class="course-nav-title">${esc(c.title)}</p>
@@ -476,14 +510,14 @@ function coursePage(c, token) {
       <h2>Au programme</h2>
       <ul class="checks">${(c.outcomes || []).map((o) => `<li>${check} ${esc(o)}</li>`).join('')}</ul>
       ${c.disclaimer ? `<p class="disclaimer small">${esc(c.disclaimer)}</p>` : ''}
-      <form class="keep-link" name="acheteurs" method="POST" action="/merci-message/" data-netlify="true" netlify-honeypot="site-web">
+      <form class="keep-link" name="acheteurs" method="POST" action="${API}/merci-message/" data-netlify="true" netlify-honeypot="site-web">
         <input type="hidden" name="form-name" value="acheteurs">
         <input type="hidden" name="masterclass" value="${c.slug}">
         <p hidden><label>Ne pas remplir : <input name="site-web"></label></p>
         <p><strong>Recevoir ce lien d'accès par e-mail</strong> (utile pour changer d'appareil ou si vous perdez vos favoris) :</p>
         <div class="inline-form"><label class="sr-only" for="kl-email">Votre e-mail</label><input id="kl-email" type="email" name="email" placeholder="votre@email.fr" required autocomplete="email"><button class="btn btn-ghost" type="submit">Envoyer</button></div>
       </form>
-      <p><a class="btn btn-primary btn-lg" href="#m1">Commencer le module 1</a></p>
+      <p class="welcome-actions"><a class="btn btn-primary btn-lg" href="#m1" data-resume>Commencer le module 1</a></p>
     </section>
     ${mods.map((m, i) => {
       const next = mods[i + 1];
@@ -492,6 +526,7 @@ function coursePage(c, token) {
       <h1>${esc(m.title)}</h1>
       ${m.html}
       <div class="lesson-end">
+        <a class="btn btn-ghost" href="#${i === 0 ? 'accueil' : mods[i - 1].id}">← ${i === 0 ? 'Sommaire' : 'Précédent'}</a>
         ${m.isBonus ? '' : `<button type="button" class="btn btn-primary" data-complete="${m.id}" data-next="${next ? next.id : 'quiz'}">J'ai terminé ce module · ${next ? 'suite' : 'quiz final'} →</button>`}
         ${m.isBonus ? '<a class="btn btn-primary" href="#quiz">Passer au quiz final →</a>' : ''}
         <button type="button" class="btn btn-ghost" data-print>Imprimer ce module</button>
@@ -538,7 +573,7 @@ function passPage(token) {
     <div class="grid">
       ${courses.filter((c) => tokens[c.slug]).map((c) => `<article class="card course-card"><div class="card-top"><span class="cat">${icon(c.category, 22)} ${esc(c.category)}</span><span class="pill">${esc(c.duration)}</span></div><h3>${esc(c.title)}</h3><p>${esc(c.subtitle)}</p><div class="card-bottom"><a class="btn btn-primary" href="/acces/${c.slug}-${tokens[c.slug]}/">Ouvrir la masterclass</a></div></article>`).join('')}
     </div>
-    <form class="keep-link" name="acheteurs" method="POST" action="/merci-message/" data-netlify="true" netlify-honeypot="site-web">
+    <form class="keep-link" name="acheteurs" method="POST" action="${API}/merci-message/" data-netlify="true" netlify-honeypot="site-web">
       <input type="hidden" name="form-name" value="acheteurs">
       <input type="hidden" name="masterclass" value="pass-integral">
       <p hidden><label>Ne pas remplir : <input name="site-web"></label></p>
@@ -625,7 +660,7 @@ function legalPages() {
   simplePage('/contact/', 'Contact', 'Contacter Kairos Académie.', `
 <h1>Nous contacter</h1>
 <p>Une question avant l'achat, un lien d'accès perdu, une suggestion ? Écrivez-nous, nous répondons sous 72 heures ouvrées. En cas de lien perdu, indiquez la référence de votre transaction PayPal.</p>
-<form class="stack-form" name="contact" method="POST" action="/merci-message/" data-netlify="true" netlify-honeypot="site-web">
+<form class="stack-form" name="contact" method="POST" action="${API}/merci-message/" data-netlify="true" netlify-honeypot="site-web">
   <input type="hidden" name="form-name" value="contact">
   <p hidden><label>Ne pas remplir : <input name="site-web"></label></p>
   <label class="field">Votre nom<input name="nom" required autocomplete="name"></label>
@@ -655,7 +690,7 @@ function legalPages() {
     body: '<section class="section"><div class="wrap narrow center"><h1>Page introuvable</h1><p>Cette page n\'existe pas ou a été déplacée.</p><p><a class="btn btn-primary" href="/">Voir les masterclasses</a></p></div></section>',
   }));
 
-  write('admin/index.html', `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Tableau de bord · ${esc(cfg.brand)}</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/admin.css"></head><body class="admin" data-page="admin"><main id="admin" class="wrap"><h1>Tableau de bord</h1><form class="inline-form" data-login><label class="sr-only" for="pw">Mot de passe</label><input id="pw" type="password" placeholder="Mot de passe administrateur" required autocomplete="current-password"><button class="btn btn-primary" type="submit">Ouvrir</button></form><div data-dash hidden></div></main><script src="/assets/admin.js" defer></script></body></html>`);
+  if (!MIRROR) write('admin/index.html', `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Tableau de bord · ${esc(cfg.brand)}</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/style.css"><link rel="stylesheet" href="/assets/admin.css"></head><body class="admin" data-page="admin"><main id="admin" class="wrap"><h1>Tableau de bord</h1><form class="inline-form" data-login><label class="sr-only" for="pw">Mot de passe</label><input id="pw" type="password" placeholder="Mot de passe administrateur" required autocomplete="current-password"><button class="btn btn-primary" type="submit">Ouvrir</button></form><div data-dash hidden></div></main><script src="/assets/admin.js" defer></script></body></html>`);
 }
 
 // ---------- assemblage ----------
@@ -666,9 +701,9 @@ cpSync(join(ROOT, 'src'), join(DIST, 'assets'), { recursive: true });
 homePage();
 for (const c of courses) {
   salesPage(c);
-  if (tokens[c.slug]) coursePage(c, tokens[c.slug]);
+  if (tokens[c.slug] && !MIRROR) coursePage(c, tokens[c.slug]);
 }
-if (tokens['pass-integral']) passPage(tokens['pass-integral']);
+if (tokens['pass-integral'] && !MIRROR) passPage(tokens['pass-integral']);
 legalPages();
 
 write('assets/catalog.json', JSON.stringify(Object.fromEntries(courses.map((c) => [c.slug, { title: c.title, category: c.category, duration: c.duration }]))));
@@ -676,6 +711,6 @@ write('robots.txt', `User-agent: *\nDisallow: /acces/\nDisallow: /admin/\nSitema
 const urls = ['/', ...courses.map((c) => `/formations/${c.slug}/`), '/certificat/', '/contact/', '/cgv/', '/mentions-legales/', '/confidentialite/'];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${cfg.siteUrl}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
 
-console.log(`\n${courses.length} masterclasses, ${courses.reduce((n, c) => n + c.totalWords, 0)} mots au total → dist/`);
+console.log(`\n${courses.length} masterclasses, ${courses.reduce((n, c) => n + c.totalWords, 0)} mots au total → ${DIST_DIR}/`);
 const missingLinks = ['pass-integral', ...courses.map((c) => c.slug)].filter((s) => !cfg.paymentLinks[s]);
 if (missingLinks.length) console.warn(`⚠ Liens de paiement PayPal manquants (liste d'attente affichée à la place) : ${missingLinks.join(', ')}`);

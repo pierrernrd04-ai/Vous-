@@ -39,10 +39,20 @@
     setTimeout(() => window.scrollTo(0, 0), 0);
     save('last', target.id);
   }
-  window.addEventListener('hashchange', show);
+  const readBar = document.querySelector('[data-read-bar]');
+  const onScroll = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    readBar.style.width = `${max > 0 ? Math.min(100, (scrollY / max) * 100) : 0}%`;
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('hashchange', () => { show(); onScroll(); });
   if (!location.hash && load('last', '')) location.hash = load('last', '');
   show();
   renderProgress();
+  const resume = document.querySelector('[data-resume]');
+  const firstTodo = modules.find((m) => !done.has(m));
+  if (resume && done.size && firstTodo) { resume.href = `#${firstTodo}`; resume.textContent = 'Reprendre là où je me suis arrêté'; }
+  if (resume && done.size && !firstTodo) { resume.href = '#quiz'; resume.textContent = 'Passer le quiz final'; }
 
   document.querySelectorAll('[data-complete]').forEach((b) => b.addEventListener('click', () => {
     if (!done.has(b.dataset.complete)) track('module');
@@ -171,7 +181,7 @@
     const score = load('best', 0);
     let cert;
     try {
-      const res = await fetch('/api/cert', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ c: slug, k: token, n: name, sc: score }) });
+      const res = await fetch(`${document.body.dataset.api || ''}/api/cert`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ c: slug, k: token, n: name, sc: score }) });
       if (!res.ok) throw new Error(String(res.status));
       cert = await res.json();
     } catch {

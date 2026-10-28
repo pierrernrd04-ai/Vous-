@@ -278,3 +278,58 @@ blockquote p:last-child, .callout p:last-child { margin-bottom: 0; }
   body.printing-cert .lesson > :not([data-cert-output]) { display: none !important; }
   body.printing-cert [data-cert-output] > :not(.certificate) { display: none !important; }
 }
+
+/* ---------- v2 : couvertures, héros, chiffres ---------- */
+.cat-ia { --c1: #1c3578; --c2: #3e6fd1; }
+.cat-argent { --c1: #0d4f40; --c2: #1f8a69; }
+.cat-carriere { --c1: #4a2a6b; --c2: #8b5bbf; }
+.cat-numerique { --c1: #0c4b5e; --c2: #1d8aa6; }
+.cat-maison { --c1: #7a3f0c; --c2: #cf8a2e; }
+.cat-bienetre { --c1: #6b2633; --c2: #c05868; }
+.cover { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; aspect-ratio: 16 / 9; border-radius: 12px; padding: 18px 20px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, var(--c2) 0%, var(--c1) 62%); isolation: isolate; }
+.cover::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 2px, transparent 2px 14px); z-index: -1; }
+.cover-icon { position: absolute; right: -14px; top: -14px; color: rgba(255,255,255,.16); z-index: -1; }
+.cover-icon .icon { width: 150px; height: 150px; stroke-width: 1.2; }
+.cover-kicker { font: 700 .68rem/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.8); }
+.cover-title { font: 700 1.18rem/1.2 var(--serif); text-wrap: balance; }
+.cover-brand { font: 600 .68rem/1 var(--sans); color: var(--gold); letter-spacing: .08em; }
+.cover-card { margin: -24px -24px 18px; border-radius: var(--radius) var(--radius) 0 0; aspect-ratio: 16 / 7; }
+.cover-card .cover-title { display: none; }
+.cover-card .cover-icon { right: 12px; top: 50%; transform: translateY(-50%); }
+.cover-card .cover-icon .icon { width: 96px; height: 96px; }
+.cover-link { display: block; text-decoration: none; }
+.course-card { transition: transform .18s ease, box-shadow .18s ease; }
+.course-card:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(20,33,61,.06), 0 18px 40px rgba(20,33,61,.12); }
+.cover-box { margin: -28px -28px 20px; border-radius: 18px 18px 0 0; text-align: left; }
+.btn-sm { padding: 8px 16px; font-size: .85em; }
+.nav-cta { color: var(--ink) !important; }
+@media (max-width: 960px) { .nav-cta { display: none !important; } }
+
+.hero-grid { display: grid; grid-template-columns: 1.25fr .9fr; gap: 48px; align-items: center; }
+.hero-grid .hero-inner { max-width: none; }
+.hero-visual { position: relative; min-height: 360px; }
+.cover-stack { position: absolute; width: 78%; box-shadow: 0 24px 50px rgba(20,33,61,.28); }
+.cover-stack-0 { top: 0; left: 0; transform: rotate(-5deg); }
+.cover-stack-1 { top: 70px; left: 14%; transform: rotate(2deg); }
+.cover-stack-2 { top: 150px; left: 24%; transform: rotate(-1deg); }
+.hero-cert { position: absolute; right: 0; bottom: 0; background: var(--surface); border: 6px double var(--gold); border-radius: 8px; padding: 12px 18px; text-align: center; box-shadow: var(--shadow); font-family: var(--serif); }
+.hero-cert p { margin: 0; }
+.hero-cert-score { font-size: 1.8rem; font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) {
+  .cover-stack { animation: rise .7s ease both; }
+  .cover-stack-1 { animation-delay: .08s; } .cover-stack-2 { animation-delay: .16s; }
+  @keyframes rise { from { translate: 0 18px; } to { translate: 0 0; } }
+}
+@media (max-width: 960px) { .hero-grid { grid-template-columns: 1fr; } .hero-visual { min-height: 300px; max-width: 480px; } }
+@media (max-width: 520px) { .hero-visual { display: none; } }
+
+.stats-strip { background: var(--ink); color: #fff; padding: 26px 0; }
+.stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; text-align: center; }
+.stats-grid p { margin: 0; display: grid; gap: 2px; }
+.stats-grid strong { font: 700 1.7rem/1.1 var(--serif); color: var(--gold); font-variant-numeric: tabular-nums; }
+.stats-grid span { font-size: .8em; color: #c9d1e2; }
+@media (max-width: 760px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .stats-grid p:last-child { grid-column: 1 / -1; } }
+
+.read-bar { position: fixed; left: 0; right: 0; top: 0; height: 4px; z-index: 40; pointer-events: none; }
+.read-bar span { display: block; height: 100%; width: 0; background: var(--gold); transition: width .1s linear; }
+.welcome-actions { display: flex; gap: 12px; flex-wrap: wrap; }

@@ -7,6 +7,7 @@
   const body = document.body;
   const page = body.dataset.page || 'info';
   const course = body.dataset.course || '';
+  const api = body.dataset.api || '';
 
   // Taille du texte (3 niveaux, mémorisée).
   const sizes = ['', 'text-lg', 'text-xl'];
@@ -33,8 +34,8 @@
     if (navigator.webdriver) return;
     const data = JSON.stringify({ e, c, s: sid, r: src, d: device, p: page });
     try {
-      if (!navigator.sendBeacon || !navigator.sendBeacon('/api/t', data)) {
-        fetch('/api/t', { method: 'POST', body: data, keepalive: true }).catch(() => {});
+      if (!navigator.sendBeacon || !navigator.sendBeacon(`${api}/api/t`, data)) {
+        fetch(`${api}/api/t`, { method: 'POST', body: data, keepalive: true, mode: 'no-cors' }).catch(() => {});
       }
     } catch { /* hors ligne */ }
   };
