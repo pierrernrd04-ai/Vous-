@@ -67,3 +67,11 @@ Exporte la nouvelle version de l'artefact dans `app.source.html`, lance `npm ci`
 ## Changer de clé
 
 Génère une nouvelle clé, calcule son empreinte (`printf %s 'CLÉ' | sha256sum`), remplace `ALLOWED_SHA` dans `wrangler.toml`, pousse. Les données sont rangées par clé : changer de clé repart d'un espace vide.
+
+## Widgets du PC (Lively Wallpaper)
+
+Mes apps › **Activer les widgets PC** : un code de liaison à 12 caractères relie le tracker aux widgets animés
+du bureau Windows (`apps/widgets`, en ligne sur `…/Vous-/widgets/`). Chaque modification part chiffrée de bout en bout
+par le relais ntfy.sh et s'affiche en moins d'une seconde. Un clic sur un widget ouvre `…/Vous-/#onglet&lien=CODE` :
+le tracker du PC se relie tout seul, reçoit les données du téléphone et lui renvoie ses propres modifications.
+Code dans `addon.js` (fin du fichier) et `../widgets/link.js` ; détails dans `apps/widgets/README.md`.

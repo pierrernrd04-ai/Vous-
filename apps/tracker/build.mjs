@@ -25,7 +25,9 @@ const ai = (await esbuild({
 })).outputFiles[0].text;
 writeFileSync(new URL('public/ai.js', dir), ai);
 const aiSrc = `ai.js?v=${createHash('sha256').update(ai).digest('hex').slice(0, 8)}`;
-const shim = `window.RP_MODE = '${MODE}';\nwindow.RP_AI_SRC = '${aiSrc}';\n` + readFileSync(new URL('shim.js', dir), 'utf8');
+// + la liaison chiffrée avec les widgets du PC (apps/widgets/link.js, même fichier que la page des widgets)
+const shim = `window.RP_MODE = '${MODE}';\nwindow.RP_AI_SRC = '${aiSrc}';\n` + readFileSync(new URL('shim.js', dir), 'utf8')
+  + '\n' + readFileSync(new URL('../widgets/link.js', dir), 'utf8');
 
 // 1. Retire l'enveloppe ajoutée par Claude autour de l'artefact.
 const body = src.indexOf('<body>');
