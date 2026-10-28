@@ -18,9 +18,13 @@ Adresse : **https://pierrernrd04-ai.github.io/Vous-/**, servie par la branche `g
 
 ## Barre d'onglets, titres et mises à jour
 
-- **Barre du bas** : une icône fixe et un nom toujours visible par onglet (Accueil, Repas, Sport, Hygiène, Sobriété, Photos, Do It, Tâches, Banque). Les jeux d'icônes qui changeaient toutes les 3 minutes sont retirés. L'onglet actif a une pastille de la couleur d'accent derrière son icône.
+- **Barre du bas** : une icône fixe et un nom toujours visible par onglet (Accueil, Repas, Sport, Sobriété, Photos, Do It, Tâches, Banque). Les jeux d'icônes qui changeaient toutes les 3 minutes sont retirés. L'onglet actif a une pastille de la couleur d'accent derrière son icône.
 - **Titres** : chaque onglet du tracker commence par un grand titre en Geist (la police de l'appli) et une ligne qui dit ce qu'il contient. Do It et Fox Bank gardent leur propre en-tête.
 - **Mise à jour automatique** : `build.mjs` écrit `public/version.json`. À l'ouverture, à chaque retour dans l'appli et toutes les 15 minutes, l'appli compare ce numéro au sien et se recharge (une seule fois par version). Pendant Do It ou Fox Bank, ou si tu es en train d'écrire, elle propose un bouton « Mettre à jour » au lieu de recharger. Le service worker lit la page sans le cache du navigateur et ne met jamais `version.json` en cache.
+
+## Onglet Hygiène retiré
+
+La routine d'hygiène disparaît. Les cartes **Hydratation**, **Sommeil** et **Humeur & énergie** passent dans l'onglet Accueil, et la tuile « Hygiène » de l'accueil devient « Hydratation » (verres d'eau, litres, sommeil). La note du jour ne compte plus la routine : ses autres parts (tâches, sport, repas, sobriété, eau) sont remises sur 100. Les données déjà saisies restent enregistrées ; le lien `#hygiene` ouvre l'Accueil.
 
 ## Onglet « Do It » (Do It Sport)
 

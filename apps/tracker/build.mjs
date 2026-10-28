@@ -50,6 +50,10 @@ const patches = [
   ["mode:S.settings.impPeople===false||window.RP_STANDALONE?'all':'people'", "mode:S.settings.impPeople===false||!rpAiOn()?'all':'people'"],
   // Budget laisse sa place à Do It Sport et Traceo à Fox Bank (addon.js) : leurs vues et la tuile Do It de l'accueil
   ['+transitCard()+v.slice(i)+menusCard()},sport:vSport,hyg:vHyg,beer:vSober,traceo:vTraceo,', '+transitCard()+v.slice(i)+menusCard()},sport:vSport,hyg:vHyg,beer:vSober,traceo:vTraceo,doit:embedHost,foxbank:embedHost,'],
+  // l'onglet Hygiène est retiré : Hydratation, Sommeil et Humeur passent dans Accueil (addon.js : hygCards)
+  ['+h.slice(i)+photosCard()', '+h.slice(i)+hygCards()+photosCard()'],
+  ["${tile('hyg','Hygiène',N(Math.round(hy*100)),'%',`Eau ${d.water||0}/${st.waterGoal} · Sommeil ${d.sleep!=null?d1(d.sleep)+' h':'—'}`,hy>=.8?'good':hy>0?'warn':'none',bar(hy))}",
+    "${tile('home','Hydratation',N(d.water||0),`/ ${st.waterGoal} verres`,`${d1((d.water||0)*0.25)} L · Sommeil ${d.sleep!=null?d1(d.sleep)+' h':'—'}`,(d.water||0)>=st.waterGoal?'good':d.water?'warn':'none',bar((d.water||0)/st.waterGoal))}"],
   ["${tile('budget','Budget du mois',N(ms.total),'€',`sur ${i0(st.budget)} € · reste ${i0(st.budget-ms.total)} €`,pctB>1?'bad':pctB>.85?'warn':'good',bar(pctB,pctB>1?'over':''))}",
     "${(()=>{const q=doitDay(S.sel);return tile('doit','Do It Sport',N(q.kcal),'kcal',q.cyc||q.min?`${q.cyc} ${plural(q.cyc,'cycle')} · ${i0(q.min)} min`:'Pas encore de séance',q.kcal>=q.goal?'good':q.kcal?'warn':'none',bar(q.kcal/Math.max(1,q.goal)))})()}"],
   // le lien copié pour Raccourcis garde la clé

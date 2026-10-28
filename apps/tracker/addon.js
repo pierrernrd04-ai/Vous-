@@ -84,6 +84,18 @@ Object.assign(ICONS, {
 function swapTab(from, to) { const i = TABS.findIndex((t) => t[0] === from); if (i >= 0) TABS.splice(i, 1, to); }
 swapTab('budget', ['doit', 'Do It', 'doit']);
 swapTab('traceo', ['foxbank', 'Fox Bank', 'fox']);
+{ const i = TABS.findIndex((t) => t[0] === 'hyg'); if (i >= 0) TABS.splice(i, 1); } // onglet Hygiène retiré
+/* ses cartes Hydratation, Sommeil et Humeur & énergie passent dans Accueil (sans la routine d'hygiène) */
+function hygCards() { const h = vHyg(), a = h.indexOf('<section'), b = h.indexOf('<section', a + 8); return b > 0 ? h.slice(b) : ''; }
+/* la routine d'hygiène ne compte plus dans la note du jour : les autres parts sont remises sur 100 */
+score = function (d, st) {
+  const t = tasksFor(d.date), tk = t.total ? t.done / t.total : 0;
+  const sp = Math.min(1, act(d, st).kcal / 450);
+  const n = nutri(d), nu = n.food > 0 ? Math.max(0, 1 - Math.abs(n.k - st.kcalGoal) / st.kcalGoal * 1.5) : 0;
+  const al = d.beer == null ? 0.5 : d.beer === 0 ? 1 : d.beer === 1 ? 0.35 : 0;
+  const w = Math.min(1, (d.water || 0) / st.waterGoal);
+  return Math.round((tk * 18 + sp * 22 + nu * 18 + al * 16 + w * 8) / 82 * 100);
+};
 function doitDay(id) {
   let j = null;
   try { j = JSON.parse(localStorage.getItem('doitsport-sum') || 'null'); } catch (e) {}
@@ -118,11 +130,12 @@ const _motivReadyEmbed = motivReady;
 motivReady = () => !EMBED[S.tab] && _motivReadyEmbed();
 // la tuile Do It Sport de l'accueil suit la séance en direct (même site, même stockage)
 addEventListener('storage', (e) => { if (e.key === 'doitsport-sum' && S.tab === 'home') softRender(); });
-const HASH_TAB = { doit: 'doit', budget: 'doit', foxbank: 'foxbank', fox: 'foxbank', traceo: 'foxbank', admin: 'foxbank' };
+const HASH_TAB = { doit: 'doit', budget: 'doit', foxbank: 'foxbank', fox: 'foxbank', traceo: 'foxbank', admin: 'foxbank', hygiene: 'home', hyg: 'home' };
 const hashTab = HASH_TAB[(location.hash || '').slice(1).toLowerCase()];
 if (hashTab) S.tab = hashTab;
 else if (S.tab === 'budget') S.tab = 'doit';
 else if (S.tab === 'traceo') S.tab = 'foxbank';
+else if (S.tab === 'hyg') S.tab = 'home';
 S._nav = null;
 render();
 
@@ -132,7 +145,6 @@ const TAB_UI = {
   home: { l: 'Accueil', t: 'Ma journée', s: "L'essentiel d'aujourd'hui, en un coup d'œil" },
   food: { l: 'Repas', t: 'Repas', s: 'Calories, macros et fibres de la journée' },
   sport: { l: 'Sport', t: 'Sport', s: 'Dépense, marche, natation et salle' },
-  hyg: { l: 'Hygiène', t: 'Hygiène', s: 'Ta routine du jour, coche au fil des heures' },
   beer: { l: 'Sobriété', t: 'Sobriété', s: "Zéro alcool, un jour après l'autre" },
   photos: { l: 'Photos', t: 'Photos', s: 'Pierre qui avance, et toute ta galerie' },
   doit: { l: 'Do It' },
