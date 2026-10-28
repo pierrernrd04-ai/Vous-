@@ -2,7 +2,7 @@
 // collision, points d'apparition, ciel, lumières, minicarte.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { getTexture } from './textures.js';
+import { getTexture, getNormalMap } from './textures.js';
 import { rayAABB } from './util.js';
 
 const WALL_T = 0.4;
@@ -233,6 +233,13 @@ export class World {
       metalness: spec.metal ?? 0,
       map: spec.tex ? getTexture(spec.tex, aniso) : null,
     });
+    if (spec.tex && spec.tex !== 'facade') {
+      // Relief : joints, rivets, grain accrochent la lumière.
+      const strength = { hazard: 0.8, grate: 3, container: 2.5, metal: 2.5, panelDark: 2.5, floor: 1.8 }[spec.tex] || 2;
+      m.normalMap = getNormalMap(spec.tex, strength, aniso);
+      const k = spec.normal ?? 0.85;
+      m.normalScale.set(k, k);
+    }
     if (spec.emissive) {
       m.emissive = new THREE.Color(spec.emissive);
       m.emissiveIntensity = spec.emissiveIntensity ?? 1;
@@ -322,6 +329,7 @@ export class World {
 
     this.sky = buildSky(t);
     this.group.add(this.sky);
+    this.animated.push((time) => { this.sky.material.uniforms.uTime.value = time; });
 
     this.solids = this.boxes.filter((b) => !b.ground);
     this.minimap = this._buildMinimap();
@@ -460,11 +468,17 @@ function buildSky(t) {
       sunDir: { value: new THREE.Vector3(...t.sunDir).normalize() },
       stars: { value: t.stars || t.night ? 1 : 0 },
       night: { value: t.night ? 1 : 0 },
+      clouds: { value: t.clouds ?? (t.indoor ? 0 : 0.35) },
+      uTime: { value: 0 },
     },
     vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); vec4 p = projectionMatrix * modelViewMatrix * vec4(position,1.0); gl_Position = p.xyww; }`,
     fragmentShader: `
-      varying vec3 vDir; uniform vec3 top, bottom, sunColor, sunDir; uniform float stars, night;
+      varying vec3 vDir; uniform vec3 top, bottom, sunColor, sunDir; uniform float stars, night, clouds, uTime;
       float hash(vec3 p){ return fract(sin(dot(p, vec3(12.9898,78.233,45.164))) * 43758.5453); }
+      float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(h2(i), h2(i + vec2(1, 0)), f.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), f.x), f.y); }
+      float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * vn(p); p = p * 2.03 + 17.1; a *= 0.5; } return v; }
       void main(){
         float h = clamp(vDir.y * 0.5 + 0.5, 0.0, 1.0);
         vec3 col = mix(bottom, top, pow(smoothstep(0.42, 1.0, h), 0.8));
@@ -474,6 +488,18 @@ function buildSky(t) {
           vec3 q = floor(vDir * 380.0);
           float st = step(0.9975, hash(q));
           col += vec3(st) * 0.9 * smoothstep(0.05, 0.4, vDir.y);
+        }
+        if (clouds > 0.0 && vDir.y > 0.0) {
+          // Couche nuageuse projetée sur un plan, éclairée côté soleil.
+          vec2 uv = vDir.xz / (vDir.y + 0.15) * 0.9 + vec2(uTime * 0.004, uTime * 0.0015);
+          float n = fbm(uv * 1.3);
+          float cover = 1.0 - clouds;
+          float c = smoothstep(cover - 0.05, cover + 0.3, n);
+          float lit = pow(max(dot(normalize(vec3(vDir.x, 0.25, vDir.z)), sunDir), 0.0), 2.0);
+          vec3 cloudCol = night > 0.5
+            ? mix(bottom * 0.6, bottom * 1.6 + vec3(0.02), n)
+            : mix(mix(bottom, vec3(1.0), 0.55) * 0.82, sunColor * 1.15 + 0.15, lit * 0.7);
+          col = mix(col, cloudCol, c * smoothstep(0.0, 0.18, vDir.y) * 0.92);
         }
         gl_FragColor = vec4(col, 1.0);
       }`,

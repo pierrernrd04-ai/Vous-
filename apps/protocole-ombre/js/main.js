@@ -4,11 +4,15 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { MAPS, getMap } from './maps.js';
 import { World, buildEnvironment } from './world.js';
 import { Effects } from './effects.js';
 import { WEAPONS, CLASSES, getWeapon, weaponStats } from './weapons.js';
-import { buildWeaponModel } from './models.js';
+import { buildWeapon } from './gunsmith.js';
+import { loadAssets } from './assets.js';
+import { Character } from './character.js';
 import { DIFFICULTIES, botName, botWeapon } from './bots.js';
 import { Match } from './game.js';
 import { HUD } from './hud.js';
@@ -39,7 +43,7 @@ function qualityPreset() {
   const presets = {
     low: { pixelRatio: Math.min(dpr, 1) * 0.8, shadows: false, shadowSize: 0, bloom: false, aniso: 1, pointLights: 0, particles: 300, dynamicLights: false, msaa: 0 },
     medium: { pixelRatio: Math.min(dpr, touch ? 1.25 : 1.5), shadows: false, shadowSize: 0, bloom: true, aniso: 2, pointLights: 3, particles: 650, dynamicLights: true, msaa: 0 },
-    high: { pixelRatio: Math.min(dpr, 1.75), shadows: true, shadowSize: 2048, bloom: true, aniso: 8, pointLights: 6, particles: 1200, dynamicLights: true, msaa: 4 },
+    high: { pixelRatio: Math.min(dpr, 1.75), shadows: true, shadowSize: 2048, bloom: true, aniso: 8, pointLights: 6, particles: 1200, dynamicLights: true, msaa: 4, ssao: true },
   };
   return { name, ...presets[name] };
 }
@@ -52,7 +56,30 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: quality.name === '
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-let composer, renderPass, bloomPass;
+let composer, renderPass, vmPass, gtaoPass, bloomPass, gradePass;
+
+// Étalonnage « cinéma » final : contraste, saturation, vignette, grain, légère aberration chromatique.
+const GradeShader = {
+  uniforms: {
+    tDiffuse: { value: null }, uTime: { value: 0 }, uVignette: { value: 0.38 }, uGrain: { value: 0.035 },
+    uCA: { value: 0.001 }, uSat: { value: 1.06 }, uContrast: { value: 1.07 }, uHurt: { value: 0 },
+  },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float uTime, uVignette, uGrain, uCA, uSat, uContrast, uHurt; varying vec2 vUv;
+    float rnd(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233)) + fract(uTime) * 61.0) * 43758.5453); }
+    void main(){
+      vec2 d = vUv - 0.5; float r2 = dot(d, d);
+      vec2 off = d * (uCA + uHurt * 0.006) * (1.0 + r2 * 4.0);
+      vec3 c = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+      float l = dot(c, vec3(0.299, 0.587, 0.114));
+      c = mix(vec3(l), c, uSat - uHurt * 0.5);
+      c = (c - 0.5) * uContrast + 0.5;
+      c *= 1.0 - (uVignette + uHurt * 0.3) * smoothstep(0.1, 0.8, r2 * 2.0);
+      c += (rnd(vUv * 1024.0) - 0.5) * uGrain;
+      gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
+    }`,
+};
 
 function setupRenderer() {
   quality = qualityPreset();
@@ -64,19 +91,41 @@ function setupRenderer() {
   composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(quality.pixelRatio);
   renderPass = new RenderPass(new THREE.Scene(), new THREE.PerspectiveCamera());
-  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.6, 0.55, 0.82);
   composer.addPass(renderPass);
+  gtaoPass = null;
+  if (quality.ssao) {
+    gtaoPass = new GTAOPass(renderPass.scene, renderPass.camera, innerWidth, innerHeight);
+    gtaoPass.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.2, thickness: 1.2, scale: 1.1, samples: 12 });
+    gtaoPass.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+    gtaoPass.blendIntensity = 0.9;
+    composer.addPass(gtaoPass);
+  }
+  // L'arme à la première personne passe dans la même chaîne (bloom et étalonnage communs).
+  vmPass = new RenderPass(new THREE.Scene(), new THREE.PerspectiveCamera());
+  vmPass.clear = false;
+  vmPass.clearDepth = true;
+  composer.addPass(vmPass);
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.6, 0.55, 0.82);
   composer.addPass(bloomPass);
   composer.addPass(new OutputPass());
+  gradePass = new ShaderPass(GradeShader);
+  composer.addPass(gradePass);
 }
 setupRenderer();
 
-function render(scene, camera, bloom, withViewModel) {
+function render(scene, camera, bloom, withViewModel, hurt = 0) {
   if (quality.bloom) {
     renderPass.scene = scene; renderPass.camera = camera;
+    if (gtaoPass) { gtaoPass.scene = scene; gtaoPass.camera = camera; gtaoPass.enabled = withViewModel; }
+    vmPass.enabled = withViewModel;
+    vmPass.scene = vm.scene; vmPass.camera = vm.camera;
     bloomPass.strength = bloom;
+    gradePass.uniforms.uTime.value = performance.now() / 1000;
+    gradePass.uniforms.uHurt.value = hurt;
     composer.render();
-  } else renderer.render(scene, camera);
+    return;
+  }
+  renderer.render(scene, camera);
   if (withViewModel) {
     renderer.autoClear = false;
     renderer.clearDepth();
@@ -104,6 +153,15 @@ class MenuScene {
     this.effects.setWeather(map.theme, this.camera);
     this.bloom = map.theme.bloom;
     renderer.toneMappingExposure = map.theme.exposure || 1;
+    // Opérateur du joueur, au premier plan à droite (comme un menu de COD).
+    this.scene.add(this.camera);
+    this.operator = new Character({ team: 0, weapon: getWeapon(profile.loadout.primary) });
+    this.operator.root.position.set(1.2, -1.55, -3.35);
+    this.operator.root.rotation.y = Math.PI * 0.88;
+    this.camera.add(this.operator.root);
+    const key = new THREE.DirectionalLight(0xffffff, 1.6);
+    key.position.set(-2, 2, 2);
+    this.camera.add(key);
   }
   update(dt) {
     this.t += dt * 0.05;
@@ -114,9 +172,13 @@ class MenuScene {
     this.camera.updateProjectionMatrix();
     this.effects.update(dt, this.camera.position.toArray());
     this.world.update(this.t * 20);
+    this.camera.updateMatrixWorld(true);
+    this.operator.root.visible = innerWidth > 700;
+    this.operator.animate(dt, { speed: 0, alive: true, pitch: -0.05 });
   }
   dispose() {
     if (!this.world) return;
+    this.operator?.dispose();
     this.world.dispose();
     this.env.dispose();
     this.world = null;
@@ -158,8 +220,10 @@ class ArmoryScene {
   }
   show(w) {
     this.holder.clear();
-    const m = buildWeaponModel(w);
-    const s = w.model.pistol ? 2.8 : 0.95 / Math.max(0.6, w.model.len);
+    const m = buildWeapon(w);
+    const raw = new THREE.Box3().setFromObject(m.group);
+    const len = raw.max.z - raw.min.z;
+    const s = (m.pistol ? 0.62 : 1.25) / Math.max(0.2, len);
     m.group.scale.setScalar(s);
     m.group.rotation.y = Math.PI / 2;
     const box = new THREE.Box3().setFromObject(m.group);
@@ -226,6 +290,7 @@ function refreshMenu() {
   const kd = profile.deaths ? (profile.kills / profile.deaths).toFixed(2) : profile.kills;
   $('pcStats').textContent = `NIVEAU ${lvl} · ${profile.matches} PARTIES · ${profile.wins} VICTOIRES · RATIO ${kd}`;
   $('pcLoadout').innerHTML = `<b>${esc(getWeapon(profile.loadout.primary).name)}</b>${esc(getWeapon(profile.loadout.secondary).name)}`;
+  menuScene.operator?.setWeapon(getWeapon(profile.loadout.primary));
 }
 
 // ─────────────────────────────────────────────── sélecteurs
@@ -669,7 +734,7 @@ function frame(now) {
   }
   if (match) {
     match.update(dt);
-    if (match) render(match.scene, match.camera, match.map.theme.bloom, true);
+    if (match) render(match.scene, match.camera, match.map.theme.bloom, true, match.hurtFx || 0);
     return;
   }
   if (screen === 'armory') {
@@ -687,8 +752,8 @@ function frame(now) {
 
 async function boot() {
   const step = (p, text) => { $('bootFill').style.width = `${p}%`; $('bootText').textContent = text; };
-  step(20, 'Chargement du moteur…');
-  await new Promise((r) => setTimeout(r, 30));
+  step(10, 'Chargement des opérateurs…');
+  await loadAssets((k) => step(10 + k * 45, `Chargement des opérateurs… ${Math.round(k * 100)} %`));
   step(55, 'Génération de la carte…');
   await new Promise((r) => setTimeout(r, 30));
   menuScene.load(solo.map);

@@ -8,7 +8,11 @@ Jeu de tir à la première personne en 3D, dans un univers militaire futuriste (
 
 ## Contenu
 
-- **18 armes** en 6 catégories : 5 fusils d'assaut, 3 mitraillettes, 3 fusils à pompe, 3 fusils de précision, 2 mitrailleuses légères et 2 pistolets. Chaque arme a sa cadence, ses dégâts avec chute selon la distance, son recul, sa dispersion, son chargeur, son temps de rechargement, sa mobilité et son zoom.
+- **Soldats humains réalistes** : un vrai modèle 3D riggé et animé (repos, marche, course). Par-dessus l'animation, le code corrige la posture : bas du corps orienté vers le déplacement (pas latéraux, marche arrière), accroupi, buste tourné en position de tir, visée en hauteur, chute à la mort. Les bras sont placés sur l'arme par cinématique inverse et les doigts se referment sur la poignée.
+- **Deux factions bien distinctes** : les SPECTRES (armure bleu acier, visière cyan) et la LÉGION ROUGE (armure rouge rouille, visière orange), avec en plus une balise lumineuse dans le dos et un brassard. Les noms des alliés sont affichés en bleu ; celui d'un ennemi apparaît en rouge quand tu le vises.
+- **Vue à la première personne** : les mains gantées et les manches de ta faction tiennent l'arme. En rechargeant, la main gauche va chercher le chargeur, et une douille est éjectée à chaque tir.
+
+- **18 armes** en 6 catégories : 5 fusils d'assaut, 3 mitraillettes, 3 fusils à pompe, 3 fusils de précision, 2 mitrailleuses légères et 2 pistolets. Chaque modèle est construit à partir de silhouettes réalistes extrudées et biseautées (carcasse, poignée, pontet, détente, chargeur courbe ou droit, crosse, garde-main ajouré, rail Picatinny dentelé, canon, frein de bouche, point rouge, viseur holographique ou lunette avec lentille et réticule lumineux), avec des matériaux PBR (acier, aluminium anodisé, polymère). Chaque arme a sa cadence, ses dégâts avec chute selon la distance, son recul, sa dispersion, son chargeur, son temps de rechargement, sa mobilité et son zoom.
 - **5 cartes** symétriques (équité des deux camps) :
 
   | Carte | Ambiance | Particularités |
@@ -77,8 +81,10 @@ js/nav.js         grille de navigation multi-niveaux + A*
 js/bots.js        intelligence des bots
 js/combat.js      balistique (tête/corps, plombs) et grenades
 js/weapons.js     les 18 armes
-js/models.js      modèles 3D procéduraux (armes, soldats animés)
-js/viewmodel.js   arme à la première personne
+js/gunsmith.js    modèles d'armes réalistes (profils extrudés, PBR)
+js/character.js   soldats humains animés, IK des bras, factions
+js/assets.js      chargement du modèle humain
+js/viewmodel.js   vue subjective (mains, arme, animations)
 js/effects.js     traçantes, étincelles, impacts, explosions, météo
 js/textures.js    textures générées sur canvas
 js/audio.js       sons synthétisés et spatialisés (Web Audio)
@@ -87,7 +93,9 @@ js/net.js         multijoueur pair-à-pair (WebRTC via PeerJS)
 lib/              three.js 0.170 et PeerJS 1.5.4 (licences MIT incluses)
 ```
 
-Tout est généré par le code (géométrie, textures, sons) : il n'y a aucun fichier image ni son à télécharger, à part les icônes.
+Les armes, décors, textures et sons sont générés par le code. La seule ressource externe est le modèle humain `assets/soldier.glb` (1,5 Mo) ; voir `assets/CREDITS.md`.
+
+Rendu : géométrie fusionnée par matériau, cartes de relief procédurales, ciel nuageux animé, brouillard, ombres, bloom, occlusion ambiante GTAO (qualité élevée), étalonnage cinéma (vignette, grain, contraste, aberration chromatique qui s'accentue quand tu es blessé).
 
 ## Multijoueur : fonctionnement et limites
 

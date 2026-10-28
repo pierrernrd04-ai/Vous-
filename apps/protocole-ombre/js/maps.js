@@ -20,7 +20,7 @@ export const MAPS = [
     theme: {
       skyTop: '#5e88b8', skyBottom: '#dfe9f2', sun: '#fff4e6', sunIntensity: 2.4,
       sunDir: [0.5, 0.8, 0.3], hemiSky: '#cfe3ff', hemiGround: '#8a96a8', hemiIntensity: 1.1,
-      fog: '#cfdbe6', fogDensity: 0.012, night: false, snow: true, bloom: 0.35, exposure: 1.0,
+      fog: '#cfdbe6', fogDensity: 0.012, night: false, snow: true, clouds: 0.62, bloom: 0.35, exposure: 1.0,
       ambientSound: 'wind',
       mats: {
         ground: { tex: 'ground', color: '#eef3f8', scale: 6, rough: 0.95 },
@@ -109,7 +109,7 @@ export const MAPS = [
     theme: {
       skyTop: '#05030f', skyBottom: '#2a0f3d', sun: '#9fb6ff', sunIntensity: 0.6,
       sunDir: [-0.3, 0.9, 0.2], hemiSky: '#7a6ac0', hemiGround: '#2a2034', hemiIntensity: 1.15,
-      fog: '#1a0c2a', fogDensity: 0.022, night: true, stars: true, bloom: 1.0, exposure: 1.05,
+      fog: '#1a0c2a', fogDensity: 0.022, night: true, stars: true, clouds: 0.3, bloom: 1.0, exposure: 1.05,
       ambientSound: 'city',
       mats: {
         ground: { tex: 'ground', color: '#2a2a33', scale: 5, rough: 0.35, metal: 0.4 },
@@ -201,7 +201,7 @@ export const MAPS = [
     theme: {
       skyTop: '#3a5a8c', skyBottom: '#ffb070', sun: '#ffc48a', sunIntensity: 2.8,
       sunDir: [-0.7, 0.35, 0.4], hemiSky: '#ffd2a8', hemiGround: '#8a5a3a', hemiIntensity: 0.9,
-      fog: '#e8a878', fogDensity: 0.011, night: false, bloom: 0.45, exposure: 1.0, dust: true,
+      fog: '#e8a878', fogDensity: 0.011, night: false, clouds: 0.42, bloom: 0.45, exposure: 1.0, dust: true,
       ambientSound: 'wind',
       mats: {
         ground: { tex: 'ground', color: '#d9b083', scale: 7, rough: 1 },
@@ -372,7 +372,7 @@ export const MAPS = [
     theme: {
       skyTop: '#03060c', skyBottom: '#1a2638', sun: '#a8c0ff', sunIntensity: 0.9,
       sunDir: [0.4, 0.8, -0.3], hemiSky: '#6a88b0', hemiGround: '#2a3444', hemiIntensity: 1.35,
-      fog: '#121a26', fogDensity: 0.024, night: true, rain: true, water: true, bloom: 0.8, exposure: 1.1,
+      fog: '#121a26', fogDensity: 0.024, night: true, rain: true, clouds: 0.7, water: true, bloom: 0.8, exposure: 1.1,
       ambientSound: 'rain',
       mats: {
         ground: { tex: 'ground', color: '#3a3e44', scale: 5, rough: 0.3, metal: 0.3 },

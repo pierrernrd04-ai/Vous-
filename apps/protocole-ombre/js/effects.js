@@ -71,6 +71,29 @@ export class Effects {
     this.lightT = 0;
 
     this.weather = null;
+
+    // Douilles éjectées
+    const shellGeo = new THREE.CylinderGeometry(0.0045, 0.0045, 0.024, 8);
+    shellGeo.rotateZ(Math.PI / 2);
+    const shellMat = new THREE.MeshStandardMaterial({ color: '#c0974a', metalness: 0.95, roughness: 0.28 });
+    this.shells = Array.from({ length: 28 }, () => {
+      const m = new THREE.Mesh(shellGeo, shellMat);
+      m.visible = false;
+      m.userData = { v: new THREE.Vector3(), spin: new THREE.Vector3(), t: 0, floor: 0 };
+      scene.add(m);
+      return m;
+    });
+    this.shellIdx = 0;
+  }
+
+  shell(pos, vel, floor) {
+    const m = this.shells[this.shellIdx = (this.shellIdx + 1) % this.shells.length];
+    m.position.copy(pos);
+    m.userData.v.copy(vel);
+    m.userData.spin.set(rand(-25, 25), rand(-25, 25), rand(-25, 25));
+    m.userData.t = 1.4;
+    m.userData.floor = floor;
+    m.visible = true;
   }
 
   tracer(a, b, color = [1.6, 1.3, 0.8]) {
@@ -213,6 +236,20 @@ export class Effects {
     this.sparks.geometry.attributes.color.needsUpdate = true;
 
     for (const s of this.flashes) if (s.visible) { s.userData.t -= dt; if (s.userData.t <= 0) s.visible = false; }
+
+    for (const m of this.shells) {
+      if (!m.visible) continue;
+      const u = m.userData;
+      u.t -= dt;
+      if (u.t <= 0) { m.visible = false; continue; }
+      u.v.y -= 9.8 * dt;
+      m.position.addScaledVector(u.v, dt);
+      if (m.position.y < u.floor + 0.005) {
+        m.position.y = u.floor + 0.005;
+        u.v.y = Math.abs(u.v.y) * 0.3; u.v.x *= 0.5; u.v.z *= 0.5; u.spin.multiplyScalar(0.5);
+      }
+      m.rotation.x += u.spin.x * dt; m.rotation.y += u.spin.y * dt; m.rotation.z += u.spin.z * dt;
+    }
 
     for (let i = this.puffs.length - 1; i >= 0; i--) {
       const s = this.puffs[i], u = s.userData;

@@ -9,7 +9,7 @@ const cache = new Map();
 function canvas(size = SIZE) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
-  return [c, c.getContext('2d')];
+  return [c, c.getContext('2d', { willReadFrequently: true })];
 }
 
 function noise(g, r, amount, size = SIZE, scale = 1) {
@@ -128,6 +128,22 @@ const painters = {
       }
     }
   },
+  fine(g, r) {
+    // Micro-surface d'arme : grain fin + rayures légères (pour la carte de relief).
+    g.fillStyle = '#808080'; g.fillRect(0, 0, SIZE, SIZE);
+    noise(g, r, 30);
+    g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1;
+    for (let i = 0; i < 40; i++) {
+      const x = r() * SIZE, y = r() * SIZE, l = 6 + r() * 30, a = r() * Math.PI;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+    }
+  },
+  fabric(g, r) {
+    g.fillStyle = '#808080'; g.fillRect(0, 0, SIZE, SIZE);
+    for (let y = 0; y < SIZE; y += 4) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, y, SIZE, 2); }
+    for (let x = 0; x < SIZE; x += 4) { g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x, 0, 2, SIZE); }
+    noise(g, r, 22);
+  },
   panelDark(g, r) {
     g.fillStyle = '#6a6c72'; g.fillRect(0, 0, SIZE, SIZE);
     g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 2;
@@ -141,18 +157,60 @@ const painters = {
   },
 };
 
-/** Texture répétable (niveaux de gris) mise en cache par type. */
-export function getTexture(kind, maxAniso = 4) {
-  if (cache.has(kind)) return cache.get(kind);
+const sources = new Map();
+function source(kind) {
+  if (sources.has(kind)) return sources.get(kind);
   const [c, g] = canvas();
   const r = rng(kind.length * 7919 + kind.charCodeAt(0));
   painters[kind](g, r);
+  sources.set(kind, c);
+  return c;
+}
+
+/** Texture répétable (niveaux de gris) mise en cache par type. */
+export function getTexture(kind, maxAniso = 4) {
+  if (cache.has(kind)) return cache.get(kind);
+  const c = source(kind);
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = kind === 'facade' ? THREE.NoColorSpace : THREE.SRGBColorSpace;
   tex.anisotropy = maxAniso;
   tex.generateMipmaps = true;
   cache.set(kind, tex);
+  return tex;
+}
+
+/**
+ * Carte de relief (normal map) déduite de la luminance de la texture :
+ * joints, rivets et grain accrochent la lumière de façon réaliste.
+ */
+export function getNormalMap(kind, strength = 2, maxAniso = 4) {
+  const key = `n:${kind}:${strength}`;
+  if (cache.has(key)) return cache.get(key);
+  const src = source(kind);
+  const S = src.width;
+  const sd = src.getContext('2d').getImageData(0, 0, S, S).data;
+  const h = new Float32Array(S * S);
+  for (let i = 0; i < S * S; i++) h[i] = (sd[i * 4] * 0.3 + sd[i * 4 + 1] * 0.59 + sd[i * 4 + 2] * 0.11) / 255;
+  const [c, g] = canvas(S);
+  const img = g.createImageData(S, S);
+  const d = img.data;
+  const at = (x, y) => h[((y + S) % S) * S + ((x + S) % S)];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    // Filtre de Sobel (bords répétés pour une texture sans couture)
+    const dx = (at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1)) - (at(x - 1, y - 1) + 2 * at(x - 1, y) + at(x - 1, y + 1));
+    const dy = (at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1)) - (at(x - 1, y - 1) + 2 * at(x, y - 1) + at(x + 1, y - 1));
+    let nx = -dx * strength, ny = dy * strength, nz = 1;
+    const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
+    const o = (y * S + x) * 4;
+    d[o] = (nx * 0.5 + 0.5) * 255; d[o + 1] = (ny * 0.5 + 0.5) * 255; d[o + 2] = (nz * 0.5 + 0.5) * 255; d[o + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.anisotropy = maxAniso;
+  cache.set(key, tex);
   return tex;
 }
 

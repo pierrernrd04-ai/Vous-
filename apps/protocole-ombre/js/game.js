@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { World, buildEnvironment } from './world.js';
 import { NavGrid } from './nav.js';
 import { Body, SPEED, STAND_H, CROUCH_H } from './physics.js';
-import { Soldier } from './models.js';
+import { Character } from './character.js';
 import { Effects } from './effects.js';
 import { Bot } from './bots.js';
 import { fireWeapon, trace, Grenade, NADE, explosionDamage } from './combat.js';
@@ -110,10 +110,16 @@ export class Match {
 
   _makeModel(e) {
     const ally = this._isAllyOfLocal(e);
-    e.model = new Soldier(ally ? 0 : 1, e.name, ally);
+    // Factions absolues en équipe (bleus contre rouges) ; en mêlée, tous les autres sont rouges.
+    const faction = this.cfg.mode === 'ffa' ? 1 : e.team;
+    e.model = new Character({ team: faction, name: e.name, showName: true, tagColor: ally ? ALLY : FOE, weapon: e.weapon });
+    e.model.showTag(ally);
     e.model.root.visible = false;
     this.scene.add(e.model.root);
   }
+
+  /** Faction des bras du joueur local. */
+  _vmTeam() { return this.cfg.mode === 'ffa' ? 0 : this.ctx.localTeam; }
 
   _isAllyOfLocal(e) {
     return this.cfg.mode !== 'ffa' && this.ctx.localTeam === e.team;
@@ -131,7 +137,7 @@ export class Match {
       ability: 0.35, pulseT: 0, uavT: 0, overT: 0, dip: 0, dipV: 0, shake: 0, stepAcc: 0,
       killerId: null, deathPos: null, aimTarget: null, hurtT: 0,
     };
-    this.vm.equip(P.weapons[0].def, 0x2c3a4a);
+    this.vm.equip(P.weapons[0].def, this._vmTeam());
     this.local.weapon = P.weapons[0].def;
     return P;
   }
@@ -183,12 +189,12 @@ export class Match {
     else { e.rpos[0] = s.x; e.rpos[1] = 0; e.rpos[2] = s.z; }
     e.mag = e.weapon.mag; e.reloadT = 0; e.fireCD = 0.5;
     if (e.bot) e.bot.reset();
-    if (e.model) { e.model.root.visible = true; e.model.deathT = -1; }
+    if (e.model) e.model.root.visible = true;
     if (e.isLocal) {
       const P = this.lp;
       for (const w of P.weapons) { w.mag = w.def.mag; w.reserve = w.def.mag * w.def.reserveMags; }
       P.wi = 0; P.reloadT = 0; P.swapT = 0.5; P.ads = 0; P.recoilP = 0; P.bloom = 0; P.killerId = null;
-      this.vm.equip(P.weapons[0].def);
+      this.vm.equip(P.weapons[0].def, this._vmTeam());
       e.weapon = P.weapons[0].def;
       this.hud.showDeath(false);
       this.input.clearCrouch();
@@ -353,7 +359,7 @@ export class Match {
       const target = inp.slot >= 0 ? inp.slot : 1 - P.wi;
       if (target !== P.wi) {
         P.wi = target; P.reloadT = 0; P.swapT = 0.45; P.ads = 0; P.burstLeft = 0;
-        this.vm.equip(P.weapons[P.wi].def);
+        this.vm.equip(P.weapons[P.wi].def, this._vmTeam());
         e.weapon = P.weapons[P.wi].def;
         audio.ui('click');
         return;
@@ -453,6 +459,15 @@ export class Match {
     audio.shot(w.cls, null);
     const muzzle = this.vm.muzzleWorld(this.camera);
     this.shoot(e, eye, dir, w, spread, 1, [muzzle.x, muzzle.y, muzzle.z]);
+    if (w.id !== 'cobra' && w.id !== 'krait') {
+      // Douille éjectée vers la droite
+      const ej = this.vm.ejectWorld(this.camera);
+      const cam = this.camera;
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion);
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion);
+      const vel = right.multiplyScalar(rand(1.8, 2.6)).addScaledVector(up, rand(1.2, 2)).add(new THREE.Vector3(body.vel[0], 0, body.vel[2]));
+      this.effects.shell(ej, vel, body.pos[1]);
+    }
   }
 
   // ─────────────────────────────────────────────── tir commun
@@ -491,7 +506,7 @@ export class Match {
     const tracerCol = e.isLocal || this._isAllyOfLocal(e) ? [1.2, 1.6, 2.2] : [2.4, 1.2, 0.5];
     pellets.forEach((p, i) => {
       if (i < 3 && (w.pellets === 1 || Math.random() < 0.6)) this.effects.tracer(from, p.end, tracerCol);
-      if (p.target) this.effects.bodyHit(p.end, p.head);
+      if (p.target) { this.effects.bodyHit(p.end, p.head); p.target.model?.hit(); }
       else if (p.box) this.effects.impact(p.end, World.faceNormal(p.box, p.end));
     });
     if (!local) {
@@ -811,7 +826,7 @@ export class Match {
           e.hp = hp;
           const alive = !!(f & 1);
           if (!alive && e.alive) e.alive = false;
-          if (alive && !e.alive) { e.alive = true; if (e.model) { e.model.root.visible = true; e.model.deathT = -1; } }
+          if (alive && !e.alive) { e.alive = true; if (e.model) e.model.root.visible = true; }
           if (wid && wid !== e.weapon.id) e.weapon = getWeapon(wid);
           this._pushSnap(e, [x, y, z], yaw, pitch, f);
         }
@@ -861,6 +876,14 @@ export class Match {
   // ─────────────────────────────────────────────── rendu
 
   _animateModels(dt) {
+    // Les personnages hors du champ de vision ne sont pas animés (gros gain CPU).
+    const cam = this.camera;
+    cam.updateMatrixWorld();
+    this._frustum = this._frustum || new THREE.Frustum();
+    this._pv = this._pv || new THREE.Matrix4();
+    this._pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+    this._frustum.setFromProjectionMatrix(this._pv);
+    const sphere = this._sphere || (this._sphere = new THREE.Sphere(new THREE.Vector3(), 1.4));
     for (const e of this.entityList) {
       if (!e.model) continue;
       const m = e.model;
@@ -872,10 +895,18 @@ export class Match {
       m.root.visible = true;
       m.root.position.set(e.rpos[0], e.rpos[1], e.rpos[2]);
       m.root.rotation.y = e.yaw;
-      const sp = Math.hypot(e.rpos[0] - e.prevPos[0], e.rpos[2] - e.prevPos[2]) / Math.max(dt, 1e-3);
+      const dx = e.rpos[0] - e.prevPos[0], dz = e.rpos[2] - e.prevPos[2];
+      const sp = Math.hypot(dx, dz) / Math.max(dt, 1e-3);
       e.speed = damp(e.speed, Math.min(sp, 12), 10, dt);
+      if (sp > 0.3) e.moveYaw = wrapAngle(Math.atan2(-dx, -dz) - e.yaw);
       e.prevPos[0] = e.rpos[0]; e.prevPos[1] = e.rpos[1]; e.prevPos[2] = e.rpos[2];
-      m.animate(dt, { speed: e.speed, crouch: e.crouch, pitch: e.pitch, airborne: e.air, alive: e.alive });
+      if (m.weapon.def !== e.weapon) m.setWeapon(e.weapon);
+      if (!this._isAllyOfLocal(e)) m.showTag(e.alive && this.lp.aimTarget === e);
+      sphere.center.set(e.rpos[0], e.rpos[1] + 0.9, e.rpos[2]);
+      m.offscreenT = (m.offscreenT || 0) + dt;
+      if (!this._frustum.intersectsSphere(sphere) && e.alive && m.offscreenT < 0.5) continue;
+      m.animate(Math.min(m.offscreenT, 0.1), { speed: e.speed, moveYaw: e.moveYaw || 0, crouch: e.crouch, pitch: e.pitch, airborne: e.air, alive: e.alive });
+      m.offscreenT = 0;
     }
   }
 
@@ -933,6 +964,7 @@ export class Match {
 
   _updateHud(dt) {
     const e = this.local, P = this.lp;
+    this.hurtFx = e.alive ? clamp((1 - e.hp / 100) * 1.1 - 0.25, 0, 1) + (P.hurtT > 0 ? 0.35 : 0) : 0.4;
     const W = P.weapons[P.wi];
     const my = e.team;
     let scoreA, scoreB;
