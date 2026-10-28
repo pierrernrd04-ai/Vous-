@@ -1,5 +1,5 @@
 // Service worker : l'appli s'ouvre même sans réseau. La sauvegarde (/api) n'est jamais mise en cache.
-const CACHE = 'rp-40a0bb6044';
+const CACHE = 'rp-947f9fd26a';
 const SHELL = ['./index.html'];
 const EXTRA = ['./manifest.json', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 
@@ -20,16 +20,17 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin && url.pathname.startsWith('/api/')) return;
+  // le numéro de version est toujours lu en ligne (mise à jour automatique de l'appli)
+  if (url.origin === location.origin && url.pathname.endsWith('/version.json')) return;
   // les autres applis du même site (miroir/, foxbank/…) ont leur propre cache : seul icons/ est un dossier du tracker
   const rel = url.pathname.slice(new URL('./', self.location).pathname.length);
   if (url.origin === location.origin && rel.includes('/') && !rel.startsWith('icons/')) return;
   if (req.mode === 'navigate') {
-    // réseau d'abord (mises à jour immédiates), cache si hors ligne
+    // réseau d'abord, sans le cache HTTP du navigateur (mises à jour immédiates), cache si hors ligne
     e.respondWith(
-      fetch(req)
+      fetch(req.url, { cache: 'no-store', credentials: 'same-origin' })
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('./index.html', copy));
+          if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); }
           return res;
         })
         .catch(() => caches.match('./index.html', { ignoreSearch: true })),

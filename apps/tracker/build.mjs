@@ -135,7 +135,9 @@ ${src.trim()}
 </body>
 </html>
 `;
-writeFileSync(new URL('public/index.html', dir), html);
+writeFileSync(new URL('public/index.html', dir), html.replace('<script>\nwindow.RP_MODE', `<script>\nwindow.RP_BUILD = '${build}';\nwindow.RP_MODE`));
+// numéro de la version en ligne : l'appli le compare au sien pour se mettre à jour toute seule
+writeFileSync(new URL('public/version.json', dir), JSON.stringify({ v: build }) + '\n');
 const sw = readFileSync(new URL('public/sw.js', dir), 'utf8').replace(/rp-[\w_]+';/, `rp-${build}';`);
 writeFileSync(new URL('public/sw.js', dir), sw);
 console.log(`public/index.html construit en mode ${MODE} (${Math.round(html.length / 1024)} Ko, version ${build}) ; public/ai.js ${Math.round(ai.length / 1024)} Ko`);

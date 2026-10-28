@@ -16,6 +16,12 @@ La même appli que l'artefact Claude, en vrai site : une adresse en `https://…
 
 Adresse : **https://pierrernrd04-ai.github.io/Vous-/**, servie par la branche `gh-pages` (contenu de `public/` construit en mode local, plus un fichier `.nojekyll`). Les données restent dans le téléphone. Pour mettre à jour : `npm ci` puis `node build.mjs` dans `apps/tracker`, puis copier `public/` dans la branche `gh-pages` (sans `_headers`) et pousser.
 
+## Barre d'onglets, titres et mises à jour
+
+- **Barre du bas** : une icône fixe et un nom toujours visible par onglet (Accueil, Repas, Sport, Hygiène, Sobriété, Photos, Do It, Tâches, Banque). Les jeux d'icônes qui changeaient toutes les 3 minutes sont retirés. L'onglet actif a une pastille de la couleur d'accent derrière son icône.
+- **Titres** : chaque onglet du tracker commence par un grand titre en Geist (la police de l'appli) et une ligne qui dit ce qu'il contient. Do It et Fox Bank gardent leur propre en-tête.
+- **Mise à jour automatique** : `build.mjs` écrit `public/version.json`. À l'ouverture, à chaque retour dans l'appli et toutes les 15 minutes, l'appli compare ce numéro au sien et se recharge (une seule fois par version). Pendant Do It ou Fox Bank, ou si tu es en train d'écrire, elle propose un bouton « Mettre à jour » au lieu de recharger. Le service worker lit la page sans le cache du navigateur et ne met jamais `version.json` en cache.
+
 ## Onglet « Do It » (Do It Sport)
 
 L'onglet Budget est remplacé par **Do It Sport** (cycles de 3 minutes, kettlebell, marche lestée, calories). L'appli publiée sur https://do-it-sport.netlify.app est copiée dans `sport/source.html` ; `build.mjs` la sert dans `public/sport/` avec quatre retouches : alarmes écran verrouillé envoyées au serveur Netlify de Do It Sport, minuteur iPhone ouvert depuis la fenêtre principale, cache hors ligne limité à ses propres fichiers, et un résumé par jour (`doitsport-sum` : calories, cycles, minutes) que lit la tuile « Do It Sport » de l'accueil du tracker (à la place de « Budget du mois »).
