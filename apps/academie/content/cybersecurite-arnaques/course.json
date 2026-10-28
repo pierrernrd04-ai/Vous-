@@ -1,0 +1,396 @@
+{
+  "slug": "cybersecurite-arnaques",
+  "title": "Déjouer les arnaques, le phishing et les deepfakes au quotidien",
+  "subtitle": "Repérer un faux message ou une voix clonée en 30 secondes, verrouiller vos comptes et savoir quoi faire si le pire arrive.",
+  "category": "Vie numérique",
+  "level": "Débutant à intermédiaire",
+  "duration": "2 h 45",
+  "audience": [
+    "Seniors qui veulent répondre au téléphone et lire leurs SMS sans crainte",
+    "Parents et grands-parents qui souhaitent protéger toute la famille, enfants compris",
+    "Professionnels, indépendants et artisans exposés au piratage de messagerie et aux faux RIB",
+    "Dirigeants de petites entreprises et d'associations qui veulent des règles simples pour leur équipe"
+  ],
+  "promise": "En 2025, l'hameçonnage est devenu la première cybermenace en France et la fraude au faux conseiller bancaire a plus que doublé. Cette masterclass vous donne des méthodes nommées, testées et faciles à retenir pour reconnaître une arnaque en quelques secondes, sécuriser vos comptes et vos appareils en une après-midi, et réagir efficacement si vous êtes visé. Aucune compétence technique n'est requise : seulement de bons réflexes.",
+  "pain_points": [
+    "Vous recevez chaque semaine des SMS de colis, d'amendes ou de remboursements et vous ne savez plus distinguer le vrai du faux.",
+    "Vous craignez qu'un appel « de votre banque » ou d'un proche en détresse vous piège, surtout depuis que l'IA imite les voix.",
+    "Vous utilisez les mêmes mots de passe un peu partout et la double authentification vous semble compliquée.",
+    "Vous ne savez pas qui appeler ni quoi faire en premier si vous avez cliqué, donné un code ou subi un virement frauduleux."
+  ],
+  "outcomes": [
+    "Vérifier n'importe quel e-mail, SMS ou appel suspect avec la méthode S.T.O.P.",
+    "Lire une adresse web pour identifier le vrai site avant de cliquer",
+    "Décortiquer les arnaques au faux conseiller, au colis, au faux support, sentimentales et aux faux placements grâce à la grille des 4 temps",
+    "Déjouer les voix clonées et les deepfakes avec le protocole des 3 R et le mot de passe familial",
+    "Sécuriser vos comptes par ordre de priorité avec un gestionnaire, la double authentification et les clés d'accès",
+    "Configurer smartphone, ordinateur, box et Wi-Fi, et sauvegarder selon la règle 3-2-1",
+    "Réduire votre exposition en ligne et réagir face à une fuite de données ou une usurpation d'identité",
+    "Appliquer le protocole d'urgence B.P.S.P. et solliciter les bons services : opposition, 17Cyber, Perceval, THESEE, 33700"
+  ],
+  "modules": [
+    {
+      "n": 1,
+      "title": "Les menaces en 2026 : ce qui vise vraiment les particuliers et les pros",
+      "duration": "18 min",
+      "summary": "Les chiffres officiels de Cybermalveillance.gouv.fr et de l'ANSSI décryptés, les trois moteurs de la menace et le diagnostic des 4 portes pour savoir par où commencer."
+    },
+    {
+      "n": 2,
+      "title": "Démasquer un faux e-mail, SMS ou appel en 30 secondes : la méthode S.T.O.P.",
+      "duration": "20 min",
+      "summary": "Une méthode de vérification en quatre étapes, valable sur tous les canaux, avec la règle de lecture des liens et les six demandes qui doivent tout arrêter."
+    },
+    {
+      "n": 3,
+      "title": "Les 6 arnaques reines décortiquées : banque, colis, support, cœur, placements, remboursements",
+      "duration": "20 min",
+      "summary": "La grille des 4 temps appliquée aux arnaques les plus fréquentes, avec le point de rupture précis de chacune et la fraude au changement de RIB pour les pros."
+    },
+    {
+      "n": 4,
+      "title": "Deepfakes et voix clonées : déjouer le faux proche, le faux patron et instaurer le mot de passe familial",
+      "duration": "18 min",
+      "summary": "Ce que l'IA permet vraiment de falsifier, pourquoi la détection ne suffit pas, et deux parades robustes : le protocole des 3 R et le mot de passe familial."
+    },
+    {
+      "n": 5,
+      "title": "Mots de passe, gestionnaire, double authentification et passkeys : verrouiller vos comptes pour de bon",
+      "duration": "20 min",
+      "summary": "La pyramide des comptes pour sécuriser d'abord l'essentiel, les recommandations de la CNIL, le choix d'un gestionnaire, la double authentification et les clés d'accès."
+    },
+    {
+      "n": 6,
+      "title": "Smartphone, ordinateur, box et Wi-Fi : verrouiller la maison numérique et sauvegarder avec la règle 3-2-1",
+      "duration": "20 min",
+      "summary": "Les réglages essentiels de chaque appareil et du réseau domestique, la règle de sauvegarde 3-2-1 et la routine mensuelle du premier dimanche."
+    },
+    {
+      "n": 7,
+      "title": "Protéger votre identité et votre vie privée : réseaux sociaux, fuites de données et usurpation",
+      "duration": "18 min",
+      "summary": "L'audit d'exposition en 4 couches, les réglages de confidentialité, les bons gestes après une fuite de données et la marche à suivre en cas d'usurpation d'identité."
+    },
+    {
+      "n": 8,
+      "title": "Victime ou simple doute : le protocole d'urgence B.P.S.P. et les bons numéros",
+      "duration": "20 min",
+      "summary": "Bloquer, Préserver, Signaler, Porter plainte : les gestes dans l'ordre, l'annuaire des plateformes officielles vérifiées et les règles de remboursement."
+    }
+  ],
+  "bonuses": [
+    {
+      "title": "Boîte à outils — Réflexes, scripts et sécurisation express",
+      "description": "Fiche réflexes à imprimer, scripts de réponse aux appels suspects, check-list de 30 minutes, modèles de messages et de contestation, glossaire et plan d'action sur 30 jours."
+    },
+    {
+      "title": "Fiche réflexes à coller près du téléphone",
+      "description": "Une page imprimable qui résume la méthode S.T.O.P., les interdits bancaires, le protocole des 3 R et tous les numéros d'urgence, incluse dans la Boîte à outils."
+    },
+    {
+      "title": "Kit famille et entreprise",
+      "description": "Le modèle de message pour instaurer le mot de passe familial et la check-list des règles anti-fraude pour les petites entreprises, inclus dans la Boîte à outils."
+    }
+  ],
+  "faq": [
+    {
+      "q": "Faut-il être à l'aise avec l'informatique pour suivre cette masterclass ?",
+      "a": "Non. Chaque terme technique est expliqué à sa première apparition, et les méthodes reposent sur des réflexes plutôt que sur des connaissances techniques. Si vous savez envoyer un SMS et ouvrir une application, vous pouvez tout appliquer."
+    },
+    {
+      "q": "Dois-je acheter un antivirus ou des logiciels payants ?",
+      "a": "Pas nécessairement. La masterclass s'appuie d'abord sur des outils gratuits ou déjà installés : gestionnaire de mots de passe intégré, double authentification, mises à jour, antivirus du système. Les options payantes sont présentées avec leurs avantages, sans obligation."
+    },
+    {
+      "q": "La formation convient-elle aux professionnels et aux petites entreprises ?",
+      "a": "Oui. Chaque module comporte des encadrés dédiés aux professionnels : piratage de messagerie, fraude au changement de RIB, fraude au président dopée à l'IA, double validation des virements, obligations en cas de fuite de données."
+    },
+    {
+      "q": "Je viens d'être victime d'une arnaque. Par où commencer ?",
+      "a": "Si votre carte ou vos codes ont été communiqués, faites opposition immédiatement auprès de votre banque ou au 0 892 705 705, puis appelez votre banque. Ensuite, suivez le module 8, qui détaille le protocole B.P.S.P. et les plateformes officielles comme 17cyber.gouv.fr."
+    },
+    {
+      "q": "Les informations sont-elles à jour ?",
+      "a": "Les chiffres, numéros et dispositifs cités ont été vérifiés auprès de sources officielles en octobre 2026. Ces services évoluent : chaque fois que c'est utile, la masterclass renvoie vers la page officielle de référence."
+    },
+    {
+      "q": "Le certificat est-il un diplôme d'État ?",
+      "a": "Non. C'est un certificat de réussite délivré par Kairos Académie après le quiz final, obtenu avec un score d'au moins 80 %. Il n'est pas inscrit au RNCP et n'est pas éligible au CPF."
+    },
+    {
+      "q": "Combien de temps ai-je accès ?",
+      "a": "À vie. Vous pouvez relire les modules, refaire les exercices et repasser le quiz autant de fois que vous le souhaitez."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "Votre téléphone affiche le numéro de votre agence bancaire. L'interlocuteur signale une opération suspecte. Que devez-vous en conclure ?",
+      "choices": [
+        "C'est forcément votre banque, puisque son numéro s'affiche",
+        "Le numéro peut être usurpé : vous raccrochez et rappelez le numéro inscrit au dos de votre carte",
+        "Vous pouvez continuer si l'interlocuteur donne son nom et son matricule",
+        "Vous pouvez lui faire confiance s'il connaît vos derniers achats"
+      ],
+      "answer": 1,
+      "explanation": "L'usurpation de numéro permet d'afficher le numéro de votre agence. Les informations exactes sur vous peuvent provenir d'une fuite. Seul un rappel au numéro officiel que vous composez vous-même fait foi."
+    },
+    {
+      "q": "Dans l'adresse https://www.impots.gouv.fr.verif-dossier.com/remboursement, quel est le site réellement visité ?",
+      "choices": [
+        "impots.gouv.fr",
+        "gouv.fr",
+        "verif-dossier.com",
+        "remboursement"
+      ],
+      "answer": 2,
+      "explanation": "Le vrai nom de domaine se lit juste avant la première barre oblique simple qui suit https://. Ici, c'est verif-dossier.com ; le début de l'adresse n'est qu'un déguisement."
+    },
+    {
+      "q": "Un « conseiller » vous demande de valider une notification dans votre application pour annuler un paiement frauduleux. Que faites-vous ?",
+      "choices": [
+        "Vous validez rapidement pour éviter le débit",
+        "Vous validez, puis vous appelez votre agence pour vérifier",
+        "Vous lui communiquez plutôt le code reçu par SMS",
+        "Vous refusez et raccrochez : on n'annule jamais une opération en la validant"
+      ],
+      "answer": 3,
+      "explanation": "Valider une notification revient à autoriser l'opération. C'est le geste d'encaissement de l'arnaque au faux conseiller bancaire."
+    },
+    {
+      "q": "Pourquoi l'unicité d'un mot de passe compte-t-elle davantage que sa complexité ?",
+      "choices": [
+        "Parce qu'après une fuite sur un site, des programmes essaient le même identifiant et le même mot de passe sur de nombreux autres sites",
+        "Parce que les mots de passe complexes sont interdits par la CNIL",
+        "Parce qu'un mot de passe unique n'a jamais besoin d'être long",
+        "Parce que les sites refusent les caractères spéciaux"
+      ],
+      "answer": 0,
+      "explanation": "C'est le bourrage d'identifiants : un mot de passe réutilisé est aussi fragile que le moins sécurisé des sites où vous l'utilisez."
+    },
+    {
+      "q": "Un e-mail de votre fournisseur d'énergie paraît parfaitement authentique et vous demande de mettre à jour vos coordonnées. Quel geste correspond à l'étape P de la méthode S.T.O.P. ?",
+      "choices": [
+        "Cliquer sur le lien pour voir si le site ressemble au vrai",
+        "Répondre à l'e-mail pour demander une confirmation",
+        "Appeler le numéro indiqué en bas de l'e-mail",
+        "Vous connecter à votre espace client en tapant vous-même l'adresse officielle"
+      ],
+      "answer": 3,
+      "explanation": "Passer par un autre canal signifie n'utiliser ni le lien, ni le numéro, ni l'adresse de réponse fournis par le message, mais un chemin que vous contrôlez."
+    },
+    {
+      "q": "À 23 heures, la voix de votre petit-fils, en pleurs, réclame 3 800 € de caution. Quelle est la meilleure réaction ?",
+      "choices": [
+        "Faire le virement, car vous reconnaissez sa voix",
+        "Demander le mot de passe familial, puis raccrocher et rappeler son numéro habituel ou un autre proche",
+        "Demander à parler à l'avocat qui l'accompagne",
+        "Envoyer la moitié de la somme pour gagner du temps"
+      ],
+      "answer": 1,
+      "explanation": "Une voix peut être clonée. Le mot de passe familial et le protocole des 3 R (Raccrocher, Rappeler, Recouper) fonctionnent quelle que soit la qualité du trucage."
+    },
+    {
+      "q": "Lors d'un appel ou d'une visioconférence, quel est le signal le plus fiable d'une arnaque par hypertrucage ?",
+      "choices": [
+        "La combinaison d'une urgence, d'un secret et d'une demande d'argent",
+        "Une image légèrement floue",
+        "Un accent différent de d'habitude",
+        "Une connexion qui coupe parfois"
+      ],
+      "answer": 0,
+      "explanation": "Les défauts techniques sont de moins en moins visibles. Le contexte, lui, ne change pas : urgence, secret et argent doivent déclencher la vérification."
+    },
+    {
+      "q": "Pourquoi une clé d'accès (passkey) protège-t-elle mieux contre l'hameçonnage qu'un mot de passe ?",
+      "choices": [
+        "Parce qu'elle est plus longue à saisir",
+        "Parce qu'elle envoie votre empreinte digitale au site",
+        "Parce qu'elle est liée au véritable site et ne fonctionne pas sur un faux site",
+        "Parce qu'elle change chaque semaine"
+      ],
+      "answer": 2,
+      "explanation": "La clé d'accès est associée au vrai site lors de sa création. Votre empreinte ou votre visage restent sur l'appareil et servent seulement à la déverrouiller."
+    },
+    {
+      "q": "Votre téléphone affiche une demande de connexion à votre messagerie que vous n'avez pas lancée. Que faites-vous ?",
+      "choices": [
+        "Vous l'acceptez pour qu'elle cesse de s'afficher",
+        "Vous l'ignorez sans autre action",
+        "Vous attendez la suivante pour vérifier",
+        "Vous la refusez et changez votre mot de passe"
+      ],
+      "answer": 3,
+      "explanation": "Une demande non sollicitée signifie que quelqu'un connaît probablement votre mot de passe. Refuser bloque l'accès ; changer le mot de passe coupe l'attaque."
+    },
+    {
+      "q": "Quelle organisation respecte la règle de sauvegarde 3-2-1 ?",
+      "choices": [
+        "Les photos sur l'ordinateur et une copie sur une clé USB rangée à côté",
+        "Les photos sur l'ordinateur, une copie sur un disque externe débranché, une copie dans un service en ligne avec historique",
+        "Les photos synchronisées sur deux ordinateurs de la maison",
+        "Les photos uniquement dans un service en ligne"
+      ],
+      "answer": 1,
+      "explanation": "Trois exemplaires, deux supports différents, dont un hors du domicile ou hors ligne : seule cette combinaison résiste à la fois à la panne, au vol et au rançongiciel."
+    },
+    {
+      "q": "Pourquoi la synchronisation de vos fichiers n'est-elle pas une véritable sauvegarde ?",
+      "choices": [
+        "Parce qu'une suppression ou un chiffrement par rançongiciel peut se propager à toutes les copies synchronisées",
+        "Parce qu'elle est toujours payante",
+        "Parce qu'elle ne fonctionne pas sur smartphone",
+        "Parce qu'elle est interdite pour les documents administratifs"
+      ],
+      "answer": 0,
+      "explanation": "La synchronisation reproduit les changements, y compris les mauvais. Il faut un historique des versions et au moins une copie débranchée."
+    },
+    {
+      "q": "Vous êtes dans une gare et devez consulter votre compte bancaire. Quelle est la solution la plus sûre ?",
+      "choices": [
+        "Le Wi-Fi gratuit dont le nom évoque la gare",
+        "Le Wi-Fi du café voisin, s'il a un mot de passe affiché",
+        "Le réseau mobile de votre téléphone ou le partage de connexion",
+        "N'importe quel Wi-Fi, puisque le site de la banque a un cadenas"
+      ],
+      "answer": 2,
+      "explanation": "Un Wi-Fi public peut être imité ou partagé avec des inconnus. Le réseau mobile est plus sûr ; le cadenas indique seulement une connexion chiffrée, pas un site honnête."
+    },
+    {
+      "q": "Une publicité montre une personnalité recommandant un placement à 8 % garanti, sans risque. Quel est le signal d'alerte principal ?",
+      "choices": [
+        "Le taux de 8 % est trop bas",
+        "La publicité est en français",
+        "La personnalité est connue",
+        "Un rendement élevé présenté comme sans risque n'existe pas"
+      ],
+      "answer": 3,
+      "explanation": "Tout placement comporte un risque. La vidéo peut être un hypertrucage ; vérifiez l'intermédiaire sur les listes de l'AMF avant tout versement."
+    },
+    {
+      "q": "Après avoir perdu de l'argent sur un faux placement, un « cabinet » vous propose de récupérer vos fonds contre des frais. De quoi s'agit-il le plus souvent ?",
+      "choices": [
+        "D'un service officiel de l'AMF",
+        "D'une seconde arnaque, dite de recouvrement",
+        "D'une procédure obligatoire avant la plainte",
+        "D'une assurance proposée par votre banque"
+      ],
+      "answer": 1,
+      "explanation": "Les victimes sont souvent recontactées par le même réseau. Aucun service officiel ne réclame de frais pour récupérer vos fonds."
+    },
+    {
+      "q": "Dans une petite entreprise, un fournisseur habituel annonce par e-mail un nouvel IBAN. Quelle est la meilleure parade ?",
+      "choices": [
+        "Répondre à l'e-mail pour demander confirmation",
+        "Payer, puisque la facture jointe est authentique",
+        "Faire confirmer le changement par un contre-appel à un numéro déjà connu, par une personne différente",
+        "Appeler le numéro figurant dans la signature de l'e-mail"
+      ],
+      "answer": 2,
+      "explanation": "La messagerie du fournisseur peut être piratée : répondre ou appeler le numéro du message revient à contacter l'escroc. Seul un numéro déjà connu fait foi."
+    },
+    {
+      "q": "Votre carte a été utilisée pour des achats en ligne que vous n'avez pas faits, alors qu'elle est toujours dans votre portefeuille. Après l'opposition, quelle plateforme permet de signaler la fraude et d'obtenir un récépissé ?",
+      "choices": [
+        "Pharos",
+        "Signal Spam",
+        "Le 33700",
+        "Perceval"
+      ],
+      "answer": 3,
+      "explanation": "Perceval, accessible via service-public.fr avec FranceConnect, traite la fraude à la carte en ligne quand la carte est toujours en votre possession, après opposition. Le récépissé accompagne la demande de remboursement."
+    },
+    {
+      "q": "Vous venez de comprendre que vous avez donné votre numéro de carte et un code à un escroc. Quelle est la toute première étape ?",
+      "choices": [
+        "Faire opposition sur la carte immédiatement",
+        "Rédiger la chronologie des faits",
+        "Porter plainte en ligne",
+        "Signaler le numéro de l'escroc au 33700"
+      ],
+      "answer": 0,
+      "explanation": "Le protocole B.P.S.P. commence par Bloquer. Les preuves, le signalement et la plainte viennent juste après, mais chaque minute compte pour stopper les paiements."
+    },
+    {
+      "q": "Vous recevez un SMS frauduleux de faux colis. Quel geste de signalement est le plus adapté ?",
+      "choices": [
+        "Répondre STOP à l'expéditeur",
+        "Le transférer gratuitement au 33700",
+        "Cliquer sur le lien pour vérifier qu'il est faux",
+        "Appeler le numéro expéditeur pour se plaindre"
+      ],
+      "answer": 1,
+      "explanation": "Le 33700 centralise les signalements de SMS et d'appels indésirables ou frauduleux pour permettre aux opérateurs de couper les numéros."
+    },
+    {
+      "q": "Un site marchand vous informe que votre adresse e-mail et votre mot de passe ont fuité. Que faut-il faire ?",
+      "choices": [
+        "Rien, puisque l'organisme vous a prévenu",
+        "Cliquer sur le lien de l'e-mail pour sécuriser votre compte",
+        "Changer ce mot de passe sur ce site et partout où il était réutilisé, et se méfier des messages citant cet organisme",
+        "Supprimer votre adresse e-mail"
+      ],
+      "answer": 2,
+      "explanation": "La fuite expose au piratage des comptes où le mot de passe était réutilisé et aux hameçonnages ciblés. Passez toujours par le site officiel, tapé vous-même."
+    },
+    {
+      "q": "Un propriétaire vous demande une copie de votre carte d'identité pour un dossier de location. Quelle précaution est la plus utile ?",
+      "choices": [
+        "Ajouter un filigrane indiquant le destinataire, la date et l'usage",
+        "L'envoyer en noir et blanc",
+        "L'envoyer depuis un Wi-Fi public",
+        "Envoyer aussi une copie de votre carte bancaire pour prouver votre solvabilité"
+      ],
+      "answer": 0,
+      "explanation": "Un filigrane, par exemple avec l'outil public Filigrane Facile, rend la copie beaucoup plus difficile à réutiliser pour une usurpation d'identité."
+    }
+  ],
+  "seo": {
+    "title": "Masterclass anti-arnaques : phishing, deepfakes, sécurité",
+    "description": "Repérez phishing, faux conseillers et voix clonées, sécurisez comptes et appareils, et sachez réagir. Masterclass en ligne à jour 2026, pour tous.",
+    "keywords": [
+      "arnaque faux conseiller bancaire",
+      "phishing",
+      "deepfake voix clonée",
+      "cybersécurité seniors",
+      "mot de passe familial",
+      "double authentification",
+      "17Cyber",
+      "protection usurpation d'identité"
+    ]
+  },
+  "disclaimer": "Cette masterclass fournit une information générale de prévention. Elle ne constitue ni un conseil juridique, ni un conseil financier personnalisé : pour un litige bancaire, une plainte ou une situation particulière, rapprochez-vous de votre banque, d'une association de consommateurs ou d'un professionnel du droit. Tout placement financier comporte un risque de perte en capital. Les numéros, plateformes et chiffres cités ont été vérifiés en octobre 2026 et peuvent évoluer : référez-vous aux sites officiels. En cas de danger immédiat, composez le 17 ou le 112.",
+  "sources": [
+    {
+      "label": "Cybermalveillance.gouv.fr — Rapport d'activité et état de la menace 2025",
+      "url": "https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/rapport-activite-2025"
+    },
+    {
+      "label": "ANSSI — Panorama de la cybermenace 2025",
+      "url": "https://cyber.gouv.fr/actualites/panorama-de-la-cybermenace-2025/"
+    },
+    {
+      "label": "Gendarmerie nationale — 17Cyber, le réflexe cyber pour tous",
+      "url": "https://www.gendarmerie.interieur.gouv.fr/gendinfo/actualites/2026/17cyber-le-reflexe-cyber-pour-tous"
+    },
+    {
+      "label": "Service-Public.fr — Opposition sur une carte bancaire",
+      "url": "https://www.service-public.fr/particuliers/vosdroits/F31241"
+    },
+    {
+      "label": "Arcep — SMS, appels et courriers électroniques indésirables ou frauduleux",
+      "url": "https://www.arcep.fr/demarches-et-services/sms-appels-et-courriers-electroniques-indesirables-et-ou-frauduleux.html"
+    },
+    {
+      "label": "Portail officiel de signalement des contenus illicites (Pharos)",
+      "url": "https://www.internet-signalement.gouv.fr"
+    },
+    {
+      "label": "CNIL — Mots de passe et droits sur vos données",
+      "url": "https://www.cnil.fr"
+    },
+    {
+      "label": "AMF — Listes noires et alertes sur les placements",
+      "url": "https://www.amf-france.org"
+    }
+  ]
+}

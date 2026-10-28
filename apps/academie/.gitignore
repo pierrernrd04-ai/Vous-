@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.netlify/
+# Jetons d'accès aux cours : secrets, fournis à Netlify par la variable ACCESS_TOKENS.
+tokens.json

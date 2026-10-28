@@ -1,0 +1,19 @@
+{
+  "name": "kairos-academie",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Kairos Académie : 10 masterclasses en ligne à 25 €, pages de vente, espace de cours, certificats et statistiques.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "marketing": "node scripts/marketing.mjs",
+    "serve": "npx -y serve dist -l 4321"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.7",
+    "marked": "18.1.2"
+  },
+  "devDependencies": {
+    "@netlify/functions": "6.0.3"
+  }
+}

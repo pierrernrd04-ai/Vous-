@@ -1,0 +1,404 @@
+{
+  "slug": "ia-generative",
+  "title": "Maîtriser l'IA générative au quotidien et au travail",
+  "subtitle": "ChatGPT, Claude, Gemini, Copilot, Le Chat, Perplexity : une méthode claire pour gagner du temps sans risque pour vos données.",
+  "category": "IA & Tech",
+  "level": "Débutant à intermédiaire",
+  "duration": "2 h 45",
+  "audience": [
+    "Professionnels de tous secteurs qui veulent gagner du temps sur leurs e-mails, documents et réunions",
+    "Seniors curieux qui souhaitent comprendre et utiliser ces outils en toute sécurité",
+    "Indépendants, artisans et responsables d'association qui manquent de temps pour rédiger",
+    "Toute personne qui a déjà essayé ChatGPT ou un autre assistant sans obtenir de résultats convaincants"
+  ],
+  "promise": "L'IA générative peut vous faire gagner des heures chaque semaine, à condition de savoir comment elle fonctionne, quel outil choisir et comment lui parler. Cette masterclass vous donne des méthodes nommées, testables immédiatement, et plus de 25 prompts professionnels prêts à copier. Vous apprendrez aussi à protéger vos données et à respecter le cadre légal européen.",
+  "pain_points": [
+    "Vous obtenez des réponses génériques ou à côté de la plaque, et vous ne savez pas comment les améliorer.",
+    "Vous ne savez pas quel outil choisir entre ChatGPT, Claude, Gemini, Copilot ou Le Chat, ni s'il faut payer un abonnement.",
+    "Vous craignez que l'IA invente des informations ou que vos données personnelles et professionnelles soient exposées.",
+    "Vous avez l'impression de perdre plus de temps à corriger les résultats qu'à faire le travail vous-même."
+  ],
+  "outcomes": [
+    "Expliquer simplement le fonctionnement d'un modèle de langage et reconnaître les situations à risque d'hallucination",
+    "Choisir l'outil et l'offre adaptés à vos usages grâce à la méthode PICS",
+    "Rédiger des prompts professionnels avec la méthode PRÉCISE et les améliorer par itération",
+    "Résumer et analyser un document important de façon vérifiable avec la méthode CEV",
+    "Identifier les tâches professionnelles à confier à l'IA avec la méthode des 3 R",
+    "Protéger vos données avec le feu tricolore et situer vos usages dans le cadre du RGPD et de l'AI Act",
+    "Configurer des assistants personnalisés et des routines avec le système 3A",
+    "Mesurer votre gain de temps net, vérification comprise"
+  ],
+  "modules": [
+    {
+      "n": 1,
+      "title": "Comprendre enfin l'IA générative : ce qu'elle sait, ce qu'elle invente",
+      "duration": "20 min",
+      "summary": "Comment fonctionne un modèle de langage, pourquoi il hallucine et comment doser votre confiance avec la méthode des trois zones."
+    },
+    {
+      "n": 2,
+      "title": "Choisir le bon outil en 2026 : ChatGPT, Claude, Gemini et les autres",
+      "duration": "18 min",
+      "summary": "Panorama des six grands assistants, de leurs offres gratuites et payantes en octobre 2026, et méthode PICS pour choisir sans se tromper."
+    },
+    {
+      "n": 3,
+      "title": "La méthode PRÉCISE : écrire des prompts de professionnel",
+      "duration": "22 min",
+      "summary": "Les sept composantes d'un prompt efficace, des exemples avant/après et les techniques avancées d'itération et de critique."
+    },
+    {
+      "n": 4,
+      "title": "Rédiger, résumer, traduire et analyser vos documents",
+      "duration": "20 min",
+      "summary": "Le brouillon à 80 %, la méthode CEV pour résumer un document à enjeu, la traduction contrôlée et l'analyse de tableurs."
+    },
+    {
+      "n": 5,
+      "title": "L'IA au travail : e-mails, réunions, tableurs et veille",
+      "duration": "22 min",
+      "summary": "La méthode des 3 R pour repérer les tâches à déléguer, puis des méthodes concrètes pour les e-mails, réunions, formules, présentations et la veille."
+    },
+    {
+      "n": 6,
+      "title": "L'IA au quotidien : démarches, voyages, apprentissage et création",
+      "duration": "20 min",
+      "summary": "La règle du double canal pour les démarches, la préparation de voyages, le tuteur socratique, la méthode SCÈNE pour les images et les arnaques à la voix clonée."
+    },
+    {
+      "n": 7,
+      "title": "Risques, éthique et loi : utiliser l'IA sans se mettre en danger",
+      "duration": "22 min",
+      "summary": "Le feu tricolore des données, le RGPD, le calendrier de l'AI Act européen, le droit d'auteur et les sanctions contre les hypertrucages."
+    },
+    {
+      "n": 8,
+      "title": "Construire votre système IA personnel et mesurer vos gains",
+      "duration": "20 min",
+      "summary": "Le système 3A (Assistants, Automatismes, Audit), la fiche MISSION pour créer un assistant personnalisé et le calcul du gain de temps net."
+    }
+  ],
+  "bonuses": [
+    {
+      "title": "Boîte à outils — L'IA générative au quotidien",
+      "description": "30 prompts professionnels prêts à copier, check-lists, tableau des méthodes, glossaire de 24 termes et plan d'action sur 30 jours."
+    },
+    {
+      "title": "Modèle d'instructions personnalisées",
+      "description": "Un canevas à remplir en cinq minutes pour que votre assistant connaisse votre contexte et signale ce qui doit être vérifié."
+    },
+    {
+      "title": "Journal de bord du gain de temps",
+      "description": "Un tableau de suivi sur deux semaines, présenté au module 8, pour mesurer votre gain net et décider d'un abonnement chiffres à l'appui."
+    }
+  ],
+  "faq": [
+    {
+      "q": "Faut-il des connaissances en informatique pour suivre cette masterclass ?",
+      "a": "Non. Chaque terme technique est expliqué à sa première apparition. Il suffit de savoir utiliser un navigateur internet ou une application sur téléphone."
+    },
+    {
+      "q": "Dois-je payer un abonnement à ChatGPT ou à un autre outil ?",
+      "a": "Non. Tous les exercices sont réalisables avec les versions gratuites. Le module 2 vous aide à décider si un abonnement est rentable pour vous."
+    },
+    {
+      "q": "Les prix et les fonctions des outils sont-ils à jour ?",
+      "a": "Ils ont été vérifiés en octobre 2026. Ces offres changent souvent : la masterclass vous apprend à vérifier la page tarifaire officielle de chaque éditeur avant de vous engager."
+    },
+    {
+      "q": "Puis-je utiliser ces méthodes avec l'outil fourni par mon employeur ?",
+      "a": "Oui. Les méthodes fonctionnent avec tous les grands assistants. Respectez toujours la politique de votre organisation sur les outils autorisés et les données que vous pouvez y saisir."
+    },
+    {
+      "q": "Cette formation remplace-t-elle un conseil juridique sur le RGPD ou l'AI Act ?",
+      "a": "Non. Le module 7 présente le cadre général à jour en octobre 2026. Pour une mise en conformité ou une situation particulière, consultez un avocat ou le délégué à la protection des données de votre organisation."
+    },
+    {
+      "q": "Le certificat est-il un diplôme d'État ?",
+      "a": "Non. C'est un certificat de réussite délivré par Kairos Académie après le quiz final (score d'au moins 80 %). Il n'est pas inscrit au RNCP et n'est pas éligible au CPF."
+    },
+    {
+      "q": "Combien de temps ai-je accès ?",
+      "a": "À vie. Vous pouvez relire les modules, refaire les exercices et repasser le quiz quand vous le souhaitez."
+    }
+  ],
+  "quiz": [
+    {
+      "q": "Pourquoi un assistant comme ChatGPT peut-il affirmer avec assurance une information fausse ?",
+      "choices": [
+        "Parce qu'il génère la suite de texte la plus plausible, sans vérifier qu'elle est vraie",
+        "Parce qu'il recopie volontairement des sites peu fiables",
+        "Parce que les versions gratuites sont programmées pour se tromper",
+        "Parce qu'il ne comprend pas le français"
+      ],
+      "answer": 0,
+      "explanation": "Un modèle de langage prédit la suite la plus vraisemblable. Quand l'information lui manque, il peut produire une réponse plausible mais fausse : c'est une hallucination."
+    },
+    {
+      "q": "Vous voulez connaître le montant actuel d'une aide publique. Quelle approche est la plus fiable ?",
+      "choices": [
+        "Demander à l'assistant sans recherche web, car sa mémoire est complète",
+        "Poser la question deux fois et garder la réponse la plus détaillée",
+        "Utiliser un outil avec recherche web, exiger la source officielle et l'ouvrir pour vérifier",
+        "Demander à l'assistant de répondre en anglais pour plus de précision"
+      ],
+      "answer": 2,
+      "explanation": "Sans recherche web, l'outil répond à partir de données figées à sa date de coupure. Une information chiffrée et datée se vérifie sur la source officielle."
+    },
+    {
+      "q": "Selon la méthode des trois zones, l'interprétation d'une clause de votre contrat de prêt relève de quelle zone ?",
+      "choices": [
+        "Zone verte : une relecture rapide suffit",
+        "Zone rouge : l'IA aide à préparer vos questions, un professionnel tranche",
+        "Zone orange : il suffit de vérifier un point sur un forum",
+        "Aucune zone : l'IA ne peut pas lire de contrat"
+      ],
+      "answer": 1,
+      "explanation": "Une décision qui engage votre argent ou vos droits est en zone rouge. L'IA peut vous aider à comprendre le vocabulaire et à formuler vos questions, pas à décider."
+    },
+    {
+      "q": "Quelle composante de la méthode PRÉCISE est la plus souvent oubliée, alors qu'elle améliore le plus les réponses ?",
+      "choices": [
+        "Le personnage",
+        "Les spécimens",
+        "Le cadre de sortie",
+        "Les renseignements, c'est-à-dire le contexte et l'objectif réel"
+      ],
+      "answer": 3,
+      "explanation": "Sans contexte ni objectif réel, l'IA produit une réponse générique. Les renseignements lui permettent d'adapter le fond comme la forme."
+    },
+    {
+      "q": "Après de nombreux échanges, une conversation produit des réponses de plus en plus confuses. Que faire ?",
+      "choices": [
+        "Continuer à corriger jusqu'à ce que l'outil comprenne",
+        "Passer immédiatement à un abonnement payant",
+        "Ouvrir une nouvelle conversation avec un prompt amélioré qui reprend l'essentiel",
+        "Écrire la demande en majuscules"
+      ],
+      "answer": 2,
+      "explanation": "Les longues conversations accumulent des consignes contradictoires. Repartir d'une conversation neuve avec un prompt complet est souvent plus efficace."
+    },
+    {
+      "q": "Dans la méthode CEV, pourquoi exiger des citations exactes avec la section ou la page ?",
+      "choices": [
+        "Pour pouvoir vérifier dans le document original et réduire le risque d'invention",
+        "Pour rendre le résumé plus long",
+        "Parce que c'est une obligation légale",
+        "Pour que l'outil travaille plus lentement"
+      ],
+      "answer": 0,
+      "explanation": "La citation exacte rend chaque affirmation vérifiable par une simple recherche dans le document, et pousse l'outil à s'appuyer sur le texte plutôt que sur ses suppositions."
+    },
+    {
+      "q": "Vous devez transmettre à une administration étrangère la traduction de votre acte de naissance. Que retenez-vous ?",
+      "choices": [
+        "Une traduction par IA suffit si elle est relue",
+        "La traduction inverse garantit la recevabilité",
+        "Il suffit de joindre le texte original et la traduction de l'IA",
+        "Une traduction par un traducteur assermenté est souvent exigée pour ce type de document"
+      ],
+      "answer": 3,
+      "explanation": "Pour les documents officiels, les administrations exigent fréquemment une traduction certifiée. L'IA peut aider à comprendre, pas remplacer cette certification."
+    },
+    {
+      "q": "Quelle tâche est la meilleure candidate à confier à l'IA selon la méthode des 3 R ?",
+      "choices": [
+        "Une négociation salariale en face à face",
+        "Le compte rendu hebdomadaire envoyé chaque vendredi à votre direction",
+        "Le choix stratégique d'un nouveau marché",
+        "Un entretien de recadrage avec un collaborateur"
+      ],
+      "answer": 1,
+      "explanation": "Le compte rendu hebdomadaire est à la fois répétitif et rédactionnel : il coche deux R. Les autres tâches relèvent de la relation humaine ou de la décision."
+    },
+    {
+      "q": "Avant d'utiliser la transcription automatique d'une réunion, que devez-vous faire en priorité ?",
+      "choices": [
+        "Informer les participants et respecter les règles de votre organisation",
+        "Désactiver les micros de tous les participants",
+        "Vérifier que la réunion dure plus d'une heure",
+        "Rien, la transcription est toujours anonyme"
+      ],
+      "answer": 0,
+      "explanation": "La voix et les propos des participants sont des données personnelles. Ils doivent être informés, et les échanges sensibles ne devraient pas être transcrits."
+    },
+    {
+      "q": "Vous demandez une formule de tableur à l'IA. Quelle précision évite le plus d'erreurs ?",
+      "choices": [
+        "Le nombre de lignes du fichier",
+        "La couleur des cellules",
+        "Le logiciel utilisé et la langue de son interface",
+        "La date de création du fichier"
+      ],
+      "answer": 2,
+      "explanation": "Les noms des fonctions diffèrent selon le logiciel et la langue (SI ou IF, RECHERCHEV ou VLOOKUP). Sans cette précision, la formule peut ne pas fonctionner."
+    },
+    {
+      "q": "Que signifie la règle du double canal pour vos démarches administratives ?",
+      "choices": [
+        "Utiliser deux assistants d'IA et comparer leurs réponses",
+        "Envoyer chaque courrier par e-mail et par la poste",
+        "Demander l'avis de deux proches",
+        "L'IA explique et prépare, le site officiel vérifie et sert à réaliser la démarche"
+      ],
+      "answer": 3,
+      "explanation": "Une date limite, un montant ou une condition fournis par l'IA peuvent être faux ou dépassés : seule la source officielle fait foi."
+    },
+    {
+      "q": "Un proche vous appelle, voix reconnaissable, pour réclamer d'urgence un virement inhabituel. Quel est le bon réflexe ?",
+      "choices": [
+        "Faire le virement rapidement pour l'aider",
+        "Raccrocher et le rappeler sur son numéro habituel, ou demander le mot de code familial",
+        "Demander à un assistant d'IA si la voix est authentique",
+        "Envoyer la moitié de la somme par précaution"
+      ],
+      "answer": 1,
+      "explanation": "Le clonage de voix permet des arnaques au faux proche. Rappeler sur le numéro habituel et utiliser un mot de code convenu sont les protections les plus simples."
+    },
+    {
+      "q": "Pourquoi la méthode du tuteur socratique est-elle plus efficace pour apprendre que de simplement demander des explications ?",
+      "choices": [
+        "Parce qu'elle est plus rapide",
+        "Parce qu'elle évite d'utiliser le mode vocal",
+        "Parce qu'on apprend en faisant l'effort de répondre à des questions et de corriger ses erreurs",
+        "Parce que l'IA ne sait pas expliquer"
+      ],
+      "answer": 2,
+      "explanation": "L'apprentissage repose sur l'effort de récupération et la correction. Le tuteur pose des questions et donne des indices plutôt que les réponses."
+    },
+    {
+      "q": "Selon le feu tricolore des données, comment traiter la liste nominative de vos clients avec leurs coordonnées ?",
+      "choices": [
+        "Vert : on peut la coller dans n'importe quel outil",
+        "Orange : il suffit de retirer les prénoms",
+        "Rouge : jamais dans un outil grand public, seulement dans un environnement professionnel prévu et autorisé",
+        "Aucune règle, car ce sont des données de l'entreprise"
+      ],
+      "answer": 2,
+      "explanation": "Des coordonnées de clients sont des données personnelles de tiers. Leur traitement doit être encadré par l'organisation, conformément au RGPD."
+    },
+    {
+      "q": "Qu'est-ce qui s'applique, selon le calendrier de l'AI Act en vigueur au moment de la rédaction, depuis le 2 août 2026 ?",
+      "choices": [
+        "Les obligations de transparence, par exemple informer qu'on dialogue avec un chatbot et signaler les hypertrucages",
+        "L'interdiction de tous les assistants d'IA non européens",
+        "Une taxe sur chaque prompt envoyé",
+        "L'obligation pour chaque citoyen de déclarer ses usages d'IA"
+      ],
+      "answer": 0,
+      "explanation": "Le 2 août 2026 marque l'application de la majorité du règlement, dont l'article 50 sur la transparence. Les obligations sur le haut risque ont été reportées par l'omnibus numérique."
+    },
+    {
+      "q": "Un texte que vous avez fait générer entièrement par une IA, sans le retravailler, est-il protégé par le droit d'auteur en France ?",
+      "choices": [
+        "Oui, toujours, puisque vous avez écrit le prompt",
+        "Oui, si vous payez un abonnement",
+        "Il a peu de chances de l'être, car la protection suppose l'empreinte de la personnalité d'un auteur humain",
+        "Oui, l'éditeur de l'IA en devient automatiquement l'auteur"
+      ],
+      "answer": 2,
+      "explanation": "L'originalité, au sens du droit français, suppose un apport créatif humain. Plus votre contribution est substantielle, plus la protection est envisageable ; la jurisprudence reste en construction."
+    },
+    {
+      "q": "Une collègue veut classer des CV nominatifs dans son compte personnel d'assistant d'IA. Quel est le principal problème ?",
+      "choices": [
+        "Les CV sont trop longs pour l'IA",
+        "Il s'agit de données personnelles de tiers dans un outil non validé, pour un usage considéré comme à haut risque par l'AI Act",
+        "L'IA ne lit pas les fichiers PDF",
+        "Il n'y a aucun problème si elle supprime la conversation ensuite"
+      ],
+      "answer": 1,
+      "explanation": "Le recrutement est un usage à haut risque dans l'AI Act, et des CV sont des données personnelles : leur traitement doit être encadré par l'organisation."
+    },
+    {
+      "q": "Une tâche vous prenait 30 minutes. Avec l'IA : 3 minutes de prompt, 7 minutes de génération et de lecture, 10 minutes de vérification. Quel est votre gain net ?",
+      "choices": [
+        "20 minutes",
+        "27 minutes",
+        "0 minute",
+        "10 minutes"
+      ],
+      "answer": 3,
+      "explanation": "Gain net = 30 − (3 + 7 + 10) = 10 minutes. Ignorer le temps de vérification conduit à surestimer l'apport de l'IA."
+    },
+    {
+      "q": "Quelle information ne devriez-vous pas inscrire dans les instructions personnalisées ou la mémoire de votre assistant ?",
+      "choices": [
+        "Votre métier et votre secteur d'activité",
+        "Votre préférence pour des réponses courtes",
+        "La demande de signaler les informations incertaines",
+        "Vos antécédents médicaux et votre numéro de sécurité sociale"
+      ],
+      "answer": 3,
+      "explanation": "Les instructions et la mémoire ne doivent contenir que des informations en vert. Les données de santé et les identifiants sont des données sensibles."
+    },
+    {
+      "q": "Un agent d'IA vous propose d'envoyer automatiquement un paiement après avoir navigué sur plusieurs sites. Quelle attitude adopter ?",
+      "choices": [
+        "Valider sans regarder, l'agent a été conçu pour cela",
+        "Relire l'action et la valider vous-même, car l'agent peut avoir été détourné par une page piégée",
+        "Laisser l'agent décider s'il est sûr de lui",
+        "Désinstaller définitivement l'outil"
+      ],
+      "answer": 1,
+      "explanation": "Les agents peuvent subir des injections de prompt cachées dans des pages web. Toute action irréversible ou financière doit être validée par vous."
+    }
+  ],
+  "seo": {
+    "title": "Masterclass IA générative : ChatGPT, Claude, Gemini",
+    "description": "Maîtrisez ChatGPT, Claude, Gemini, Copilot et Le Chat : méthode de prompt PRÉCISE, 30 prompts prêts à copier, RGPD et AI Act. Formation en ligne, 25 €.",
+    "keywords": [
+      "formation IA générative",
+      "apprendre ChatGPT",
+      "méthode de prompt",
+      "Claude Gemini Copilot",
+      "IA au travail",
+      "AI Act RGPD",
+      "Le Chat Mistral",
+      "IA pour seniors"
+    ]
+  },
+  "disclaimer": "Les informations juridiques (RGPD, AI Act, droit d'auteur, hypertrucages) et les tarifs des outils sont donnés à titre d'information générale, à jour en octobre 2026. Ils ne constituent pas un conseil juridique : vérifiez les offres sur les sites des éditeurs et consultez un professionnel pour toute situation particulière. L'IA ne remplace pas un avis médical, financier ou juridique.",
+  "sources": [
+    {
+      "label": "Règlement (UE) 2024/1689 sur l'intelligence artificielle (AI Act) — EUR-Lex",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    },
+    {
+      "label": "Commission européenne — Cadre réglementaire de l'IA",
+      "url": "https://digital-strategy.ec.europa.eu/fr/policies/regulatory-framework-ai"
+    },
+    {
+      "label": "CNIL — Intelligence artificielle",
+      "url": "https://www.cnil.fr/fr/intelligence-artificielle"
+    },
+    {
+      "label": "CNIL — Comment déployer une IA générative",
+      "url": "https://www.cnil.fr/fr/comment-deployer-une-ia-generative-la-cnil-apporte-de-premieres-precisions"
+    },
+    {
+      "label": "Légifrance — Loi n° 2024-449 du 21 mai 2024 visant à sécuriser et à réguler l'espace numérique",
+      "url": "https://www.legifrance.gouv.fr/eli/loi/2024/5/21/ECOI2309270L/jo/texte"
+    },
+    {
+      "label": "ANSSI — Recommandations de sécurité pour un système d'IA générative",
+      "url": "https://cyber.gouv.fr/publications/recommandations-de-securite-pour-un-systeme-dia-generative"
+    },
+    {
+      "label": "Cybermalveillance.gouv.fr — Assistance et prévention",
+      "url": "https://www.cybermalveillance.gouv.fr/"
+    },
+    {
+      "label": "OpenAI — Offres et tarifs de ChatGPT",
+      "url": "https://openai.com/chatgpt/pricing/"
+    },
+    {
+      "label": "Anthropic — Offres et tarifs de Claude",
+      "url": "https://claude.com/pricing"
+    },
+    {
+      "label": "Mistral AI — Offres et tarifs de Le Chat",
+      "url": "https://mistral.ai/pricing"
+    }
+  ]
+}

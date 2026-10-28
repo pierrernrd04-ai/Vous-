@@ -1,0 +1,47 @@
+{
+  "brand": "Kairos Académie",
+  "tagline": "Le bon savoir, au bon moment.",
+  "siteUrl": "https://kairos-academie.netlify.app",
+  "price": 25,
+  "passPrice": 89,
+  "founder": "Pierre Renard",
+  "paymentLinks": {
+    "ia-generative": "",
+    "automatisation-ia": "",
+    "cybersecurite-arnaques": "",
+    "epargne-investissement": "",
+    "retraite": "",
+    "linkedin-marque-personnelle": "",
+    "activite-complementaire": "",
+    "numerique-sans-stress": "",
+    "economies-energie": "",
+    "productivite-sereine": "",
+    "pass-integral": ""
+  },
+  "order": [
+    "ia-generative",
+    "cybersecurite-arnaques",
+    "epargne-investissement",
+    "retraite",
+    "numerique-sans-stress",
+    "automatisation-ia",
+    "linkedin-marque-personnelle",
+    "activite-complementaire",
+    "economies-energie",
+    "productivite-sereine"
+  ],
+  "legal": {
+    "editorName": "Pierre Renard",
+    "status": "Entrepreneur individuel (micro-entreprise)",
+    "address": "À COMPLÉTER",
+    "email": "À COMPLÉTER",
+    "phone": "À COMPLÉTER",
+    "siren": "À COMPLÉTER",
+    "vat": "TVA non applicable, art. 293 B du CGI",
+    "publicationDirector": "Pierre Renard",
+    "host": "Netlify, Inc., 512 2nd Street, Fl 2, San Francisco, CA 94107, États-Unis — www.netlify.com",
+    "mediatorName": "À COMPLÉTER",
+    "mediatorWebsite": "À COMPLÉTER",
+    "lastUpdated": "2026-10-28"
+  }
+}
