@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <script>
-window.RP_BUILD = '0e9b4b5daa';
+window.RP_BUILD = '79f60245d1';
 window.RP_MODE = 'local';
 window.RP_AI_SRC = 'ai.js?v=987e0780';
 /* Version web autonome : remplace les fonctions de Claude (window.claude.use) :
@@ -5025,7 +5025,15 @@ if (window.RP_STANDALONE && window.RPLink) {
     ACT.appsOpen();
     setTimeout(() => { const c = $('#linkCard'); if (c) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 350);
   };
+  // raccourci dans la rangée de boutons de l'accueil
+  const _renderLink = render;
+  render = function () {
+    _renderLink.apply(this, arguments);
+    const r = S.tab === 'home' && $('#main .scrollx');
+    if (r && !r.querySelector('[data-a="linkOpen"]')) r.insertAdjacentHTML('afterbegin', `<button class="chip" data-a="linkOpen">${ic('desk', 15)} Widgets PC</button>`);
+  };
   Object.assign(ACT, {
+    linkOpen,
     linkOn() { enable(L.newCode(), true); schedule('s', 300); haptic('success'); toast('Widgets PC activés : tape le code sur ton PC.'); appsRefresh(); },
     linkJoin() {
       const c = L.parse(($('#linkCode') || {}).value);
