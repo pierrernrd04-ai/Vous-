@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <script>
-window.RP_BUILD = '75ef7f59e0';
+window.RP_BUILD = '0e9b4b5daa';
 window.RP_MODE = 'local';
 window.RP_AI_SRC = 'ai.js?v=987e0780';
 /* Version web autonome : remplace les fonctions de Claude (window.claude.use) :
@@ -187,6 +187,140 @@ window.RP_AI_SRC = 'ai.js?v=987e0780';
   }
   caps.db = { doc: docRef, collection: colRef };
   caps.user = { id: function () { return Promise.resolve('me'); } };
+})();
+
+/* Liaison chiffrée entre le tracker (iPhone, PC) et les widgets du bureau Windows (Lively Wallpaper).
+   Relais : ntfy.sh, gratuit et sans compte. Tout est chiffré ici avant l'envoi (AES-GCM 256 bits, clé tirée
+   du code de liaison) : le relais ne voit que du texte illisible. Il garde les messages 12 h.
+   Partagé par apps/tracker (intégré à la page par build.mjs) et apps/widgets (chargé tel quel). */
+(function () {
+  'use strict';
+  var RELAY = window.RP_RELAY || 'https://ntfy.sh/'; // RP_RELAY : relais de test
+  var ALPHA = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // sans I, L, O, U : pas de confusion à la saisie
+  var PART = 3600; // caractères par message (le relais refuse au-delà de 4 096 octets)
+  var te = new TextEncoder(), td = new TextDecoder();
+
+  function clean(s) { return String(s || '').toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1').replace(/[^0-9A-Z]/g, ''); }
+  function fmt(c) { return c.slice(0, 4) + '-' + c.slice(4, 8) + '-' + c.slice(8, 12); }
+  function parse(s) { var c = clean(s); return c.length === 12 && c.split('').every(function (ch) { return ALPHA.indexOf(ch) >= 0; }) ? fmt(c) : null; }
+  function newCode() { var b = crypto.getRandomValues(new Uint8Array(12)), c = ''; for (var i = 0; i < 12; i++) c += ALPHA[b[i] & 31]; return fmt(c); }
+  function rid(n) { var b = crypto.getRandomValues(new Uint8Array(n)), s = ''; for (var i = 0; i < n; i++) s += ALPHA[b[i] & 31]; return s; }
+
+  function b64(u8) {
+    var s = '';
+    for (var i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function unb64(s) {
+    var bin = atob(s.replace(/-/g, '+').replace(/_/g, '/')), u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return u8;
+  }
+  function squeeze(u8, back) {
+    var S = back ? DecompressionStream : CompressionStream;
+    return new Response(new Blob([u8]).stream().pipeThrough(new S('deflate-raw'))).arrayBuffer().then(function (b) { return new Uint8Array(b); });
+  }
+
+  /* une seule clé de 384 bits : 256 pour le chiffrement, le reste nomme le canal sur le relais */
+  function derive(code) {
+    return crypto.subtle.importKey('raw', te.encode(clean(code)), 'PBKDF2', false, ['deriveBits']).then(function (base) {
+      return crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te.encode('vous-widgets-v1'), iterations: 120000 }, base, 384);
+    }).then(function (buf) {
+      var bits = new Uint8Array(buf), hex = '';
+      for (var i = 32; i < 44; i++) hex += (bits[i] < 16 ? '0' : '') + bits[i].toString(16);
+      return crypto.subtle.importKey('raw', bits.slice(0, 32), 'AES-GCM', false, ['encrypt', 'decrypt']).then(function (key) {
+        return { key: key, topic: 'vous-' + hex };
+      });
+    });
+  }
+
+  async function seal(key, obj) {
+    var data = te.encode(JSON.stringify(obj)), z = 0;
+    if (typeof CompressionStream === 'function') { try { data = await squeeze(data); z = 1; } catch (e) {} }
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, data));
+    var out = new Uint8Array(14 + ct.length);
+    out[0] = 1; out[1] = z; out.set(iv, 2); out.set(ct, 14);
+    return out;
+  }
+  async function unseal(key, u8) {
+    if (u8[0] !== 1) throw new Error('version');
+    var data = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8.slice(2, 14) }, key, u8.slice(14)));
+    if (u8[1] === 1) data = await squeeze(data, true);
+    return JSON.parse(td.decode(data));
+  }
+
+  /* opts : since (secondes, reprise après le dernier message reçu), onData(obj, meta), onStatus('live'|'retry'|'off'), onBad() */
+  function connect(code, opts) {
+    opts = opts || {};
+    var K = null, es = null, closed = false, retry = 0, timer = null, beat = 0, q = Promise.resolve();
+    var last = opts.since || 0, seen = new Set(), parts = new Map();
+    var status = function (s) { if (opts.onStatus) try { opts.onStatus(s); } catch (e) {} };
+    var ready = derive(code).then(function (k) { K = k; sub(); return k; });
+
+    async function handle(m) {
+      if (!m || m.event !== 'message' || !m.id || seen.has(m.id)) return;
+      seen.add(m.id);
+      if (m.time > last) last = m.time;
+      var r = /^v1:([0-9A-Z]{6,16}):(\d+)\/(\d+):([\w-]+)$/.exec(m.message || '');
+      if (!r) return;
+      var mid = r[1], i = +r[2], n = +r[3];
+      if (!(n > 0 && n <= 400 && i < n)) return;
+      var p = parts.get(mid);
+      if (!p) { p = { n: n, got: new Array(n), c: 0 }; parts.set(mid, p); }
+      if (p.got[i] == null) { p.got[i] = r[4]; p.c++; }
+      if (p.c < p.n) return;
+      parts.delete(mid);
+      var obj;
+      try { obj = await unseal(K.key, unb64(p.got.join(''))); } catch (e) { if (opts.onBad) opts.onBad(e); return; }
+      try { opts.onData(obj, { time: m.time, id: m.id }); } catch (e) { console.error(e); }
+    }
+    function sub() {
+      if (closed || !K) return;
+      // la reprise repart une seconde avant le dernier message vu (les doublons sont écartés)
+      es = new EventSource(RELAY + K.topic + '/sse?since=' + (last ? last - 1 : 'all'));
+      beat = Date.now();
+      es.onopen = function () { retry = 0; beat = Date.now(); status('live'); };
+      es.addEventListener('open', function () { beat = Date.now(); });
+      es.addEventListener('keepalive', function () { beat = Date.now(); });
+      es.onmessage = function (ev) {
+        beat = Date.now();
+        var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+        q = q.then(function () { return handle(m); });
+      };
+      es.onerror = function () {
+        if (es) es.close(); es = null;
+        status('retry');
+        clearTimeout(timer); timer = setTimeout(sub, Math.min(30000, 1000 * Math.pow(2, retry++)));
+      };
+    }
+    function kick() { if (closed || !K) return; if (es) es.close(); es = null; clearTimeout(timer); retry = 0; sub(); }
+    // le relais envoie un signe de vie toutes les 45 s : sans nouvelles depuis 2 min, on se reconnecte
+    var watch = setInterval(function () { if (es && Date.now() - beat > 120000) kick(); }, 30000);
+    var onVis = function () { if (document.visibilityState === 'visible') kick(); };
+    document.addEventListener('visibilitychange', onVis);
+    addEventListener('online', kick);
+
+    async function send(obj, bg) {
+      await ready;
+      var b = b64(await seal(K.key, obj)), n = Math.max(1, Math.ceil(b.length / PART)), mid = rid(10);
+      for (var i = 0; i < n; i++) {
+        var body = 'v1:' + mid + ':' + i + '/' + n + ':' + b.slice(i * PART, (i + 1) * PART);
+        var r = await fetch(RELAY + K.topic, { method: 'POST', body: body, keepalive: !!bg && n === 1, cache: 'no-store' });
+        if (!r.ok) throw { code: r.status === 429 ? 'rate' : 'relay', status: r.status };
+      }
+      return n;
+    }
+    function close() {
+      closed = true; clearInterval(watch); clearTimeout(timer);
+      if (es) es.close(); es = null;
+      document.removeEventListener('visibilitychange', onVis); removeEventListener('online', kick);
+      status('off');
+    }
+    return { ready: ready, send: send, close: close, kick: kick, last: function () { return last; } };
+  }
+
+  window.RPLink = { parse: parse, newCode: newCode, connect: connect, derive: derive, seal: seal, unseal: unseal, rid: rid };
 })();
 </script>
 </head>
@@ -4563,8 +4697,10 @@ const _motivReadyEmbed = motivReady;
 motivReady = () => !EMBED[S.tab] && _motivReadyEmbed();
 // la tuile Do It Sport de l'accueil suit la séance en direct (même site, même stockage)
 addEventListener('storage', (e) => { if (e.key === 'doitsport-sum' && S.tab === 'home') softRender(); });
-const HASH_TAB = { doit: 'doit', budget: 'doit', foxbank: 'foxbank', fox: 'foxbank', traceo: 'foxbank', admin: 'foxbank', hygiene: 'home', hyg: 'home' };
-const hashTab = HASH_TAB[(location.hash || '').slice(1).toLowerCase()];
+const HASH_TAB = { doit: 'doit', budget: 'doit', foxbank: 'foxbank', fox: 'foxbank', traceo: 'foxbank', admin: 'foxbank', hygiene: 'home', hyg: 'home',
+  home: 'home', accueil: 'home', food: 'food', repas: 'food', sport: 'sport', beer: 'beer', sobriete: 'beer', photos: 'photos', todo: 'todo', taches: 'todo' };
+// #onglet, éventuellement suivi de &lien=… (ouverture depuis un widget du PC)
+const hashTab = HASH_TAB[(location.hash || '').slice(1).split('&')[0].toLowerCase()];
 if (hashTab) S.tab = hashTab;
 else if (S.tab === 'budget') S.tab = 'doit';
 else if (S.tab === 'traceo') S.tab = 'foxbank';
@@ -4647,6 +4783,274 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 setInterval(rpCheckUpdate, 15 * 60e3);
 S._nav = null;
 render();
+
+/* Widgets du bureau Windows (Lively Wallpaper) : chaque modification part, chiffrée, vers les widgets et vers le tracker
+   ouvert sur le PC (et inversement). Relais ntfy.sh, code de liaison à 12 caractères : voir apps/widgets/link.js. */
+if (window.RP_STANDALONE && window.RPLink) {
+  const L = window.RPLink, CK = 'rp-link', MK = 'rp-link-meta', RK = 'rp-link-rate';
+  const LS_SYNC = ['foxbank-v1', 'doitsport-v1', 'doitsport-sum'];
+  const DOC_RE = /^(settings|todos|\d{4}-\d{2}-\d{2})$/, SNAP_DAYS = 40, SNAP_EVERY = 6 * 3600e3;
+  const WIDGETS_URL = new URL('widgets/', location.href).href.split('#')[0].split('?')[0];
+  const jget = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') || d; } catch (e) { return d; } };
+  const jset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  let cfg = jget(CK, null), meta = jget(MK, {}), rate = jget(RK, { d: '', n: 0 });
+  let conn = null, live = 'off', pubT = null, pubKind = 'd', lastPub = 0, gotSnap = false, helloT = null, sending = false;
+  const queue = new Set(), lsLast = {};
+  LS_SYNC.forEach((k) => { lsLast[k] = localStorage.getItem(k); });
+  Object.assign(ICONS, { desk: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>' });
+
+  const saveCfg = () => jset(CK, cfg);
+  const docIds = () => ['settings', 'todos', ...Object.keys(S.docs).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k))];
+  function docVal(id) {
+    if (id.startsWith('ls:')) { const v = localStorage.getItem(id.slice(3)); return v == null ? undefined : v; }
+    if (id === 'settings') return S.settings;
+    if (id === 'todos') return S.todos;
+    return S.docs[id];
+  }
+
+  /* --- résumé lu par les widgets (calculé ici, avec les mêmes formules que l'appli) --- */
+  const FOX_B = { courses: 30000, logement: 60000, transport: 12000, sorties: 12000, shopping: 10000, abonnements: 5000, sante: 5000, autres: 6000 };
+  function foxSum(T) {
+    const j = jget('foxbank-v1', null);
+    if (!j || !j.cfg) return null;
+    const c = j.cfg, a0 = c.anchor || { amount: 0, at: 0 }, debit = c.debit !== false, months = j.months || {};
+    const mo = months[T.slice(0, 7)] || { e: [], v: [] };
+    let tin = 0, tout = 0;
+    for (const m of Object.values(months)) {
+      for (const v of m.v || []) if (v.t > a0.at) tin += v.a;
+      if (debit) for (const e of m.e || []) if (e.t > a0.at) tout += e.a;
+    }
+    const cats = {};
+    let spent = 0, today = 0, recv = 0;
+    for (const e of mo.e || []) { cats[e.c] = (cats[e.c] || 0) + e.a; spent += e.a; if (e.d === T) today += e.a; }
+    for (const v of mo.v || []) recv += v.a;
+    const bud = Object.values({ ...FOX_B, ...(c.budgets || {}) }).reduce((s, x) => s + (+x || 0), 0);
+    const last = [...(mo.e || [])].sort((p, q) => q.t - p.t).slice(0, 3).map((e) => [String(e.n || '').slice(0, 40), e.a, e.c, e.d]);
+    return { bal: a0.amount + tin - tout, set: !!(a0.set || a0.at), spent, recv, today, budget: bud, top: Object.entries(cats).sort((p, q) => q[1] - p[1]).slice(0, 4), last };
+  }
+  function linkSum() {
+    const T = TODAY(), st = S.settings, d = S.docs[T] || blank(T), n = nutri(d), a = act(d, st), bl = balance(d, st), t = tasksFor(T), bs = beerStats(T), dz = doitDay(T);
+    const week = [...Array(7)].map((_, i) => { const id = addDays(T, i - 6), x = S.docs[id]; return [id, x ? score(x, st) : 0, x ? x.steps || 0 : 0, x ? Math.round(nutri(x).k) : 0, doitDay(id).kcal]; });
+    const todo = relTasks(T).filter((x) => !x.d).sort((p, q) => (p.time || '99').localeCompare(q.time || '99')).slice(0, 6)
+      .map((x) => [String(x.t || '').slice(0, 70), x.time || '', x.due && x.due < T ? 1 : 0]);
+    for (const r of st.routine || []) if (todo.length < 6 && !(d.rt && d.rt[r])) todo.push([String(r).slice(0, 70), '', 0, 1]);
+    const w = S.meteo;
+    return {
+      date: T, at: Date.now(), dt: Object.values(meta).reduce((x, y) => (y > x ? y : x), 0), score: score(d, st), week,
+      kcal: Math.round(n.k), kcalGoal: st.kcalGoal, p: Math.round(n.p), g: Math.round(n.g), l: Math.round(n.l), meals: (d.food || []).length,
+      out: Math.round(bl.out), diff: Math.round(bl.diff),
+      steps: d.steps || 0, stepsGoal: st.stepsGoal, km: Math.round(a.w.km * 10) / 10, act: Math.round(a.kcal),
+      swim: Math.round(a.s.min), gym: d.gym && d.gym.min ? [d.gym.min, d.gym.s || ''] : null,
+      water: d.water || 0, waterGoal: st.waterGoal, sleep: d.sleep, sq: d.sq, mood: d.mood, energy: d.energy,
+      beer: d.beer, sober: bs.streak, saved: Math.round(bs.saved),
+      tasks: { open: t.open, done: t.done, total: t.total, list: todo },
+      doit: { kcal: dz.kcal, min: dz.min, cyc: dz.cyc, goal: dz.goal },
+      fox: foxSum(T),
+      wx: w ? { t: w.t, code: w.code, tmin: w.tmin, tmax: w.tmax, pop: w.pop, city: w.city, date: w.date } : null,
+      quotes: [0, 11, 23, 37].map((k) => pick(QUOTES, T, k)),
+    };
+  }
+
+  /* --- envoi : regroupé, limité (le relais accepte 250 messages par jour) --- */
+  function bump(n) { const T = TODAY(); if (rate.d !== T) rate = { d: T, n: 0 }; rate.n += n; jset(RK, rate); }
+  function schedule(kind, ms) {
+    if (!cfg) return;
+    if (kind === 's') pubKind = 's';
+    const T = TODAY(), used = rate.d === T ? rate.n : 0, gap = used > 170 ? 10 * 60e3 : used > 120 ? 60e3 : 1500;
+    const at = Math.max(Date.now() + (ms == null ? 500 : ms), lastPub + gap);
+    if (pubT && pubT.at <= at) return;
+    clearTimeout(pubT && pubT.id);
+    pubT = { at, id: setTimeout(publish, at - Date.now()) };
+  }
+  async function publish(bg) {
+    pubT = null;
+    if (!cfg || !conn) return;
+    if (sending) { schedule(null, 800); return; }
+    const kind = pubKind; pubKind = 'd';
+    let ids = [...queue];
+    if (kind === 's') {
+      const from = addDays(TODAY(), -SNAP_DAYS);
+      ids = [...new Set([...ids, ...docIds().filter((k) => !/^\d/.test(k) || k >= from), ...LS_SYNC.map((k) => 'ls:' + k)])];
+    }
+    queue.clear();
+    const docs = {};
+    for (const id of ids) { const v = docVal(id); if (v !== undefined && meta[id] > 0) docs[id] = { t: meta[id], v }; }
+    const msg = { v: 1, k: kind, dev: cfg.dev, at: Date.now(), docs, sum: linkSum() };
+    sending = true; lastPub = Date.now();
+    try {
+      const n = await conn.send(msg, bg === true);
+      bump(n);
+      if (kind === 's') cfg.snap = msg.at;
+      cfg.sent = msg.at; cfg.sumDate = msg.sum.date; saveCfg();
+      for (const k of LS_SYNC) if (docs['ls:' + k]) lsLast[k] = docs['ls:' + k].v;
+    } catch (e) {
+      ids.forEach((id) => queue.add(id)); if (kind === 's') pubKind = 's';
+      if (e && e.code === 'rate') bump(40);
+      schedule(null, e && e.code === 'rate' ? 5 * 60e3 : 15000);
+    } finally { sending = false; linkPaint(); }
+  }
+  function touched(id) {
+    if (!cfg || !(DOC_RE.test(id) || id.startsWith('ls:'))) return;
+    meta[id] = Date.now(); jset(MK, meta); queue.add(id); schedule();
+  }
+  const _saveLink = save;
+  save = function (id) { _saveLink.apply(this, arguments); if (!S.ro) touched(id); };
+  const _saveManyLink = saveMany;
+  saveMany = function (ids) { const r = _saveManyLink.apply(this, arguments); if (!S.ro) (ids || []).forEach(touched); return r; };
+  // Fox Bank et Do It Sport (dans leurs onglets) écrivent dans le même stockage : on suit leurs changements
+  addEventListener('storage', (e) => {
+    if (!cfg || !LS_SYNC.includes(e.key) || e.newValue == null || e.newValue === lsLast[e.key]) return;
+    lsLast[e.key] = e.newValue; touched('ls:' + e.key);
+  });
+  // l'appli passe en arrière-plan : on envoie tout de suite ce qui attend
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && pubT && cfg) { clearTimeout(pubT.id); publish(true); }
+    if (document.visibilityState === 'visible') setTimeout(routine, 4000);
+  });
+
+  /* --- réception --- */
+  const embedReload = new Set();
+  function onData(m, info) {
+    if (!cfg) return;
+    if (info && info.time > (cfg.last || 0)) { cfg.last = info.time; saveCfg(); }
+    if (!m || m.v !== 1 || m.dev === cfg.dev) return;
+    if (m.k === 'h') {
+      // un widget ne demande que le résumé, un tracker qui arrive demande tout
+      if (hasData()) { if (m.want === 'sum') { if (m.at > (cfg.sent || 0)) schedule(null, 1500); } else if (m.at > (cfg.snap || 0)) schedule('s', 1500); }
+      return;
+    }
+    if (m.k === 's') { gotSnap = true; if (!cfg.got) { cfg.got = true; saveCfg(); } }
+    let changed = false, theme = false;
+    for (const [id, d] of Object.entries(m.docs || {})) {
+      if (!d || !(d.t > (meta[id] || 0))) continue;
+      if (id.startsWith('ls:')) {
+        const k = id.slice(3);
+        if (!LS_SYNC.includes(k) || typeof d.v !== 'string') continue;
+        try { localStorage.setItem(k, d.v); } catch (e) { continue; }
+        lsLast[k] = d.v; embedReload.add(k === 'foxbank-v1' ? 'foxbank' : 'doit');
+      } else if (DOC_RE.test(id) && d.v && typeof d.v === 'object') {
+        apply(id, d.v); if (id === 'settings') theme = true;
+      } else continue;
+      meta[id] = d.t; queue.delete(id); changed = true;
+    }
+    if (!changed) return;
+    // enregistré tout de suite (pas après le délai habituel) : l'appli peut être fermée dans la seconde
+    clearTimeout(lsT);
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ docs: S.docs, settings: S.settings, todos: S.todos, meteo: S.meteo })); } catch (e) {}
+    jset(MK, meta);
+    if (theme && typeof applyTheme === 'function') try { applyTheme(); } catch (e) {}
+    if (m.k === 's' && !cfg.src && !cfg.welcomed) { cfg.welcomed = true; saveCfg(); toast('Tes données du téléphone sont arrivées.'); }
+    refresh();
+  }
+  function refresh() {
+    for (const k of [...embedReload]) {
+      const el = embeds[k], f = el && el.querySelector('iframe');
+      if (!f) { embedReload.delete(k); continue; }
+      let busy = false;
+      try { const a = f.contentDocument && f.contentDocument.activeElement; busy = !el.hidden && !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName); } catch (e) {}
+      if (busy) continue; // rechargé dès que la saisie est finie
+      embedReload.delete(k);
+      try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; }
+    }
+    if (embedReload.size) setTimeout(refresh, 2000);
+    if (S.sheet) return; // une fiche ouverte : on ne redessine pas sous les doigts
+    softRender();
+  }
+
+  /* --- connexion --- */
+  const hasData = () => Object.values(meta).some((t) => t > 1);
+  function routine() {
+    if (!cfg || !conn || !hasData()) return;
+    // le téléphone (source) republie tout au plus toutes les 6 h si quelque chose a changé (le relais garde 12 h),
+    // et chaque appareil envoie un résumé frais au premier lancement de la journée
+    const newer = Object.values(meta).some((t) => t > (cfg.snap || 0));
+    if (cfg.src && newer && Date.now() - (cfg.snap || 0) > SNAP_EVERY) schedule('s', 0);
+    else if (cfg.sumDate !== TODAY()) schedule(null, 0);
+  }
+  function start() {
+    if (conn) conn.close();
+    gotSnap = false;
+    conn = L.connect(cfg.code, {
+      since: cfg.last || 0,
+      onData,
+      onStatus: (s) => { live = s; linkPaint(); },
+    });
+    conn.ready.then(() => setTimeout(routine, 5000)).catch(() => { live = 'retry'; linkPaint(); });
+    clearTimeout(helloT);
+    // appareil qui rejoint, encore sans données ou absent plus de 11 h : il demande tout
+    // (le téléphone répond dès qu'il est ouvert, les widgets du PC aussi s'ils ont une copie)
+    const gap = Date.now() / 1000 - (cfg.last || 0) > 11 * 3600;
+    if (!cfg.src && (!cfg.got || gap)) helloT = setTimeout(() => { if (!gotSnap && conn) conn.send({ v: 1, k: 'h', dev: cfg.dev, at: Date.now() }).then(bump).catch(() => {}); }, 6000);
+  }
+  function enable(code, src) {
+    cfg = { code, dev: L.rid(8), src: !!src, last: 0, snap: 0 };
+    // source (en général l'iPhone) : ses données font foi. Appareil qui rejoint : ses propres données ne
+    // passent qu'à défaut (date la plus ancienne possible), celles du téléphone les remplacent.
+    const t = src ? Date.now() : 1;
+    for (const id of docIds()) if (!meta[id]) meta[id] = t;
+    for (const k of LS_SYNC) if (localStorage.getItem(k) != null && !meta['ls:' + k]) meta['ls:' + k] = t;
+    jset(MK, meta); saveCfg(); start();
+  }
+  function disable() {
+    if (conn) conn.close();
+    conn = null; cfg = null; live = 'off'; queue.clear();
+    try { localStorage.removeItem(CK); localStorage.removeItem(MK); } catch (e) {}
+    meta = {};
+  }
+
+  /* --- réglage dans « Mes apps » --- */
+  const linkUrl = () => WIDGETS_URL + '#' + cfg.code;
+  const ago = (ms) => { const s = Math.round((Date.now() - ms) / 1000); return s < 60 ? `il y a ${Math.max(1, s)} s` : s < 3600 ? `il y a ${Math.round(s / 60)} min` : `à ${new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`; };
+  function linkCard() {
+    if (!cfg) {
+      return `<div class="apps-note" id="linkCard"><b>${ic('desk', 15)} Widgets du PC (Lively Wallpaper)</b>
+      <p>Ta journée en widgets animés sur le bureau de ton PC Windows, mis à jour en direct dès que tu remplis le tracker. Un clic sur un widget ouvre le tracker sur le PC.</p>
+      <button class="btn block go" data-a="linkOn" style="margin-bottom:10px">${ic('desk', 17)} Activer les widgets PC</button>
+      <p class="small muted" style="margin:0 0 6px">Déjà activé sur un autre appareil ? Tape son code :</p>
+      <div class="grid2" style="grid-template-columns:minmax(0,1fr) auto;margin-bottom:10px"><input class="inp" id="linkCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" maxlength="16"><button class="btn ghost" data-a="linkJoin">Relier</button></div></div>`;
+    }
+    const st = live === 'live' ? 'En direct' : live === 'retry' ? 'Reconnexion…' : 'Connexion…';
+    return `<div class="apps-note" id="linkCard"><b>${ic('desk', 15)} Widgets du PC : activés</b>
+      <p>Code de liaison : <b class="num" style="font-size:17px;letter-spacing:.06em">${esc(cfg.code)}</b></p>
+      <p>Sur le PC, ouvre <b>${esc(WIDGETS_URL.replace(/^https:\/\//, ''))}</b> dans Chrome et tape ce code (ou envoie-toi le lien ci-dessous).</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="btn ghost sm" data-a="linkCopy">${ic('copy', 14)} Copier le lien</button>${navigator.share ? `<button class="btn ghost sm" data-a="linkShare">${ic('ext', 14)} Envoyer le lien</button>` : ''}<button class="btn ghost sm" data-a="linkPush">${ic('repeat', 14)} Tout renvoyer</button></div>
+      <p class="small muted" id="linkState" style="margin:0 0 8px">${esc(st)}${cfg.sent ? ' · dernier envoi ' + esc(ago(cfg.sent)) : ''} · chiffré de bout en bout</p>
+      <button class="btn ghost sm" data-a="linkOff" style="margin-bottom:10px">Désactiver sur cet appareil</button></div>`;
+  }
+  function linkPaint() { const el = $('#linkState'); if (el && cfg) { const st = live === 'live' ? 'En direct' : live === 'retry' ? 'Reconnexion…' : 'Connexion…'; el.textContent = `${st}${cfg.sent ? ' · dernier envoi ' + ago(cfg.sent) : ''} · chiffré de bout en bout`; } }
+  setInterval(linkPaint, 15000);
+  const _xferLink = xferNote;
+  xferNote = () => linkCard() + _xferLink();
+  const linkOpen = () => {
+    ACT.appsOpen();
+    setTimeout(() => { const c = $('#linkCard'); if (c) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 350);
+  };
+  Object.assign(ACT, {
+    linkOn() { enable(L.newCode(), true); schedule('s', 300); haptic('success'); toast('Widgets PC activés : tape le code sur ton PC.'); appsRefresh(); },
+    linkJoin() {
+      const c = L.parse(($('#linkCode') || {}).value);
+      if (!c) { toast('Code incomplet : 12 caractères, comme 7KQ2-M9XF-3HWD.'); return; }
+      enable(c, false); haptic('success'); toast('Appareil relié : récupération des données…'); appsRefresh();
+    },
+    linkCopy() {
+      const u = linkUrl();
+      (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('Lien copié.'), () => toast(u));
+    },
+    linkShare() { navigator.share({ title: 'Mes widgets PC', text: 'Widgets du tracker pour Lively Wallpaper', url: linkUrl() }).catch(() => {}); },
+    linkPush() { schedule('s', 0); toast('Envoi de toutes tes données…'); },
+    linkOff() { disable(); toast('Widgets PC désactivés sur cet appareil.'); appsRefresh(); },
+  });
+
+  // ouvert depuis un widget du PC : …/Vous-/#onglet&lien=CODE relie ce navigateur tout seul
+  // (après le #, le code n'est jamais envoyé au serveur ; il est retiré de l'adresse aussitôt)
+  const hp = (location.hash || '').slice(1).split('&'), hl = hp.findIndex((x) => /^lien=/i.test(x));
+  const lien = hl >= 0 ? L.parse(decodeURIComponent(hp[hl].slice(5))) : null;
+  if (hl >= 0) { hp.splice(hl, 1); history.replaceState(null, '', location.pathname + location.search + (hp.join('&') ? '#' + hp.join('&') : '')); }
+  if (lien && (!cfg || cfg.code !== lien)) { enable(lien, false); setTimeout(() => toast('Tracker relié à tes widgets : tes données arrivent.'), 1200); }
+  else if (cfg) start();
+  if ((location.hash || '').split('&')[0].toLowerCase() === '#widgets') setTimeout(linkOpen, 600);
+  window.RP_LINK = { sum: linkSum, state: () => ({ cfg, live, queue: [...queue], meta: Object.keys(meta).length, rate }) };
+}
 })();
 </script>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
