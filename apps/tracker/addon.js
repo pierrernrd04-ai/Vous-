@@ -71,41 +71,57 @@ if (window.RP_STANDALONE && window.RP_AI) {
   });
 }
 
-/* Do It Sport à la place de l'onglet Budget : l'appli (copiée dans sport/ par build.mjs) tourne dans un cadre
-   gardé en vie quand on change d'onglet, pour ne jamais couper un minuteur en cours. */
-Object.assign(ICONS, { doit: '<path d="M9 9.5V7a3 3 0 0 1 6 0v2.5"/><circle cx="12" cy="15" r="6"/><path d="M10 15h4"/>' });
-{ const i = TABS.findIndex((t) => t[0] === 'budget'); if (i >= 0) TABS.splice(i, 1, ['doit', 'Do It', 'doit']); }
+/* Applis du même site dans un onglet du tracker : Do It Sport à la place de Budget, Fox Bank à la place de Traceo.
+   Chacune tourne dans un cadre gardé en vie quand on change d'onglet (un minuteur en cours n'est jamais coupé). */
+const EMBED = {
+  doit: { src: 'sport/index.html', title: 'Do It Sport', bg: '#040B1C', bgDark: '#040B1C' },
+  foxbank: { src: 'foxbank/index.html', title: 'Fox Bank', bg: '#F3F4F7', bgDark: '#0B0F17' },
+};
+Object.assign(ICONS, {
+  doit: '<path d="M9 9.5V7a3 3 0 0 1 6 0v2.5"/><circle cx="12" cy="15" r="6"/><path d="M10 15h4"/>',
+  fox: '<path d="M4 4.5 9 9h6l5-4.5.5 9L12 21l-8.5-7.5Z"/><path d="M9.5 13.5h.01M14.5 13.5h.01"/><path d="m10.5 17.2 1.5 1.3 1.5-1.3"/>',
+});
+function swapTab(from, to) { const i = TABS.findIndex((t) => t[0] === from); if (i >= 0) TABS.splice(i, 1, to); }
+swapTab('budget', ['doit', 'Do It', 'doit']);
+swapTab('traceo', ['foxbank', 'Fox Bank', 'fox']);
 function doitDay(id) {
   let j = null;
   try { j = JSON.parse(localStorage.getItem('doitsport-sum') || 'null'); } catch (e) {}
   const d = (j && j.days && j.days[id]) || {};
   return { kcal: d.kcal || 0, cyc: d.cyc || 0, min: d.min || 0, goal: (j && j.goal) || 300 };
 }
-function doitHost() { return `<section class="card" style="text-align:center"><p class="hint">Ouverture de Do It Sport…</p></section>`; }
-let doitEl = null;
-function doitSync() {
-  const on = S.tab === 'doit';
-  if (on && !doitEl) {
-    const st = document.createElement('style');
-    st.textContent = '#doitWrap{position:fixed;left:0;right:0;top:0;z-index:29;background:#040B1C;padding-top:env(safe-area-inset-top,0px)}#doitWrap iframe{display:block;width:100%;height:100%;border:0}html.doit-on,html.doit-on body{overflow:hidden}html.doit-on .fab{display:none}';
-    document.head.appendChild(st);
-    doitEl = document.createElement('div');
-    doitEl.id = 'doitWrap';
-    doitEl.innerHTML = '<iframe src="sport/index.html" title="Do It Sport" allow="screen-wake-lock; autoplay; fullscreen; clipboard-write"></iframe>';
-    document.body.appendChild(doitEl);
-    addEventListener('resize', () => { if (S.tab === 'doit') doitPlace(); });
+function embedHost() { const e = EMBED[S.tab]; return `<section class="card" style="text-align:center"><p class="hint">Ouverture de ${esc(e ? e.title : '')}…</p></section>`; }
+const embeds = {};
+function embedSync() {
+  if (!embedSync.css) {
+    embedSync.css = document.createElement('style');
+    embedSync.css.textContent = '.embedWrap{position:fixed;left:0;right:0;top:0;z-index:29;padding-top:env(safe-area-inset-top,0px)}.embedWrap iframe{display:block;width:100%;height:100%;border:0}html.embed-on,html.embed-on body{overflow:hidden}html.embed-on .fab{display:none}'
+      + Object.entries(EMBED).map(([k, e]) => `#embed-${k}{background:${e.bg}}@media (prefers-color-scheme:dark){#embed-${k}{background:${e.bgDark}}}`).join('');
+    document.head.appendChild(embedSync.css);
+    addEventListener('resize', () => { const el = embeds[S.tab]; if (el) embedPlace(el); });
   }
-  document.documentElement.classList.toggle('doit-on', on);
-  if (doitEl) { doitEl.hidden = !on; if (on) doitPlace(); }
+  const cur = EMBED[S.tab] ? S.tab : null;
+  if (cur && !embeds[cur]) {
+    const el = document.createElement('div');
+    el.className = 'embedWrap'; el.id = 'embed-' + cur;
+    el.innerHTML = `<iframe src="${EMBED[cur].src}" title="${esc(EMBED[cur].title)}" allow="screen-wake-lock; autoplay; fullscreen; clipboard-write"></iframe>`;
+    document.body.appendChild(el); embeds[cur] = el;
+  }
+  for (const [k, el] of Object.entries(embeds)) { el.hidden = k !== cur; if (k === cur) embedPlace(el); }
+  document.documentElement.classList.toggle('embed-on', !!cur);
 }
-function doitPlace() { const nav = document.querySelector('.nav'); doitEl.style.bottom = (nav ? nav.offsetHeight : 0) + 'px'; }
-const _renderDoit = render;
-render = function () { _renderDoit.apply(this, arguments); doitSync(); };
-// pas de photo de motivation par-dessus une séance (ni le bouton Musique du tracker : Do It Sport a le sien)
-const _motivReadyDoit = motivReady;
-motivReady = () => S.tab !== 'doit' && _motivReadyDoit();
-// la tuile de l'accueil suit la séance en direct (même site, même stockage)
+function embedPlace(el) { const nav = document.querySelector('.nav'); el.style.bottom = (nav ? nav.offsetHeight : 0) + 'px'; }
+const _renderEmbed = render;
+render = function () { _renderEmbed.apply(this, arguments); embedSync(); };
+// pas de photo de motivation par-dessus une appli d'onglet (ni le bouton Musique du tracker : Do It Sport a le sien)
+const _motivReadyEmbed = motivReady;
+motivReady = () => !EMBED[S.tab] && _motivReadyEmbed();
+// la tuile Do It Sport de l'accueil suit la séance en direct (même site, même stockage)
 addEventListener('storage', (e) => { if (e.key === 'doitsport-sum' && S.tab === 'home') softRender(); });
-if (S.tab === 'budget' || /^#(doit|budget)$/i.test(location.hash)) S.tab = 'doit';
+const HASH_TAB = { doit: 'doit', budget: 'doit', foxbank: 'foxbank', fox: 'foxbank', traceo: 'foxbank', admin: 'foxbank' };
+const hashTab = HASH_TAB[(location.hash || '').slice(1).toLowerCase()];
+if (hashTab) S.tab = hashTab;
+else if (S.tab === 'budget') S.tab = 'doit';
+else if (S.tab === 'traceo') S.tab = 'foxbank';
 S._nav = null;
 render();

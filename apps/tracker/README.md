@@ -24,6 +24,10 @@ Dans le tracker, Do It Sport tourne dans un cadre gardé en vie quand on change 
 
 Mettre à jour Do It Sport : `curl -o apps/tracker/sport/source.html https://do-it-sport.netlify.app/index.html`, puis `node build.mjs`.
 
+## Onglet « Fox Bank »
+
+L'onglet Traceo est remplacé par **Fox Bank** (`apps/foxbank`, servi sur le même site dans `foxbank/`), affiché de la même façon que Do It Sport : un cadre gardé en vie entre les onglets. Les données de Traceo restent enregistrées. Dans le tracker, Fox Bank a ses propres données (celles du tracker sur ce téléphone) : pour y reprendre celles de l'appli Fox Bank de l'écran d'accueil, Mon solde › Réglages › « Copier mes données » d'un côté, « Coller des données » de l'autre. Les liens `#traceo` et `#foxbank` ouvrent cet onglet, `#budget` et `#doit` l'onglet Do It.
+
 ## Analyse photo de l'assiette et tri automatique des photos
 
 Hors de Claude, ces deux fonctions appellent directement l'API Claude depuis le téléphone, avec la clé API personnelle de l'utilisateur (platform.claude.com › API Keys). La clé est collée une fois dans **Mes apps › Analyse photo par Claude**, vérifiée sans frais, puis gardée dans le téléphone (`localStorage`) : elle n'est ni dans le dépôt ni sur un serveur. Le SDK (`public/ai.js`, 310 Ko) n'est chargé qu'au premier usage.
