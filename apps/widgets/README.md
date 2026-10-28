@@ -25,18 +25,27 @@ Le lien a la forme `…/widgets/#XXXX-XXXX-XXXX`. Options à ajouter après le c
 
 ## Liaison (link.js)
 
-- Relais : [ntfy.sh](https://ntfy.sh), gratuit et sans compte. Les messages y restent 12 h.
+- Relais : trois serveurs ntfy publics, gratuits et sans compte, utilisés en même temps : ntfy.envs.net et
+  ntfy.adminforge.de (17 280 messages par jour et par adresse IP), ntfy.sh (250 seulement). Un envoi réussit dès
+  qu'un relais l'a reçu ; les messages reçus en double sont écartés. Les relais gardent les messages 12 h.
+  Avant (ntfy.sh seul), un quota épuisé, par exemple sur une connexion 4G partagée, bloquait tout sans le dire.
 - Chiffrement de bout en bout : AES-GCM 256 bits, clé et nom du canal tirés du code de liaison (PBKDF2-SHA-256,
-  120 000 tours). Le relais ne voit que du texte illisible. Le code n'est jamais envoyé à un serveur
+  120 000 tours). Les relais ne voient que du texte illisible. Le code n'est jamais envoyé à un serveur
   (il reste après le `#` des adresses).
-- Le tracker envoie chaque modification (regroupées sur ½ s) avec un résumé calculé par ses propres formules ;
-  les widgets n'affichent que ce résumé. Fox Bank et Do It Sport (onglets du tracker) suivent le même chemin.
+- Le tracker envoie chaque modification (regroupées sur ½ s) avec un résumé calculé par ses propres formules,
+  et un résumé frais à chaque retour dans l'appli après 15 min. Les widgets n'affichent que ce résumé.
+  Fox Bank et Do It Sport (onglets du tracker) suivent le même chemin.
 - Sens inverse : le tracker ouvert sur le PC (depuis un widget) reçoit tout et renvoie ses modifications au téléphone.
   En cas de modification des deux côtés, la plus récente gagne (par journée, réglages, tâches, Fox Bank, Do It).
 - Les widgets gardent une copie des données sur le PC : affichage immédiat au démarrage, et relais de secours
   (republiée toutes les 10 h, envoyée à un tracker qui la demande quand le téléphone est fermé).
-- Limite du relais gratuit : 250 messages par jour et par adresse IP. Le tracker compte ses envois et espace
-  automatiquement au-delà de 120 par jour.
-- Mesures (test de bout en bout, iPhone simulé → page des widgets) : environ 0,6 s entre l'appui et l'affichage.
+- Filets de sécurité : relecture directe des relais chaque minute, reconnexion immédiate quand Lively réveille
+  le fond d'écran (trou dans l'horloge) ou quand l'iPhone revient au premier plan, envois limités à 15 s.
+- Diagnostic : tracker › Widgets PC affiche le dernier envoi (« reçu par 2 relais sur 3 ») ou l'erreur, et
+  **Tester la liaison** fait un aller-retour par les relais ; les widgets affichent « Test reçu de ton iPhone ✓ »
+  et les 4 derniers caractères du code.
+- La page des widgets se met à jour toute seule (`version.json`, écrit par `node apps/widgets/build.mjs`).
+- Mesures : iPhone simulé avec WebKit (moteur de Safari), widgets dans Chromium, relais réels avec ntfy.sh saturé
+  (erreur 429) : widget à jour 1,2 s après l'appui, test de liaison en 1,4 s aller-retour.
 
 `link.js` est partagé : `apps/tracker/build.mjs` l'intègre à la page du tracker, la page des widgets le charge tel quel.

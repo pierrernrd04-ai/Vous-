@@ -284,12 +284,12 @@ if (window.RP_STANDALONE && window.RPLink) {
     };
   }
 
-  /* --- envoi : regroupé, limité (le relais accepte 250 messages par jour) --- */
+  /* --- envoi : regroupé (les relais acceptent 17 280 messages par jour, ntfy.sh 250) --- */
   function bump(n) { const T = TODAY(); if (rate.d !== T) rate = { d: T, n: 0 }; rate.n += n; jset(RK, rate); }
   function schedule(kind, ms) {
     if (!cfg) return;
     if (kind === 's') pubKind = 's';
-    const T = TODAY(), used = rate.d === T ? rate.n : 0, gap = used > 170 ? 10 * 60e3 : used > 120 ? 60e3 : 1500;
+    const T = TODAY(), used = rate.d === T ? rate.n : 0, gap = used > 3000 ? 60e3 : 1000;
     const at = Math.max(Date.now() + (ms == null ? 500 : ms), lastPub + gap);
     if (pubT && pubT.at <= at) return;
     clearTimeout(pubT && pubT.id);
@@ -308,18 +308,21 @@ if (window.RP_STANDALONE && window.RPLink) {
     queue.clear();
     const docs = {};
     for (const id of ids) { const v = docVal(id); if (v !== undefined && meta[id] > 0) docs[id] = { t: meta[id], v }; }
-    const msg = { v: 1, k: kind, dev: cfg.dev, at: Date.now(), docs, sum: linkSum() };
+    // un résumé impossible à calculer ne doit jamais bloquer l'envoi des données
+    let sum = null;
+    try { sum = linkSum(); } catch (e) { cfg.sumErr = String(e && e.message || e).slice(0, 80); }
+    const msg = { v: 1, k: kind, dev: cfg.dev, at: Date.now(), docs, sum };
     sending = true; lastPub = Date.now();
     try {
-      const n = await conn.send(msg, bg === true);
-      bump(n);
+      const r = await conn.send(msg, bg === true);
+      bump(r.n);
       if (kind === 's') cfg.snap = msg.at;
-      cfg.sent = msg.at; cfg.sumDate = msg.sum.date; saveCfg();
+      cfg.sent = msg.at; cfg.relays = [r.ok, r.of]; cfg.err = ''; if (sum) cfg.sumDate = sum.date; saveCfg();
       for (const k of LS_SYNC) if (docs['ls:' + k]) lsLast[k] = docs['ls:' + k].v;
     } catch (e) {
       ids.forEach((id) => queue.add(id)); if (kind === 's') pubKind = 's';
-      if (e && e.code === 'rate') bump(40);
-      schedule(null, e && e.code === 'rate' ? 5 * 60e3 : 15000);
+      cfg.err = (e && e.code) || 'relay'; cfg.errAt = Date.now(); saveCfg();
+      schedule(null, cfg.err === 'rate' ? 60e3 : 10000);
     } finally { sending = false; linkPaint(); }
   }
   function touched(id) {
@@ -343,9 +346,12 @@ if (window.RP_STANDALONE && window.RPLink) {
 
   /* --- réception --- */
   const embedReload = new Set();
+  const pings = {};
   function onData(m, info) {
     if (!cfg) return;
     if (info && info.time > (cfg.last || 0)) { cfg.last = info.time; saveCfg(); }
+    cfg.heard = Date.now();
+    if (m && m.k === 'ping') { if (m.dev === cfg.dev && pings[m.id]) pings[m.id](info); return; }
     if (!m || m.v !== 1 || m.dev === cfg.dev) return;
     if (m.k === 'h') {
       // un widget ne demande que le résumé, un tracker qui arrive demande tout
@@ -396,9 +402,10 @@ if (window.RP_STANDALONE && window.RPLink) {
     if (!cfg || !conn || !hasData()) return;
     // le téléphone (source) republie tout au plus toutes les 6 h si quelque chose a changé (le relais garde 12 h),
     // et chaque appareil envoie un résumé frais au premier lancement de la journée
+    // (et un résumé à chaque retour dans l'appli après 15 min : les widgets restent toujours à jour)
     const newer = Object.values(meta).some((t) => t > (cfg.snap || 0));
     if (cfg.src && newer && Date.now() - (cfg.snap || 0) > SNAP_EVERY) schedule('s', 0);
-    else if (cfg.sumDate !== TODAY()) schedule(null, 0);
+    else if (cfg.sumDate !== TODAY() || Date.now() - (cfg.sent || 0) > 15 * 60e3 || cfg.err) schedule(null, 0);
   }
   function start() {
     if (conn) conn.close();
@@ -413,7 +420,7 @@ if (window.RP_STANDALONE && window.RPLink) {
     // appareil qui rejoint, encore sans données ou absent plus de 11 h : il demande tout
     // (le téléphone répond dès qu'il est ouvert, les widgets du PC aussi s'ils ont une copie)
     const gap = Date.now() / 1000 - (cfg.last || 0) > 11 * 3600;
-    if (!cfg.src && (!cfg.got || gap)) helloT = setTimeout(() => { if (!gotSnap && conn) conn.send({ v: 1, k: 'h', dev: cfg.dev, at: Date.now() }).then(bump).catch(() => {}); }, 6000);
+    if (!cfg.src && (!cfg.got || gap)) helloT = setTimeout(() => { if (!gotSnap && conn) conn.send({ v: 1, k: 'h', dev: cfg.dev, at: Date.now() }).then((r) => bump(r.n)).catch(() => {}); }, 6000);
   }
   function enable(code, src) {
     cfg = { code, dev: L.rid(8), src: !!src, last: 0, snap: 0 };
@@ -434,23 +441,43 @@ if (window.RP_STANDALONE && window.RPLink) {
   /* --- réglage dans « Mes apps » --- */
   const linkUrl = () => WIDGETS_URL + '#' + cfg.code;
   const ago = (ms) => { const s = Math.round((Date.now() - ms) / 1000); return s < 60 ? `il y a ${Math.max(1, s)} s` : s < 3600 ? `il y a ${Math.round(s / 60)} min` : `à ${new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`; };
+  const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Mac/.test(navigator.platform || '') && navigator.maxTouchPoints > 1);
+  const MOBILE = IOS || /Android/i.test(navigator.userAgent);
+  const STANDALONE = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  // dans Safari, le tracker n'a pas les mêmes données que l'appli de l'écran d'accueil : c'est elle qu'il faut relier
+  const safariNote = () => IOS && !STANDALONE ? `<p style="padding:10px 12px;border-radius:12px;background:rgba(255,92,122,.16);color:var(--hero-fg,inherit)"><b>Tu es dans Safari.</b> Ouvre plutôt le tracker depuis son icône sur l'écran d'accueil : Safari et l'appli gardent des données séparées, et c'est l'appli qu'il faut relier.</p>` : '';
+  const ERR = { rate: 'relais saturés', offline: "pas d'internet", relay: 'relais injoignables' };
+  function linkLines() {
+    const st = live === 'live' ? 'En direct' : live === 'retry' ? 'Reconnexion…' : 'Connexion…';
+    const sent = cfg.err ? `Dernier envoi échoué ${ago(cfg.errAt)} (${ERR[cfg.err] || cfg.err}) : nouvel essai automatique`
+      : cfg.sent ? `Dernier envoi ${ago(cfg.sent)}${cfg.relays ? `, reçu par ${cfg.relays[0]} relais sur ${cfg.relays[1]}` : ''}` : 'Rien envoyé pour le moment';
+    return [st + ' · chiffré de bout en bout', sent];
+  }
   function linkCard() {
     if (!cfg) {
+      const join = `<p class="small muted" style="margin:0 0 6px">${MOBILE ? 'Déjà activé sur un autre appareil ? Tape son code :' : "Tape le code affiché sur ton iPhone (Widgets PC) :"}</p>
+      <div class="grid2" style="grid-template-columns:minmax(0,1fr) auto;margin-bottom:10px"><input class="inp" id="linkCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" maxlength="16"><button class="btn ${MOBILE ? 'ghost' : 'go'}" data-a="linkJoin">Relier</button></div>`;
+      const on = `<button class="btn block ${MOBILE ? 'go' : 'ghost'}" data-a="linkOn" style="margin-bottom:10px">${ic('desk', 17)} ${MOBILE ? 'Activer les widgets PC' : 'Créer un nouveau code ici'}</button>`;
       return `<div class="apps-note" id="linkCard"><b>${ic('desk', 15)} Widgets du PC (Lively Wallpaper)</b>
       <p>Ta journée en widgets animés sur le bureau de ton PC Windows, mis à jour en direct dès que tu remplis le tracker. Un clic sur un widget ouvre le tracker sur le PC.</p>
-      <button class="btn block go" data-a="linkOn" style="margin-bottom:10px">${ic('desk', 17)} Activer les widgets PC</button>
-      <p class="small muted" style="margin:0 0 6px">Déjà activé sur un autre appareil ? Tape son code :</p>
-      <div class="grid2" style="grid-template-columns:minmax(0,1fr) auto;margin-bottom:10px"><input class="inp" id="linkCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" maxlength="16"><button class="btn ghost" data-a="linkJoin">Relier</button></div></div>`;
+      ${safariNote()}${MOBILE ? on + join : join + on}</div>`;
     }
-    const st = live === 'live' ? 'En direct' : live === 'retry' ? 'Reconnexion…' : 'Connexion…';
+    const [l1, l2] = linkLines();
     return `<div class="apps-note" id="linkCard"><b>${ic('desk', 15)} Widgets du PC : activés</b>
       <p>Code de liaison : <b class="num" style="font-size:17px;letter-spacing:.06em">${esc(cfg.code)}</b></p>
-      <p>Sur le PC, ouvre <b>${esc(WIDGETS_URL.replace(/^https:\/\//, ''))}</b> dans Chrome et tape ce code (ou envoie-toi le lien ci-dessous).</p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="btn ghost sm" data-a="linkCopy">${ic('copy', 14)} Copier le lien</button>${navigator.share ? `<button class="btn ghost sm" data-a="linkShare">${ic('ext', 14)} Envoyer le lien</button>` : ''}<button class="btn ghost sm" data-a="linkPush">${ic('repeat', 14)} Tout renvoyer</button></div>
-      <p class="small muted" id="linkState" style="margin:0 0 8px">${esc(st)}${cfg.sent ? ' · dernier envoi ' + esc(ago(cfg.sent)) : ''} · chiffré de bout en bout</p>
+      ${safariNote()}
+      <p>Sur le PC, ouvre <b>${esc(WIDGETS_URL.replace(/^https:\/\//, ''))}</b> dans Chrome et tape ce code (ou envoie-toi le lien ci-dessous). Les 4 derniers caractères s'affichent aussi en bas des widgets : ils doivent être identiques.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="btn go sm" data-a="linkTest">${ic('bolt', 14)} Tester la liaison</button><button class="btn ghost sm" data-a="linkCopy">${ic('copy', 14)} Copier le lien</button>${navigator.share ? `<button class="btn ghost sm" data-a="linkShare">${ic('ext', 14)} Envoyer le lien</button>` : ''}<button class="btn ghost sm" data-a="linkPush">${ic('repeat', 14)} Tout renvoyer</button></div>
+      <p class="small muted" id="linkState" style="margin:0 0 4px">${esc(l1)}</p>
+      <p class="small muted" id="linkSent" style="margin:0 0 10px">${esc(l2)}</p>
       <button class="btn ghost sm" data-a="linkOff" style="margin-bottom:10px">Désactiver sur cet appareil</button></div>`;
   }
-  function linkPaint() { const el = $('#linkState'); if (el && cfg) { const st = live === 'live' ? 'En direct' : live === 'retry' ? 'Reconnexion…' : 'Connexion…'; el.textContent = `${st}${cfg.sent ? ' · dernier envoi ' + ago(cfg.sent) : ''} · chiffré de bout en bout`; } }
+  function linkPaint() {
+    if (!cfg) return;
+    const [l1, l2] = linkLines(), a = $('#linkState'), b = $('#linkSent');
+    if (a) a.textContent = l1;
+    if (b) b.textContent = l2;
+  }
   setInterval(linkPaint, 15000);
   const _xferLink = xferNote;
   xferNote = () => linkCard() + _xferLink();
@@ -479,6 +506,21 @@ if (window.RP_STANDALONE && window.RPLink) {
     },
     linkShare() { navigator.share({ title: 'Mes widgets PC', text: 'Widgets du tracker pour Lively Wallpaper', url: linkUrl() }).catch(() => {}); },
     linkPush() { schedule('s', 0); toast('Envoi de toutes tes données…'); },
+    // aller-retour par les relais : le message de test revient à l'iPhone et s'affiche aussi sur les widgets du PC
+    async linkTest(t) {
+      if (!conn) return;
+      const id = L.rid(8), t0 = Date.now();
+      t.disabled = true;
+      const back = new Promise((ok) => { pings[id] = ok; setTimeout(() => ok(null), 12000); });
+      let sent = null;
+      try { sent = await conn.send({ v: 1, k: 'ping', id, dev: cfg.dev, at: t0 }); } catch (e) { cfg.err = (e && e.code) || 'relay'; cfg.errAt = Date.now(); }
+      const info = sent ? await back : null;
+      delete pings[id]; t.disabled = false;
+      if (info) { cfg.err = ''; toast(`Liaison OK : aller-retour en ${(Math.max(1, Date.now() - t0) / 1000).toFixed(1).replace('.', ',')} s, ${sent.ok} relais sur ${sent.of}. Regarde ton PC.`); haptic('success'); }
+      else toast(sent ? "Envoyé, mais rien n'est revenu : vérifie ta connexion internet." : `Échec de l'envoi (${ERR[cfg.err] || cfg.err}). Vérifie ta connexion internet.`);
+      saveCfg(); linkPaint();
+      if (info) schedule(null, 0); // et un résumé frais pour les widgets
+    },
     linkOff() { disable(); toast('Widgets PC désactivés sur cet appareil.'); appsRefresh(); },
   });
 
