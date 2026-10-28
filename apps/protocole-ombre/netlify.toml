@@ -1,0 +1,14 @@
+# Site statique : aucune compilation, le dossier est publié tel quel.
+[build]
+  publish = "."
+  command = "echo 'Site statique, aucune compilation'"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"

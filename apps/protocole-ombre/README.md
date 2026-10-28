@@ -2,6 +2,8 @@
 
 Jeu de tir à la première personne en 3D, dans un univers militaire futuriste (2071, soldats augmentés, propulseurs, néons), inspiré de l'ambiance des jeux de tir de type Black Ops. Il se joue dans le navigateur sur **mobile, tablette et ordinateur**, et s'installe comme une application (PWA).
 
+**Jouer : https://protocole-ombre.netlify.app**
+
 > Univers, noms, armes et cartes originaux. Le jeu n'est pas affilié à Activision ni à Call of Duty et ne peut pas se connecter à leurs serveurs.
 
 ## Contenu
@@ -55,6 +57,8 @@ python3 -m http.server 8080
 Il faut un serveur HTTP : les modules JavaScript ne se chargent pas depuis `file://`.
 
 ## Mettre en ligne et installer sur téléphone
+
+Le jeu est publié sur Netlify (projet `protocole-ombre`, configuration dans `netlify.toml`). Pour publier une mise à jour, renvoie le dossier `apps/protocole-ombre/` sur ce projet.
 
 Il suffit de publier le dossier `apps/protocole-ombre/` sur n'importe quel hébergement statique en HTTPS (Netlify, Cloudflare Pages, GitHub Pages…). Sur le téléphone, il reste à ouvrir l'adresse puis à choisir « Ajouter à l'écran d'accueil » : le jeu se lance alors en plein écran, en paysage, et fonctionne hors ligne (sauf le multijoueur).
 
