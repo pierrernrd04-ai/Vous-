@@ -9,7 +9,7 @@ En ligne : https://pierrernrd04-ai.github.io/Vous-/widgets/
 
 ## Mise en route
 
-1. iPhone : tracker › Mes apps › **Activer les widgets PC** → un code de liaison à 12 caractères s'affiche.
+1. iPhone : tracker › Accueil › bouton **Widgets PC** (ou Mes apps) › **Activer les widgets PC** → un code de liaison à 12 caractères s'affiche.
 2. PC, dans Chrome : ouvrir l'adresse ci-dessus, taper le code, puis **Copier le lien**.
 3. Lively Wallpaper : **+** (Ajouter un fond d'écran) › coller le lien dans le champ d'adresse › valider, puis appliquer.
 

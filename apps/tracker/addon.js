@@ -458,7 +458,15 @@ if (window.RP_STANDALONE && window.RPLink) {
     ACT.appsOpen();
     setTimeout(() => { const c = $('#linkCard'); if (c) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 350);
   };
+  // raccourci dans la rangée de boutons de l'accueil
+  const _renderLink = render;
+  render = function () {
+    _renderLink.apply(this, arguments);
+    const r = S.tab === 'home' && $('#main .scrollx');
+    if (r && !r.querySelector('[data-a="linkOpen"]')) r.insertAdjacentHTML('afterbegin', `<button class="chip" data-a="linkOpen">${ic('desk', 15)} Widgets PC</button>`);
+  };
   Object.assign(ACT, {
+    linkOpen,
     linkOn() { enable(L.newCode(), true); schedule('s', 300); haptic('success'); toast('Widgets PC activés : tape le code sur ton PC.'); appsRefresh(); },
     linkJoin() {
       const c = L.parse(($('#linkCode') || {}).value);
