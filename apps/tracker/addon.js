@@ -70,3 +70,42 @@ if (window.RP_STANDALONE && window.RP_AI) {
     aiKeyForget() { AI.clearKey(); toast('Clé retirée.'); appsRefresh(); render(); },
   });
 }
+
+/* Do It Sport à la place de l'onglet Budget : l'appli (copiée dans sport/ par build.mjs) tourne dans un cadre
+   gardé en vie quand on change d'onglet, pour ne jamais couper un minuteur en cours. */
+Object.assign(ICONS, { doit: '<path d="M9 9.5V7a3 3 0 0 1 6 0v2.5"/><circle cx="12" cy="15" r="6"/><path d="M10 15h4"/>' });
+{ const i = TABS.findIndex((t) => t[0] === 'budget'); if (i >= 0) TABS.splice(i, 1, ['doit', 'Do It', 'doit']); }
+function doitDay(id) {
+  let j = null;
+  try { j = JSON.parse(localStorage.getItem('doitsport-sum') || 'null'); } catch (e) {}
+  const d = (j && j.days && j.days[id]) || {};
+  return { kcal: d.kcal || 0, cyc: d.cyc || 0, min: d.min || 0, goal: (j && j.goal) || 300 };
+}
+function doitHost() { return `<section class="card" style="text-align:center"><p class="hint">Ouverture de Do It Sport…</p></section>`; }
+let doitEl = null;
+function doitSync() {
+  const on = S.tab === 'doit';
+  if (on && !doitEl) {
+    const st = document.createElement('style');
+    st.textContent = '#doitWrap{position:fixed;left:0;right:0;top:0;z-index:29;background:#040B1C;padding-top:env(safe-area-inset-top,0px)}#doitWrap iframe{display:block;width:100%;height:100%;border:0}html.doit-on,html.doit-on body{overflow:hidden}html.doit-on .fab{display:none}';
+    document.head.appendChild(st);
+    doitEl = document.createElement('div');
+    doitEl.id = 'doitWrap';
+    doitEl.innerHTML = '<iframe src="sport/index.html" title="Do It Sport" allow="screen-wake-lock; autoplay; fullscreen; clipboard-write"></iframe>';
+    document.body.appendChild(doitEl);
+    addEventListener('resize', () => { if (S.tab === 'doit') doitPlace(); });
+  }
+  document.documentElement.classList.toggle('doit-on', on);
+  if (doitEl) { doitEl.hidden = !on; if (on) doitPlace(); }
+}
+function doitPlace() { const nav = document.querySelector('.nav'); doitEl.style.bottom = (nav ? nav.offsetHeight : 0) + 'px'; }
+const _renderDoit = render;
+render = function () { _renderDoit.apply(this, arguments); doitSync(); };
+// pas de photo de motivation par-dessus une séance (ni le bouton Musique du tracker : Do It Sport a le sien)
+const _motivReadyDoit = motivReady;
+motivReady = () => S.tab !== 'doit' && _motivReadyDoit();
+// la tuile de l'accueil suit la séance en direct (même site, même stockage)
+addEventListener('storage', (e) => { if (e.key === 'doitsport-sum' && S.tab === 'home') softRender(); });
+if (S.tab === 'budget' || /^#(doit|budget)$/i.test(location.hash)) S.tab = 'doit';
+S._nav = null;
+render();

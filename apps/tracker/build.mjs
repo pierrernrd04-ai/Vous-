@@ -6,7 +6,7 @@
 //
 // Pour mettre à jour l'appli : remplacer app.source.html par le nouvel export, relancer, pousser.
 // Prérequis : npm ci (dans apps/tracker), pour le SDK Claude et esbuild.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { build as esbuild } from 'esbuild';
 
@@ -48,6 +48,10 @@ const patches = [
   ['${SA?\'\':`<div class="wrap" style="margin-top:12px"><button class="chip ${on?\'on\':\'\'}" data-a="impPeople"',
     '${SA&&!rpAiOn()?rpAiChip():`<div class="wrap" style="margin-top:12px"><button class="chip ${on?\'on\':\'\'}" data-a="impPeople"'],
   ["mode:S.settings.impPeople===false||window.RP_STANDALONE?'all':'people'", "mode:S.settings.impPeople===false||!rpAiOn()?'all':'people'"],
+  // l'onglet Budget laisse sa place à Do It Sport (addon.js) : la vue « doit » et la tuile de l'accueil
+  ['+transitCard()+v.slice(i)+menusCard()},sport:vSport,hyg:vHyg,beer:vSober,traceo:vTraceo,', '+transitCard()+v.slice(i)+menusCard()},sport:vSport,hyg:vHyg,beer:vSober,traceo:vTraceo,doit:doitHost,'],
+  ["${tile('budget','Budget du mois',N(ms.total),'€',`sur ${i0(st.budget)} € · reste ${i0(st.budget-ms.total)} €`,pctB>1?'bad':pctB>.85?'warn':'good',bar(pctB,pctB>1?'over':''))}",
+    "${(()=>{const q=doitDay(S.sel);return tile('doit','Do It Sport',N(q.kcal),'kcal',q.cyc||q.min?`${q.cyc} ${plural(q.cyc,'cycle')} · ${i0(q.min)} min`:'Pas encore de séance',q.kcal>=q.goal?'good':q.kcal?'warn':'none',bar(q.kcal/Math.max(1,q.goal)))})()}"],
   // le lien copié pour Raccourcis garde la clé
   ['const u=location.origin+location.pathname,ok=await copyText(u)', 'const u=location.href.split(\'#\')[0],ok=await copyText(u)'],
   // après saisie de la clé, l'adresse la contient (utile pour l'écran d'accueil)
@@ -72,7 +76,40 @@ const end = src.lastIndexOf('})();\n</script>');
 if (end < 0) throw new Error('Fin du script de l\'appli introuvable');
 src = src.slice(0, end) + addon + src.slice(end);
 
-const build = createHash('sha256').update(ai + shim + src).digest('hex').slice(0, 10);
+// 5. Do It Sport : copie de l'appli publiée sur Netlify (sport/source.html), servie à côté du tracker
+//    pour s'afficher dans son onglet « Do It » avec les mêmes droits (écran allumé, son, minuteur iPhone).
+//    Mettre à jour : curl -o apps/tracker/sport/source.html https://do-it-sport.netlify.app/index.html
+const SP = new URL('sport/', dir), SP_OUT = new URL('public/sport/', dir);
+mkdirSync(SP_OUT, { recursive: true });
+let sp = readFileSync(new URL('source.html', SP), 'utf8');
+const hud = sp.match(/<script async src="\/\.netlify\/scripts\/hud[^>]*><\/script>/g) || [];
+if (hud.length > 1) throw new Error('Script Netlify ambigu');
+sp = sp.replace(hud[0] || '', ''); // ajouté par Netlify à ses pages, inutile ici
+const spPatches = [
+  // les alarmes écran verrouillé passent toujours par le serveur Netlify de Do It Sport (CORS ouvert)
+  ['fetch("/api/alarm",', 'fetch("https://do-it-sport.netlify.app/api/alarm",', 1],
+  ['fetch("/api/alarm-cancel",', 'fetch("https://do-it-sport.netlify.app/api/alarm-cancel",', 1],
+  [',keepalive:true}', '}', 2],
+  // dans l'onglet du tracker, le minuteur de l'iPhone s'ouvre depuis la fenêtre principale
+  ['else location.href=url;', 'else{try{(window.top||window).location.href=url}catch(e){location.href=url}}', 1],
+  // résumé par jour (calories, cycles, minutes) pour la tuile Do It Sport de l'accueil du tracker
+  ['const saveLocal=()=>{try{localStorage.setItem(LKEY,JSON.stringify(S));}catch(e){}};',
+    'const saveLocal=()=>{try{localStorage.setItem(LKEY,JSON.stringify(S));}catch(e){}try{const sum={};for(const k in S.days){const t=totals(S.days[k]);sum[k]={kcal:Math.round(t.kcal),cyc:t.cyc,min:Math.round(t.min)};}localStorage.setItem("doitsport-sum",JSON.stringify({goal:S.p.goal,days:sum}));}catch(e){}};', 1],
+];
+for (const [from, to, want] of spPatches) {
+  const n = sp.split(from).length - 1;
+  if (n !== want) throw new Error(`Correctif Do It Sport introuvable (${n}/${want}) : ${from.slice(0, 50)}…`);
+  sp = sp.split(from).join(to);
+}
+writeFileSync(new URL('index.html', SP_OUT), sp);
+let spSw = readFileSync(new URL('sw.source.js', SP), 'utf8');
+if (!spSw.includes('ks.filter(k=>k!==C)')) throw new Error('Service worker Do It Sport : correctif introuvable');
+// ne supprime que ses propres caches (le site héberge aussi le tracker, Fox Bank…)
+spSw = spSw.replace('ks.filter(k=>k!==C)', 'ks.filter(k=>k.startsWith("doitsport-")&&k!==C)');
+writeFileSync(new URL('sw.js', SP_OUT), spSw);
+for (const f of ['manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png']) copyFileSync(new URL(f, SP), new URL(f, SP_OUT));
+
+const build = createHash('sha256').update(ai + shim + src + sp).digest('hex').slice(0, 10);
 const html = `<!doctype html>
 <html lang="fr">
 <head>

@@ -16,6 +16,14 @@ La même appli que l'artefact Claude, en vrai site : une adresse en `https://…
 
 Adresse : **https://pierrernrd04-ai.github.io/Vous-/**, servie par la branche `gh-pages` (contenu de `public/` construit en mode local, plus un fichier `.nojekyll`). Les données restent dans le téléphone. Pour mettre à jour : `npm ci` puis `node build.mjs` dans `apps/tracker`, puis copier `public/` dans la branche `gh-pages` (sans `_headers`) et pousser.
 
+## Onglet « Do It » (Do It Sport)
+
+L'onglet Budget est remplacé par **Do It Sport** (cycles de 3 minutes, kettlebell, marche lestée, calories). L'appli publiée sur https://do-it-sport.netlify.app est copiée dans `sport/source.html` ; `build.mjs` la sert dans `public/sport/` avec quatre retouches : alarmes écran verrouillé envoyées au serveur Netlify de Do It Sport, minuteur iPhone ouvert depuis la fenêtre principale, cache hors ligne limité à ses propres fichiers, et un résumé par jour (`doitsport-sum` : calories, cycles, minutes) que lit la tuile « Do It Sport » de l'accueil du tracker (à la place de « Budget du mois »).
+
+Dans le tracker, Do It Sport tourne dans un cadre gardé en vie quand on change d'onglet : un minuteur en cours n'est jamais coupé. Les photos de motivation ne s'affichent pas pendant une séance. Ses données sont celles de cette copie (le même téléphone que le tracker), pas celles de l'appli Netlify.
+
+Mettre à jour Do It Sport : `curl -o apps/tracker/sport/source.html https://do-it-sport.netlify.app/index.html`, puis `node build.mjs`.
+
 ## Analyse photo de l'assiette et tri automatique des photos
 
 Hors de Claude, ces deux fonctions appellent directement l'API Claude depuis le téléphone, avec la clé API personnelle de l'utilisateur (platform.claude.com › API Keys). La clé est collée une fois dans **Mes apps › Analyse photo par Claude**, vérifiée sans frais, puis gardée dans le téléphone (`localStorage`) : elle n'est ni dans le dépôt ni sur un serveur. Le SDK (`public/ai.js`, 310 Ko) n'est chargé qu'au premier usage.
