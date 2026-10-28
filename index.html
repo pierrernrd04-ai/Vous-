@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <script>
+window.RP_BUILD = '947f9fd26a';
 window.RP_MODE = 'local';
 window.RP_AI_SRC = 'ai.js?v=987e0780';
 /* Version web autonome : remplace les fonctions de Claude (window.claude.use) :
@@ -4555,6 +4556,83 @@ const hashTab = HASH_TAB[(location.hash || '').slice(1).toLowerCase()];
 if (hashTab) S.tab = hashTab;
 else if (S.tab === 'budget') S.tab = 'doit';
 else if (S.tab === 'traceo') S.tab = 'foxbank';
+S._nav = null;
+render();
+
+/* Barre d'onglets : une icône fixe et un titre toujours visible par onglet (plus de jeux d'icônes qui tournent),
+   et un grand titre en tête de chaque onglet du tracker. */
+const TAB_UI = {
+  home: { l: 'Accueil', t: 'Ma journée', s: "L'essentiel d'aujourd'hui, en un coup d'œil" },
+  food: { l: 'Repas', t: 'Repas', s: 'Calories, macros et fibres de la journée' },
+  sport: { l: 'Sport', t: 'Sport', s: 'Dépense, marche, natation et salle' },
+  hyg: { l: 'Hygiène', t: 'Hygiène', s: 'Ta routine du jour, coche au fil des heures' },
+  beer: { l: 'Sobriété', t: 'Sobriété', s: "Zéro alcool, un jour après l'autre" },
+  photos: { l: 'Photos', t: 'Photos', s: 'Pierre qui avance, et toute ta galerie' },
+  doit: { l: 'Do It' },
+  todo: { l: 'Tâches', t: 'Tâches', s: "Ce qu'il reste à faire" },
+  foxbank: { l: 'Banque' },
+};
+{
+  const st = document.createElement('style');
+  st.textContent = `
+.nav{padding:6px max(4px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
+.nav .nav-in{display:grid;grid-template-columns:repeat(var(--tabs,9),minmax(0,1fr));gap:0;max-width:720px}
+.nav .nav-in button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:54px;padding:0 1px;border-radius:14px;background:none;color:var(--muted);min-width:0}
+.nav .nav-in button span.ni{max-width:none;width:44px;height:28px;border-radius:999px;display:grid;place-items:center;transition:background .25s,color .25s}
+.nav .nav-in button span.nl{max-width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap;font:600 10px/1.15 Geist,ui-sans-serif,system-ui,sans-serif;letter-spacing:.005em;transition:color .25s}
+.nav .nav-in button.on{background:none;padding:0 1px}
+.nav .nav-in button.on span.ni{background:var(--accent);color:var(--on-accent)}
+.nav .nav-in button.on span.nl{max-width:100%;color:var(--fg,var(--text,currentColor))}
+@media (max-width:385px){.nav .nav-in button span.nl{font-size:9.4px;letter-spacing:-.01em}}
+@media (min-width:600px){.nav .nav-in button span.nl{font-size:11.5px}.nav .nav-in button{height:58px}}
+.ptitle{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:2px 2px 4px}
+.ptitle>div{min-width:0}
+.ptitle h1{margin:0;font:700 30px/1.05 Geist,ui-sans-serif,system-ui,sans-serif;letter-spacing:-.035em;text-wrap:balance}
+.ptitle p{margin:6px 0 0;font:500 14px/1.35 Geist,ui-sans-serif,system-ui,sans-serif;color:var(--muted);letter-spacing:-.005em}
+.ptitle .pb{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--accent);color:var(--on-accent)}
+@media (min-width:600px){.ptitle h1{font-size:36px}}`;
+  document.body.appendChild(st); // après les styles de l'appli (dans <body>), pour passer devant à force égale
+}
+renderChrome = function () {
+  const t = TODAY(), isT = S.sel === t;
+  $('#dlabel').innerHTML = isT ? `<em>Aujourd'hui</em><span>${esc(shortDate(S.sel))}</span>` : `${S.sel > t ? '<em>À venir</em>' : ''}<span>${esc(shortDate(S.sel))}</span>`;
+  $('#btn-next').disabled = S.tab !== 'todo' && S.sel >= t;
+  if (S._nav !== S.tab) {
+    S._nav = S.tab;
+    const nav = $('#nav');
+    nav.style.setProperty('--tabs', TABS.length);
+    nav.innerHTML = TABS.map(([k, l, i], n) => {
+      const u = TAB_UI[k] || { l }, on = S.tab === k;
+      return `<button class="${on ? 'on' : ''}" style="--n:${n}" data-a="tab" data-v="${k}" aria-label="${esc(u.l)}" ${on ? 'aria-current="page"' : ''}><span class="ni">${ic(i, 21)}</span><span class="nl">${esc(u.l)}</span></button>`;
+    }).join('');
+  }
+  const p = $('#soberPill'); if (p) p.innerHTML = `${ic('shield', 16)}<span>Jour ${progDay()}</span>`;
+};
+const _renderTitles = render;
+render = function () {
+  _renderTitles.apply(this, arguments);
+  const u = TAB_UI[S.tab], m = $('#main'), tab = TABS.find((x) => x[0] === S.tab);
+  if (u && u.t && m && !m.querySelector(':scope > .ptitle')) {
+    m.insertAdjacentHTML('afterbegin', `<header class="ptitle"><div><h1>${esc(u.t)}</h1><p>${esc(u.s)}</p></div><span class="pb" aria-hidden="true">${ic(tab ? tab[2] : 'home', 22)}</span></header>`);
+  }
+};
+
+/* Mise à jour automatique : à l'ouverture et à chaque retour dans l'appli, si une nouvelle version est en ligne,
+   l'appli se recharge (une fois par version). Pas pendant une séance Do It ou dans Fox Bank : un bouton le propose. */
+function rpCheckUpdate() {
+  if (!window.RP_BUILD) return;
+  try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then((r) => r && r.update()).catch(() => {}); } catch (e) {}
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    if (!j || !j.v || j.v === window.RP_BUILD) return;
+    let tried = ''; try { tried = sessionStorage.getItem('rp-upd') || ''; } catch (e) {}
+    const go = () => { try { sessionStorage.setItem('rp-upd', j.v); } catch (e) {} location.reload(); };
+    if (tried === j.v || EMBED[S.tab] || isTyping() || S.sheet) { toast('Nouvelle version du tracker disponible.', { label: 'Mettre à jour', fn: go }); return; }
+    go();
+  }).catch(() => {});
+}
+setTimeout(rpCheckUpdate, 1500);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') rpCheckUpdate(); });
+setInterval(rpCheckUpdate, 15 * 60e3);
 S._nav = null;
 render();
 })();
