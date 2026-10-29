@@ -2,13 +2,14 @@
 // Tes notes vocales deviennent des pages : à retravailler, ranger et retenir.
 import * as db from './db.js';
 import { createEditor, BLOCKS, htmlToText, countWords } from './editor.js';
-import { loadVoiceNotes, loadVoiceThemes, saveVoiceNote, themeOf, moodOf, noteToHtml } from './voice.js';
+import { loadVoiceNotes, loadVoiceThemes, saveVoiceNote, themeOf, moodOf, noteToHtml, noteToSection, newVoiceEntry, writeVoiceNote, retryPendingNotes } from './voice.js';
 import { childFolders, pagesIn, canMoveFolder, folderPath, deepCount, flatTree, nextOrder, descendantIds } from './tree.js';
 import { newCard, review, dueCards, mastery, dueLabel } from './memory.js';
 import { toMarkdown } from './markdown.js';
 import { Dictation, isSpeechSupported } from '../../js/speech.js';
 import { cleanTranscript } from '../../js/local-ai.js';
-import { esc, attr, typo, ago, longDate, timeLabel, todayLabel, uid, plural } from '../../js/format.js';
+import { esc, attr, typo, ago, longDate, timeLabel, todayLabel, uid, plural, clock } from '../../js/format.js';
+import { REASONS } from '../../js/ai.js';
 import { fold, slugify } from '../../js/themes.js';
 import { download } from '../../js/export.js';
 
@@ -77,6 +78,7 @@ const state = {
   review: null,
   lastHash: null,
   depth: 0, // pages empilées par la navigation interne (pour « Retour »)
+  hand: true, // notes vocales affichées en écriture manuscrite
 };
 
 const findPage = (id) => state.pages.find((p) => p.id === id);
@@ -233,11 +235,12 @@ function renderChrome() {
 
   const nav = [['home', '#/', I.home, 'Accueil'], ['notes', '#/notes', I.wave, 'Notes'], ['folders', '#/dossiers', I.folder, 'Dossiers'], ['memory', '#/memoire', I.brain, 'Mémoire']];
   const item = ([key, href, icon, label]) => `<a href="${href}" data-go class="${name === key ? 'is-active' : ''}" aria-current="${name === key ? 'page' : 'false'}"><span class="dock-ico">${icon}${key === 'memory' && due ? `<b class="badge">${due}</b>` : ''}</span><span>${label}</span></a>`;
-  $('#dock').innerHTML = `${item(nav[0])}${item(nav[1])}<button class="fab" type="button" data-action="new-page" aria-label="Nouvelle page">${I.plus}</button>${item(nav[2])}${item(nav[3])}`;
+  $('#dock').innerHTML = `${item(nav[0])}${item(nav[1])}<button class="fab" type="button" data-action="capture" aria-label="Parler : nouvelle note vocale">${I.mic}</button>${item(nav[2])}${item(nav[3])}`;
 
   $('#sidebar').innerHTML = `<a class="brand" href="#/" data-go><span class="brand-mark">${MARK}</span><span class="brand-name">Encré<b>.</b></span></a>
     <nav class="side-nav">${nav.map(([key, href, icon, label]) => `<a href="${href}" data-go class="${name === key || (key === 'notes' && name === 'note') ? 'is-active' : ''}">${icon}<span>${label}</span>${key === 'notes' ? `<small>${state.notes.length}</small>` : key === 'memory' && due ? `<small class="hot">${due}</small>` : ''}</a>`).join('')}</nav>
-    <button class="btn btn-neon side-new" type="button" data-action="new-page">${I.plus}Nouvelle page</button>
+    <button class="btn btn-neon side-new" type="button" data-action="capture">${I.mic}Parler</button>
+    <button class="btn side-new2" type="button" data-action="new-page">${I.plus}Nouvelle page</button>
     <p class="side-label">Dossiers <button class="mini" type="button" data-action="new-folder" aria-label="Nouveau dossier">${I.plus}</button></p>
     <div class="side-tree">${treeHTML()}</div>
     <a class="side-doit" href="../#parler">${I.mic}<span>Dicter dans Do It</span>${I.ext}</a>`;
@@ -332,8 +335,8 @@ function renderHome() {
 
     <div id="home-body">${state.query.trim() ? searchResults(state.query.trim()) : `
     <div class="quick">
-      <button class="qa spot is-neon" type="button" data-action="new-page" style="--i:0">${I.plus}<span>Nouvelle page</span></button>
-      <button class="qa spot" type="button" data-action="dictate-page" style="--i:1">${I.mic}<span>Dicter une page</span></button>
+      <button class="qa spot is-neon" type="button" data-action="capture" style="--i:0">${I.mic}<span>Parler</span></button>
+      <button class="qa spot" type="button" data-action="new-page" style="--i:1">${I.plus}<span>Nouvelle page</span></button>
       <button class="qa spot" type="button" data-action="new-folder" style="--i:2">${I.folderPlus}<span>Nouveau dossier</span></button>
       <a class="qa spot" href="#/memoire" data-go style="--i:3">${I.brain}<span>Réviser${due.length ? ` <b>${due.length}</b>` : ''}</span></a>
     </div>
@@ -389,7 +392,8 @@ function renderNotes() {
   const list = filteredNotes();
 
   $('#view').innerHTML = `<section class="view notes">
-    <header class="vhead"><p class="eyebrow">Depuis Do It</p><h1>Notes vocales</h1><p class="vsub">${plural(state.notes.length, 'note transcrite', 'notes transcrites')}, prêtes à devenir des pages.</p></header>
+    <header class="vhead"><p class="eyebrow">Encré et Do It</p><h1>Notes vocales</h1><p class="vsub">${plural(state.notes.length, 'note résumée', 'notes résumées')} et classées par thème, prêtes à devenir des pages.</p></header>
+    <div class="vactions"><button class="btn btn-neon" type="button" data-action="capture">${I.mic}Nouvelle note vocale</button></div>
     <label class="search spot">${I.search}<input id="notes-search" type="search" placeholder="Rechercher une note" value="${attr(state.noteQuery)}" autocomplete="off"></label>
     ${themes.length ? `<div class="chips scroll">
       <button class="chip${state.noteFilter === 'all' ? ' is-active' : ''}" type="button" data-action="note-filter" data-id="all">Toutes <small>${state.notes.length}</small></button>
@@ -409,7 +413,7 @@ function noteCards(list) {
       return `<a class="ncard spot" href="#/note/${n.id}" data-go style="--i:${Math.min(i, 10)}">
         <span class="ncard-top"><span>${longDate(n.createdAt)} · ${timeLabel(n.createdAt)}</span><span class="mood" title="${esc(mood.label)}">${mood.emoji}</span></span>
         <span class="ncard-title">${esc(n.title || 'Note vocale')}</span>
-        <span class="ncard-text">${esc(n.summary || n.text)}</span>
+        <span class="ncard-text${state.hand ? ' hand' : ''}">${esc(n.summary || n.text)}</span>
         <span class="ncard-foot">${(n.themes || []).map((id) => {
           const t = themeOf(id, state.noteThemes);
           return `<span class="tag">${esc(t.emoji)} ${esc(t.label)}</span>`;
@@ -439,9 +443,10 @@ function renderNote(id) {
         const t = themeOf(tid, state.noteThemes);
         return `<span class="tag">${esc(t.emoji)} ${esc(t.label)}</span>`;
       }).join('')}</div>
-      <p class="page-meta"><span class="save" id="save-state" data-state="saved">Enregistré dans Do It</span></p>
-      <div class="doc" id="note-doc" contenteditable="true" spellcheck="true">${String(n.text || '').split(/\n{2,}/).filter((p) => p.trim()).map((p) => `<p>${attr(p.trim())}</p>`).join('') || '<p><br></p>'}</div>
+      <p class="page-meta"><span class="save" id="save-state" data-state="saved">Enregistré dans Do It</span><button class="hand-toggle" type="button" data-action="toggle-hand">${state.hand ? 'Aa Classique' : '✍︎ Manuscrit'}</button></p>
+      <div class="doc${state.hand ? ' is-hand' : ''}" id="note-doc" contenteditable="true" spellcheck="true">${String(n.text || '').split(/\n{2,}/).filter((p) => p.trim()).map((p) => `<p>${attr(p.trim())}</p>`).join('') || '<p><br></p>'}</div>
       ${n.highlights?.length ? `<div class="keypoints"><p class="eyebrow">Points clés</p><ul>${n.highlights.map((h) => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
+      ${n.followUp ? `<div class="note-followup"><p><span>Encré te relance</span>« ${esc(n.followUp)} »</p><button class="btn" type="button" data-action="capture-reply" data-id="${n.id}">${I.mic}Répondre à voix haute</button></div>` : ''}
       <div class="note-actions">
         <button class="btn btn-neon" type="button" data-action="note-to-page" data-id="${n.id}">${linked ? `${I.page}Ouvrir la page` : `${I.spark}Transformer en page`}</button>
         <a class="btn" href="../#journal">${I.ext}Voir dans Do It</a>
@@ -1094,6 +1099,298 @@ function pickNote() {
   });
 }
 
+/* ───────────── Capture vocale : tu parles, Encré écrit ───────────── */
+
+const CAPTURE_STEPS = ['Je résume l’essentiel…', 'Je range par thèmes…', 'Je passe à l’encre…', 'Je soigne chaque mot…'];
+const LOCAL_MSG = 'IA pas joignable pour l’instant : note nettoyée et classée sans elle, elle sera réécrite automatiquement.';
+const cap = { status: 'closed', d: null, entry: null, question: null, startedAt: 0, timer: 0, raf: 0, ticker: 0, energy: 0 };
+
+/** Texte « écrit à la main » : chaque mot se trace à l'encre, l'un après l'autre. */
+function handWords(text, start, step = 70) {
+  let i = 0;
+  const html = esc(text).split(/(\s+)/).map((w) => (w.trim() ? `<span class="hw" style="--d:${start + i++ * step}ms">${w}</span>` : w)).join('');
+  return { html, end: start + i * step };
+}
+
+function handCard(entry) {
+  const mood = moodOf(entry.mood);
+  let t = 150;
+  const title = handWords(entry.title || 'Note vocale', t, 90);
+  t = title.end + 200;
+  const paras = String(entry.text || '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).map((p) => {
+    const w = handWords(p, t);
+    t = w.end + 120;
+    return `<p>${w.html}</p>`;
+  }).join('');
+  const points = (entry.highlights || []).map((h) => {
+    const w = handWords(h, t);
+    t = w.end + 120;
+    return `<li>${w.html}</li>`;
+  }).join('');
+  const themes = (entry.themes || []).map((tid, i) => {
+    const th = themeOf(tid, state.noteThemes);
+    return `<span class="tag hand-tag" style="--d:${t + i * 120}ms">${esc(th.emoji)} ${esc(th.label)}</span>`;
+  }).join('');
+  return `<article class="hand-card">
+    <p class="eyebrow">${longDate(entry.createdAt)} · ${timeLabel(entry.updatedAt || entry.createdAt)} · ${mood.emoji} ${esc(mood.label)}</p>
+    <h2 class="hand-title">${title.html}</h2>
+    <div class="hand-text">${paras}</div>
+    ${points ? `<ul class="hand-points">${points}</ul>` : ''}
+    <div class="tags">${themes}</div>
+    ${entry.source === 'local' ? `<p class="hand-local">${esc(entry.pending ? 'Écrite sans l’IA pour l’instant : elle sera réécrite automatiquement.' : 'Écrite sans l’IA.')}</p>` : ''}
+  </article>`;
+}
+
+function renderCapture(status, { animate = true } = {}) {
+  cap.status = status;
+  clearInterval(cap.ticker);
+  const el = $('#capture');
+  el.dataset.state = status;
+  const e = cap.entry;
+  const head = `<header class="cap-head"><button class="icon-btn" type="button" data-cap="close" aria-label="Fermer">${I.close}</button><p class="eyebrow">${e && status !== 'done' ? 'Tu complètes ta note' : 'Note vocale'}</p><span class="cap-timer" id="cap-timer"></span></header>`;
+
+  if (status === 'done') {
+    el.innerHTML = `${head}<div class="cap-body${animate ? '' : ' no-anim'}">${handCard(e)}
+      ${e.followUp ? `<div class="note-followup cap-follow"><p><span>Encré te relance</span>« ${esc(e.followUp)} »</p><button class="btn" type="button" data-cap="reply">${I.mic}Répondre</button></div>` : ''}
+      <div class="cap-grid">
+        <button class="btn btn-neon" type="button" data-cap="to-page">${I.spark}En faire une page</button>
+        <button class="btn" type="button" data-cap="append">${I.plus}Ajouter à une page</button>
+        <button class="btn" type="button" data-cap="edit">${I.pencil}Modifier</button>
+        <button class="btn" type="button" data-cap="again">${I.mic}Nouvelle note</button>
+      </div></div>`;
+    return;
+  }
+
+  if (status === 'unsupported') {
+    el.innerHTML = `${head}<div class="cap-body"><p class="cap-note">La dictée n’est pas disponible sur ce navigateur (ouvre Encré dans <b>Chrome</b> ou <b>Safari</b>). Tu peux écrire ta note ici : Encré la résume et la range de la même façon.</p>
+      <textarea id="cap-text" rows="8" placeholder="Raconte, même en vrac…"></textarea>
+      <button class="btn btn-neon btn-lg" type="button" data-cap="write">${I.spark}Encré l’écrit</button></div>`;
+    setTimeout(() => $('#cap-text')?.focus(), 100);
+    return;
+  }
+
+  const q = cap.question;
+  el.innerHTML = `${head}<div class="cap-body">
+    ${q ? `<div class="cap-q"><span>Tu réponds à</span><p>« ${esc(q)} »</p></div>` : ''}
+    <button class="cap-orb" type="button" data-cap="toggle" aria-label="${status === 'listening' ? 'Terminer' : 'Parler'}">
+      <span class="cap-ring"></span><span class="cap-ring r2"></span>
+      <span class="cap-core">${MARK}</span>
+    </button>
+    <p class="cap-hint" id="cap-hint">${status === 'listening' ? 'Je t’écoute… touche la goutte pour finir' : status === 'ready' ? 'Touche la goutte et parle' : 'Encré écrit…'}</p>
+    <div class="bars cap-bars" aria-hidden="true">${'<i></i>'.repeat(18)}</div>
+    <p class="cap-live" id="cap-live" aria-live="polite"></p>
+    <div class="cap-actions"${status === 'listening' ? '' : ' hidden'}>
+      <button class="btn" type="button" data-cap="cancel">Annuler</button>
+      <button class="btn btn-neon" type="button" data-cap="stop">${I.check}Terminer</button>
+    </div>
+  </div>`;
+}
+
+function setWriting() {
+  const el = $('#capture');
+  el.dataset.state = 'writing';
+  cap.status = 'writing';
+  $('#capture .cap-actions')?.setAttribute('hidden', '');
+  const hint = $('#cap-hint');
+  let i = 0;
+  if (hint) hint.textContent = 'Encré écrit…';
+  cap.ticker = setInterval(() => {
+    const h = $('#cap-hint');
+    if (h) h.textContent = CAPTURE_STEPS[i++ % CAPTURE_STEPS.length];
+  }, 1500);
+}
+
+function stopCaptureExtras() {
+  clearInterval(cap.timer);
+  cancelAnimationFrame(cap.raf);
+}
+
+function startListening() {
+  if (state.dictation) stopDictation(true);
+  if (!isSpeechSupported()) {
+    renderCapture('unsupported');
+    return;
+  }
+  renderCapture('listening');
+  const live = $('#cap-live');
+  const d = new Dictation({
+    onText: (finalText, interim) => {
+      live.innerHTML = `${esc(finalText)} <span class="interim">${esc(interim)}</span>`;
+      live.scrollTop = live.scrollHeight;
+    },
+    onActivity: () => {
+      cap.energy = 1;
+    },
+    onError: (msg) => {
+      toast(msg);
+      finishCapture({ quiet: true });
+    },
+  });
+  try {
+    d.start();
+  } catch {
+    renderCapture('unsupported');
+    return;
+  }
+  cap.d = d;
+  cap.startedAt = Date.now();
+  const timer = $('#cap-timer');
+  timer.textContent = '00:00';
+  cap.timer = setInterval(() => {
+    const s = (Date.now() - cap.startedAt) / 1000;
+    timer.textContent = clock(s);
+    if (s > 20 * 60) finishCapture();
+  }, 250);
+  const bars = $$('#capture .cap-bars i');
+  const orb = $('#capture .cap-orb');
+  const tick = () => {
+    cap.energy *= 0.92;
+    bars.forEach((b, k) => b.style.setProperty('--v', (0.12 + Math.abs(Math.sin(Date.now() / 170 + k * 0.7)) * (0.2 + cap.energy * 0.8)).toFixed(2)));
+    orb?.style.setProperty('--level', cap.energy.toFixed(2));
+    cap.raf = requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+async function finishCapture({ quiet = false } = {}) {
+  if (cap.status !== 'listening' || !cap.d) return;
+  const d = cap.d;
+  cap.d = null;
+  setWriting();
+  const text = (await d.stop()).trim();
+  stopCaptureExtras();
+  if (!text) {
+    if (!quiet) toast('Je n’ai rien entendu… Rapproche-toi du micro et réessaie.');
+    if (cap.entry?.text) renderCapture('done', { animate: false });
+    else renderCapture('ready');
+    return;
+  }
+  await writeCaptured(text, Math.round((Date.now() - cap.startedAt) / 1000));
+}
+
+async function writeCaptured(text, duration) {
+  if (cap.status !== 'writing') setWriting();
+  const segment = { text, at: new Date().toISOString(), duration };
+  if (cap.question) segment.question = cap.question;
+  let entry = cap.entry;
+  if (entry) entry.segments.push(segment);
+  else entry = newVoiceEntry(segment);
+  const res = await writeVoiceNote(entry);
+  cap.entry = entry;
+  cap.question = null;
+  state.noteThemes = res.customThemes;
+  const i = state.notes.findIndex((n) => n.id === entry.id);
+  if (i >= 0) state.notes[i] = entry;
+  else state.notes.unshift(entry);
+  if (cap.status === 'closed') return;
+  renderCapture('done');
+  setTimeout(() => burst(), 300);
+  if (res.source === 'local') toast(['code', 'refusal', 'input'].includes(res.reason) ? REASONS[res.reason] : LOCAL_MSG);
+  refresh();
+}
+
+function openCapture({ entryId = null, reply = false } = {}) {
+  cap.entry = entryId ? findNote(entryId) : null;
+  cap.question = reply && cap.entry ? cap.entry.followUp || null : null;
+  const el = $('#capture');
+  el.hidden = false;
+  document.body.classList.add('cap-open');
+  requestAnimationFrame(() => el.classList.add('is-open'));
+  startListening();
+}
+
+function closeCapture() {
+  if (cap.d) {
+    cap.d.cancel();
+    cap.d = null;
+  }
+  stopCaptureExtras();
+  clearInterval(cap.ticker);
+  cap.status = 'closed';
+  const el = $('#capture');
+  el.classList.remove('is-open');
+  document.body.classList.remove('cap-open');
+  setTimeout(() => {
+    if (cap.status === 'closed') {
+      el.hidden = true;
+      el.innerHTML = '';
+    }
+  }, 450);
+  refresh();
+}
+
+async function appendNoteTo(entry, page) {
+  const section = noteToSection(entry);
+  if (state.editor && state.route.name === 'page' && state.route.id === page.id) {
+    state.editor.focusEnd();
+    state.editor.insertBlocks(section);
+    state.editor.flush();
+  } else {
+    const html = `${page.html || ''}${section}`;
+    await savePage(page, { html, words: countWords(htmlToText(html)) });
+  }
+  toast(`Note ajoutée à « ${page.title || 'Sans titre'} »`);
+}
+
+async function captureAction(name) {
+  const e = cap.entry;
+  switch (name) {
+    case 'close':
+      return closeCapture();
+    case 'toggle':
+      if (cap.status === 'listening') return finishCapture();
+      if (cap.status === 'ready') return startListening();
+      return;
+    case 'stop':
+      return finishCapture();
+    case 'cancel':
+      if (cap.d) {
+        cap.d.cancel();
+        cap.d = null;
+      }
+      stopCaptureExtras();
+      if (e?.text) return renderCapture('done', { animate: false });
+      return closeCapture();
+    case 'write': {
+      const text = $('#cap-text')?.value.trim();
+      if (!text) return;
+      return writeCaptured(text, 0);
+    }
+    case 'reply':
+      cap.question = e?.followUp || null;
+      return startListening();
+    case 'again':
+      cap.entry = null;
+      cap.question = null;
+      return startListening();
+    case 'edit':
+      closeCapture();
+      return go(`#/note/${e.id}`);
+    case 'to-page':
+      closeCapture();
+      return noteToPage(e.id);
+    case 'append': {
+      const page = await pickPage();
+      if (!page) return;
+      await appendNoteTo(e, page);
+      closeCapture();
+      return go(`#/page/${page.id}`);
+    }
+    default:
+  }
+}
+
+function pickPage() {
+  const pages = sortRecent(state.pages);
+  if (!pages.length) {
+    toast('Aucune page pour l’instant : choisis plutôt « En faire une page ».');
+    return Promise.resolve(null);
+  }
+  return openSheet(`${sheetHead('Ajouter à quelle page ?')}<div class="menu">${pages.slice(0, 40).map((p, i) => `<button type="button" class="menu-item" data-page-id="${p.id}" style="--i:${Math.min(i, 12)}"><span class="menu-emoji">${esc(p.icon || '📄')}</span><span><b>${esc(p.title || 'Sans titre')}</b><small>${ago(p.updatedAt)}</small></span></button>`).join('')}</div>`, (dlg, finish) => {
+    dlg.querySelectorAll('[data-page-id]').forEach((b) => b.addEventListener('click', () => finish(findPage(b.dataset.pageId))));
+  });
+}
+
 /* ───────────── Effets ───────────── */
 
 let toastTimer = 0;
@@ -1187,6 +1484,17 @@ async function onAction(name, el, event) {
     case 'note-filter':
       state.noteFilter = id;
       renderNotes();
+      return;
+    case 'capture':
+      openCapture();
+      return;
+    case 'capture-reply':
+      openCapture({ entryId: id, reply: true });
+      return;
+    case 'toggle-hand':
+      state.hand = !state.hand;
+      db.setValue('hand', state.hand);
+      render(true);
       return;
     case 'note-to-page':
       return noteToPage(id);
@@ -1396,6 +1704,14 @@ function bind() {
     }
   });
   window.addEventListener('pagehide', () => state.editor?.flush());
+  window.addEventListener('online', () => rewritePending());
+  $('#capture').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-cap]');
+    if (btn && !btn.disabled) captureAction(btn.dataset.cap);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && cap.status !== 'closed' && !$('#sheet').open) closeCapture();
+  });
 }
 
 /** En tapant, le curseur reste visible au-dessus de la barre d'édition et du clavier. */
@@ -1440,10 +1756,10 @@ function splash() {
 async function init() {
   splash();
   bind();
-  const [pages, folders, cards, tabs, notes, noteThemes] = await Promise.all([
-    db.getAll('pages'), db.getAll('folders'), db.getAll('cards'), db.getValue('tabs', []), loadVoiceNotes(), loadVoiceThemes(),
+  const [pages, folders, cards, tabs, notes, noteThemes, hand] = await Promise.all([
+    db.getAll('pages'), db.getAll('folders'), db.getAll('cards'), db.getValue('tabs', []), loadVoiceNotes(), loadVoiceThemes(), db.getValue('hand', true),
   ]);
-  Object.assign(state, { pages, folders, cards, notes, noteThemes, tabs: tabs.filter((t) => pages.some((p) => p.id === t)) });
+  Object.assign(state, { pages, folders, cards, notes, noteThemes, hand, tabs: tabs.filter((t) => pages.some((p) => p.id === t)) });
   await seed();
   if (!state.pages.length) state.pages = await db.getAll('pages');
   navigator.storage?.persist?.().catch(() => {});
@@ -1452,6 +1768,13 @@ async function init() {
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('../sw.js').catch(() => {});
   }
+  rewritePending();
+}
+
+/** Notes écrites sans l'IA : réécrites dès qu'elle répond. */
+async function rewritePending() {
+  const done = await retryPendingNotes(state.notes, () => refresh());
+  if (done) toast(`✦ ${plural(done, 'note réécrite', 'notes réécrites')} par l’IA`);
 }
 
 init();

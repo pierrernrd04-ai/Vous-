@@ -323,12 +323,90 @@ assert.equal(card.step, 0);
 assert.ok(new Date(card.due) > new Date(Date.now() + 20 * 3600e3));
 step('mémoire : révision et prochaine échéance demain');
 
+// 9 bis. Parler dans Encré : résumé synthétique, écrit à la main, classé par thème
+const capturePosts = [];
+await page.route('**/api/ecrire', async (route) => {
+  const req = route.request();
+  if (req.method() === 'GET') return route.fulfill({ json: { ai: true, needsCode: false, authorized: true } });
+  const body = req.postDataJSON();
+  capturePosts.push(body);
+  await new Promise((r) => setTimeout(r, 900));
+  const reply = body.segments.length > 1;
+  return route.fulfill({ json: { entry: {
+    title: 'Lancer un podcast sur la course',
+    text: reply
+      ? 'Je veux lancer un podcast consacré à la course à pied, avec un épisode par semaine et des invités. Premier épisode prévu en janvier.'
+      : 'Je veux lancer un podcast consacré à la course à pied, avec un épisode par semaine et des invités.',
+    summary: 'Projet de podcast hebdomadaire sur la course à pied.',
+    highlights: reply ? ['Un épisode par semaine', 'Des invités', 'Lancement en janvier'] : ['Un épisode par semaine', 'Des invités'],
+    themes: [{ id: 'projets', label: 'Projets & objectifs', emoji: '🎯' }, { id: 'sport', label: 'Sport', emoji: '🏃' }],
+    mood: 'bon',
+    followUp: reply ? 'Qui serait ton premier invité idéal ?' : 'Quand veux-tu publier le premier épisode ?',
+  }, model: 'test' } });
+});
+await page.evaluate(() => { location.hash = '#/notes'; });
+await page.waitForSelector('.notes .vactions [data-action="capture"]');
+await page.evaluate(() => {
+  window.__phrases = ['euh alors en fait je voudrais lancer un podcast sur la course à pied', 'du coup un épisode par semaine avec des invités'];
+});
+await page.click('#dock .fab');
+await page.waitForSelector('#capture[data-state="listening"]');
+await page.waitForFunction(() => document.querySelector('#cap-live')?.textContent.includes('invités'));
+await pause(400);
+await shot('15-capture-ecoute');
+await page.click('#capture [data-cap="stop"]');
+await page.waitForSelector('#capture[data-state="writing"]');
+await page.waitForSelector('#capture[data-state="done"] .hand-card');
+assert.equal(capturePosts[0].style, 'synthese');
+assert.match(capturePosts[0].segments[0].text, /podcast.*invités/);
+assert.match(await page.textContent('.hand-title'), /Lancer un podcast/);
+assert.deepEqual(await page.$$eval('.hand-card .tag', (els) => els.map((e) => e.textContent.trim())), ['🎯 Projets & objectifs', '🏃 Sport']);
+await page.waitForTimeout(3200);
+await shot('16-note-manuscrite');
+step('capture vocale : résumé synthétique écrit à la main et classé par thème');
+
+await page.evaluate(() => {
+  window.__phrases = ['je commencerai en janvier'];
+});
+await page.click('#capture [data-cap="reply"]');
+await page.waitForSelector('#capture .cap-q');
+await page.waitForFunction(() => document.querySelector('#cap-live')?.textContent.includes('janvier'));
+await page.click('#capture [data-cap="stop"]');
+await page.waitForFunction(() => document.querySelector('#capture[data-state="done"] .hand-text')?.textContent.includes('janvier'));
+assert.equal(capturePosts[1].segments.length, 2);
+assert.match(capturePosts[1].segments[1].question, /premier épisode/);
+const stored = await page.evaluate(async () => (await (await import('/js/store.js')).loadEntries()).find((e) => e.origin === 'encre'));
+assert.equal(stored.title, 'Lancer un podcast sur la course');
+assert.deepEqual(stored.themes, ['projets', 'sport']);
+assert.equal(stored.segments.length, 2);
+step('relance : la réponse complète la même note, enregistrée aussi dans Do It');
+
+await page.click('#capture [data-cap="append"]');
+await page.click('#sheet .menu-item >> text=Idées en vrac');
+await page.waitForSelector('.page #doc h2 >> text=Lancer un podcast sur la course');
+await page.waitForSelector('#capture', { state: 'hidden' });
+step('note ajoutée à une page existante');
+
+await page.evaluate(() => { location.hash = '#/notes'; });
+await page.waitForSelector('.ncard >> text=Lancer un podcast sur la course');
+assert.equal(await page.locator('.ncard').count(), 4);
+await page.click('.ncard >> text=Lancer un podcast sur la course');
+await page.waitForSelector('#note-doc.is-hand');
+await pause(500);
+await shot('17-note-vocale-manuscrite');
+await page.click('[data-action="toggle-hand"]');
+await page.waitForSelector('#note-doc:not(.is-hand)');
+await page.click('[data-action="toggle-hand"]');
+await page.waitForSelector('#note-doc.is-hand');
+step('notes vocales en écriture manuscrite (bascule possible)');
+
 // 10. Persistance
 await page.reload();
 await page.waitForSelector('body.is-ready');
 await page.goto(`${base}/encre/#/dossiers`);
 await page.waitForSelector('.explorer .is-folder >> text=Projets');
 assert.equal(await page.locator('.explorer .is-page').count(), 3);
+assert.equal(await page.locator('.explorer .is-page', { hasText: 'Idées en vrac' }).count(), 1);
 step('tout est conservé après rechargement');
 
 assert.deepEqual(errors, []);

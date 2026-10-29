@@ -36,10 +36,11 @@ Tu appuies sur l'orbe et tu racontes ta journée, ton sport, tes soirées, ton m
 
 Encré (`/encre/`, même site que Do It) reprend toutes tes notes vocales pour que tu les travailles comme dans Notion : pages riches, dossiers, onglets, et une mémoire pour retenir l'essentiel. Fond noir, vert fluo et blanc.
 
-| Accueil | Page | Menu « / » | Dossiers | Révision |
-| --- | --- | --- | --- | --- |
-| ![Accueil](docs/screenshots-encre/02-accueil.jpg) | ![Page](docs/screenshots-encre/08-page-edition.jpg) | ![Menu](docs/screenshots-encre/07-menu-slash.jpg) | ![Dossiers](docs/screenshots-encre/11-dossiers.jpg) | ![Révision](docs/screenshots-encre/13-revision.jpg) |
+| Note manuscrite | Accueil | Page | Menu « / » | Dossiers | Révision |
+| --- | --- | --- | --- | --- | --- |
+| ![Note manuscrite](docs/screenshots-encre/16-note-manuscrite.jpg) | ![Accueil](docs/screenshots-encre/02-accueil.jpg) | ![Page](docs/screenshots-encre/08-page-edition.jpg) | ![Menu](docs/screenshots-encre/07-menu-slash.jpg) | ![Dossiers](docs/screenshots-encre/11-dossiers.jpg) | ![Révision](docs/screenshots-encre/13-revision.jpg) |
 
+- **Parler** : le bouton central (micro vert fluo). Tu parles, tes mots s'affichent en direct ; l'IA en fait un résumé professionnel et synthétique (titre, quelques phrases, points clés) qui **s'écrit à la main sous tes yeux**, à l'encre néon sur papier ligné, classé par thème, avec une question de relance à laquelle tu peux répondre à voix haute. Ensuite : modifier la note, en faire une page ou l'ajouter à une page existante. Les notes dictées dans Encré apparaissent aussi dans Do It.
 - **Notes vocales** : tout ce que tu racontes dans Do It arrive ici, avec recherche et filtre par thème. Une note se modifie sur place (le journal Do It suit) ou devient une page en un geste, rangée dans le dossier « Notes vocales ».
 - **Pages façon Notion** : titres, listes, cases à cocher, citations, encadrés, séparateurs. Tape `/` pour choisir un bloc, ou les raccourcis `#`, `##`, `###`, `-`, `1.`, `[]`, `>`, `!`, `---`. Gras, italique, souligné, barré, surligneur. Insertion d'une note vocale, de la date, et **dictée directement dans la page**. Sept couvertures animées, une icône par page, export Markdown.
 - **Dossiers et onglets** : dossiers et sous-dossiers, glisser-déposer à la souris ou « Déplacer vers… » au doigt, pages épinglées. Les pages ouvertes restent en onglets en haut de l'écran.

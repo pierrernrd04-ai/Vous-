@@ -1177,3 +1177,158 @@ body[data-route="page"] .toast.is-visible, body[data-route="note"] .toast.is-vis
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ───────────── Capture vocale et écriture manuscrite ───────────── */
+
+:root { --f-hand: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive; }
+
+.capture {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(90% 60% at 50% 30%, rgb(57 255 127 / .12), transparent 70%),
+    rgb(0 0 0 / .97);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  overflow-y: auto;
+  opacity: 0;
+  transform: scale(1.03);
+  transition: opacity .4s var(--ease), transform .45s var(--ease);
+}
+.capture.is-open { opacity: 1; transform: none; }
+body.cap-open { overflow: hidden; }
+body.cap-open .dock, body.cap-open .toolbar { opacity: 0; pointer-events: none; }
+.cap-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(var(--safe-t) + 12px) 16px 10px;
+  background: linear-gradient(#000 60%, transparent);
+}
+.cap-head .eyebrow { flex: 1; text-align: center; }
+.cap-timer { min-width: 40px; text-align: right; font: 500 13px var(--f-mono); color: var(--neon); font-variant-numeric: tabular-nums; }
+.cap-body { width: min(620px, 100%); margin: 0 auto; padding: 8px 20px calc(30px + var(--safe-b)); display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+.cap-q { width: 100%; padding: 12px 16px; border-radius: 16px; border: 1px solid var(--neon-b); background: var(--neon-a); animation: pop-in .4s var(--spring) both; }
+.cap-q span { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--neon); }
+.cap-q p { margin-top: 2px; font: 400 26px/1.25 var(--f-hand); color: var(--text); }
+
+.cap-orb {
+  --level: 0;
+  position: relative;
+  width: 168px;
+  height: 168px;
+  margin: 18px 0 6px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  transition: transform .3s var(--spring);
+}
+.cap-orb:active { transform: scale(.94); }
+.cap-core {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgb(57 255 127 / .35), #031b0c 60%, #000);
+  border: 1.5px solid var(--neon);
+  box-shadow: 0 0 calc(30px + var(--level) * 40px) rgb(57 255 127 / calc(.35 + var(--level) * .4)), inset 0 0 40px rgb(57 255 127 / .25);
+  transform: scale(calc(1 + var(--level) * .08));
+  transition: transform .1s linear, box-shadow .1s linear;
+  animation: breathe 4s ease-in-out infinite;
+}
+.cap-core svg { width: 84px; height: 84px; }
+.cap-core .mark-drop { stroke-width: 1.4; }
+.cap-core .mark-wave { stroke-width: 1.2; }
+.cap-ring { position: absolute; inset: -14px; border-radius: 50%; border: 1px solid var(--neon-b); }
+.cap-ring.r2 { inset: -30px; border-color: rgb(57 255 127 / .14); }
+.capture[data-state="listening"] .cap-ring { border-color: var(--neon); animation: ripple 2s ease-out infinite; }
+.capture[data-state="listening"] .cap-ring.r2 { animation-delay: 1s; }
+.capture[data-state="writing"] .cap-core { animation: think-ink 1.6s ease-in-out infinite; }
+.capture[data-state="writing"] .cap-ring { border-color: transparent; border-top-color: var(--neon); animation: spin 1s linear infinite; }
+.capture[data-state="writing"] .cap-ring.r2 { border-top-color: #fff; animation-duration: 1.7s; animation-direction: reverse; }
+@keyframes spin { to { transform: rotate(1turn); } }
+@keyframes think-ink { 50% { transform: scale(1.04); border-radius: 46% 54% 50% 50% / 55% 45% 55% 45%; } }
+
+.cap-hint { font: 500 13px var(--f-mono); letter-spacing: .04em; color: var(--muted); text-align: center; }
+.capture[data-state="listening"] .cap-hint { color: var(--neon); }
+.cap-bars { height: 0; opacity: 0; transition: height .3s var(--ease), opacity .3s; }
+.capture[data-state="listening"] .cap-bars { height: 40px; opacity: 1; }
+.cap-live { width: 100%; max-height: 9em; overflow-y: auto; text-align: center; font: 400 22px/1.45 var(--f-display); color: var(--text); scrollbar-width: none; mask-image: linear-gradient(transparent, #000 25%); -webkit-mask-image: linear-gradient(transparent, #000 25%); }
+.cap-live:empty { display: none; }
+.cap-live .interim { color: var(--muted); }
+.capture[data-state="writing"] .cap-live { animation: melt 2.4s ease-in-out infinite; }
+@keyframes melt { 50% { filter: blur(3px); opacity: .45; } }
+.cap-actions { display: flex; gap: 10px; animation: pop-in .35s var(--spring) both; }
+.cap-note { color: var(--text-2); text-align: center; }
+.cap-note b { color: var(--neon); }
+#cap-text { width: 100%; padding: 14px; border-radius: 16px; border: 1px solid var(--line-2); background: var(--panel); outline: 0; color: var(--text); font: 400 24px/1.4 var(--f-hand); resize: vertical; }
+#cap-text:focus { border-color: var(--neon); box-shadow: var(--glow); }
+
+/* La note manuscrite : encre néon sur papier noir ligné */
+.hand-card {
+  position: relative;
+  width: 100%;
+  margin-top: 6px;
+  padding: 20px 22px 18px 34px;
+  border-radius: 22px;
+  border: 1px solid var(--line-2);
+  background:
+    linear-gradient(90deg, transparent 21px, rgb(57 255 127 / .35) 21px 22px, transparent 22px),
+    repeating-linear-gradient(transparent 0 35px, rgb(255 255 255 / .06) 35px 36px),
+    #050605;
+  background-position: 0 0, 0 14px, 0 0;
+  box-shadow: 0 30px 60px -30px rgb(57 255 127 / .45);
+  animation: card-in .6s var(--spring) both;
+}
+.hand-card .eyebrow { margin-bottom: 4px; }
+.hand-title { font: 700 40px/1.05 var(--f-hand); color: var(--neon); text-shadow: 0 0 18px rgb(57 255 127 / .45); }
+.hand-text { margin-top: 6px; font: 400 27px/36px var(--f-hand); color: var(--text); }
+.hand-text p + p { margin-top: 0; }
+.hand-points { margin: 6px 0 0; padding: 0; list-style: none; font: 400 25px/36px var(--f-hand); color: var(--text-2); }
+.hand-points li::before { content: '— '; color: var(--neon); }
+.hand-card .tags { margin-top: 12px; }
+.hand-tag { opacity: 0; animation: pop-in .4s var(--spring) forwards; animation-delay: var(--d); }
+.hand-local { margin-top: 10px; font: 500 12px var(--f-mono); color: var(--muted); }
+/* Chaque mot se dévoile de gauche à droite ; la marge finale laisse respirer la lueur et les jambages. */
+.hw { display: inline-block; clip-path: inset(-60% 100% -60% -20%); animation: write-in .5s var(--ease) forwards; animation-delay: var(--d); }
+@keyframes write-in {
+  0% { clip-path: inset(-60% 100% -60% -20%); text-shadow: 0 0 14px var(--neon); }
+  70% { text-shadow: 0 0 10px rgb(57 255 127 / .7); }
+  100% { clip-path: inset(-60% -60% -60% -20%); text-shadow: none; }
+}
+.hand-title .hw { animation-name: write-in-title; }
+@keyframes write-in-title { to { clip-path: inset(-60% -60% -60% -20%); } }
+.cap-body.no-anim .hw, .cap-body.no-anim .hand-tag { animation: none; clip-path: none; opacity: 1; }
+.cap-follow { width: 100%; }
+.cap-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; margin-top: 4px; animation: rise .5s .4s var(--ease) both; }
+.cap-grid .btn { min-height: 50px; font-size: 14px; }
+
+.note-followup { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--neon-b); background: linear-gradient(120deg, rgb(57 255 127 / .1), transparent); }
+.note-followup p { flex: 1 1 220px; font: 400 25px/1.25 var(--f-hand); color: var(--text); }
+.note-followup span { display: block; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--neon); }
+
+/* Notes vocales en écriture manuscrite */
+.doc.is-hand {
+  font: 400 27px/36px var(--f-hand);
+  color: var(--text);
+  background: repeating-linear-gradient(transparent 0 35px, rgb(255 255 255 / .05) 35px 36px);
+  background-position: 0 2px;
+}
+.doc.is-hand > * { margin-bottom: 0; }
+.ncard-text.hand { font: 400 23px/1.25 var(--f-hand); color: var(--text); }
+.hand-toggle { margin-left: auto; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-2); background: none; color: var(--text-2); font: 500 12px var(--f-ui); transition: border-color .2s, color .2s; }
+.hand-toggle:hover { border-color: var(--neon); color: var(--neon); }
+.side-new2 { margin: 0 4px 6px; }
+.fab svg { width: 26px; height: 26px; stroke-width: 2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hw, .hand-tag { animation: none !important; clip-path: none !important; opacity: 1 !important; }
+}
