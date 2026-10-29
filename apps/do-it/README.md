@@ -2,7 +2,9 @@
 
 > Les paroles s'envolent. **Les tiennes restent.**
 
-**Ouvrir l'appli : https://do-it-journal.netlify.app** (sur téléphone : « Ajouter à l'écran d'accueil »)
+**Ouvrir Do It : https://pierrernrd04-ai.github.io/Vous-/do-it/** · **Encré : https://pierrernrd04-ai.github.io/Vous-/do-it/encre/** (sur téléphone : « Ajouter à l'écran d'accueil »)
+
+Version Netlify d'origine : https://do-it-journal.netlify.app (les notes enregistrées sur une adresse ne sont pas visibles sur l'autre : passe par Bilan › Réglages › Sauvegarde puis Importer).
 
 Tu appuies sur l'orbe et tu racontes ta journée, ton sport, tes soirées, ton moral, en vrac et comme ça vient. Do It retranscrit ce que tu dis, puis l'IA (Claude) le réécrit en un texte net : grammaire et syntaxe corrigées, « euh », « en fait » et « du coup » supprimés, répétitions et doublons retirés, idées remises dans l'ordre. Chaque récit est daté, titré, résumé et **classé par thème** (Sport, Alcool, Humeurs, Travail…). Au fil des jours, ça devient ton journal de bord.
 
@@ -52,6 +54,16 @@ La dictée utilise la reconnaissance vocale du navigateur, en français :
 - **Android** : Chrome. **iPhone / iPad** : Safari (Réglages › Général › Clavier › Dictée doit être activée). **Ordinateur** : Chrome, Edge ou Safari.
 - Firefox n'a pas de dictée : Do It propose alors d'écrire au clavier, avec le même traitement par l'IA.
 - Sur Chrome, la dictée passe par les serveurs de Google et demande une connexion.
+
+## Mettre en ligne sur GitHub Pages
+
+Les deux applis sont publiées dans le dossier `do-it/` de la branche `gh-pages` (le reste de cette branche appartient aux autres applis du site et n'est pas modifié) :
+
+```sh
+apps/do-it/scripts/publish-gh-pages.sh
+```
+
+GitHub Pages ne fait tourner aucune fonction : la réécriture par l'IA reste assurée par la fonction Netlify (`https://do-it-journal.netlify.app/api/ecrire`), qui accepte les appels venant de `https://pierrernrd04-ai.github.io` (autres origines : variable `DOIT_ALLOWED_ORIGINS`). Tant que cette version de la fonction n'est pas déployée sur Netlify, Do It fonctionne en mode local sur GitHub Pages, puis fait réécrire les récits en attente dès que l'IA répond.
 
 ## Mettre en ligne sur Netlify
 

@@ -180,7 +180,10 @@ async function processEntry(entry, { foreground = false, silent = false, isNew =
       if (state.revealId === entry.id) state.revealId = null;
     }, 2500);
   }
-  if (res.source === 'local' && !silent) toast(REASONS[res.reason] || REASONS.upstream, 'warn');
+  if (res.source === 'local' && !silent) {
+    const shown = res.reason === 'network' && navigator.onLine !== false && !state.ai ? 'ai_unavailable' : res.reason;
+    toast(REASONS[shown] || REASONS.upstream, 'warn');
+  }
   if (res.reason === 'code') refreshAiStatus();
   if (foreground && isNew) celebrate();
   return res;
@@ -1228,7 +1231,7 @@ async function init() {
   refreshAiStatus().then(retryPending);
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }
 

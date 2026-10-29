@@ -22,8 +22,21 @@ import {
 type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 const EFFORTS: Effort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
 
-const json = (body: unknown, status = 200) =>
-  Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
+// Do It et Encré publiés sur GitHub Pages appellent cette fonction depuis une autre origine.
+const ALLOWED_ORIGINS = ['https://pierrernrd04-ai.github.io'];
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin');
+  const extra = (Netlify.env.get('DOIT_ALLOWED_ORIGINS') || '').split(',').map((o) => o.trim()).filter(Boolean);
+  if (!origin || ![...ALLOWED_ORIGINS, ...extra].includes(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'content-type, x-doit-code',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  };
+}
 
 function aiConfigured(): boolean {
   return Boolean(Netlify.env.get('ANTHROPIC_API_KEY') || Netlify.env.get('ANTHROPIC_AUTH_TOKEN'));
@@ -35,6 +48,12 @@ function authorized(req: Request): boolean {
 }
 
 export default async (req: Request, _context: Context) => {
+  const cors = corsHeaders(req);
+  const json = (body: unknown, status = 200) =>
+    Response.json(body, { status, headers: { 'Cache-Control': 'no-store', ...cors } });
+
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+
   if (req.method === 'GET') {
     return json({
       ai: aiConfigured(),
@@ -120,6 +139,6 @@ export default async (req: Request, _context: Context) => {
 
 export const config: Config = {
   path: '/api/ecrire',
-  method: ['GET', 'POST'],
+  method: ['GET', 'POST', 'OPTIONS'],
   rateLimit: { windowLimit: 30, windowSize: 60, aggregateBy: ['ip', 'domain'] },
 };

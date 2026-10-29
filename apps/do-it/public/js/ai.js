@@ -2,7 +2,9 @@
 import { localWrite } from './local-ai.js';
 import { getTheme } from './themes.js';
 
-const ENDPOINT = '/api/ecrire';
+// Sur Netlify, la fonction est sur le même site. Ailleurs (GitHub Pages), on appelle celle de Netlify.
+const NETLIFY_API = 'https://do-it-journal.netlify.app/api/ecrire';
+const ENDPOINT = location.hostname.endsWith('github.io') ? NETLIFY_API : '/api/ecrire';
 
 /** État de l’IA côté serveur : { ai, needsCode, authorized } ou null si injoignable. */
 export async function aiStatus(accessCode) {

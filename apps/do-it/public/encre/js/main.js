@@ -223,10 +223,10 @@ function renderChrome() {
       }).join('')}<button class="tab-new" type="button" data-action="new-page" aria-label="Nouvelle page">${I.plus}</button></div>
       <button class="icon-btn" data-action="page-menu" data-id="${id}" aria-label="Options de la page">${I.more}</button>`;
   } else if (name === 'note') {
-    top = `<button class="icon-btn" data-action="back" aria-label="Retour">${I.back}</button><p class="top-title">Note vocale</p><a class="icon-btn" href="/#journal" aria-label="Ouvrir Do It">${I.ext}</a>`;
+    top = `<button class="icon-btn" data-action="back" aria-label="Retour">${I.back}</button><p class="top-title">Note vocale</p><a class="icon-btn" href="../#journal" aria-label="Ouvrir Do It">${I.ext}</a>`;
   } else {
     top = `<a class="brand" href="#/" data-go><span class="brand-mark">${MARK}</span><span class="brand-name">Encré<b>.</b></span></a>
-      <a class="doit-link" href="/#parler">${I.mic}<span>Do It</span></a>`;
+      <a class="doit-link" href="../#parler">${I.mic}<span>Do It</span></a>`;
   }
   $('#topbar').innerHTML = top;
   $('#topbar .tab.is-active')?.scrollIntoView({ inline: 'center', block: 'nearest' });
@@ -240,7 +240,7 @@ function renderChrome() {
     <button class="btn btn-neon side-new" type="button" data-action="new-page">${I.plus}Nouvelle page</button>
     <p class="side-label">Dossiers <button class="mini" type="button" data-action="new-folder" aria-label="Nouveau dossier">${I.plus}</button></p>
     <div class="side-tree">${treeHTML()}</div>
-    <a class="side-doit" href="/#parler">${I.mic}<span>Dicter dans Do It</span>${I.ext}</a>`;
+    <a class="side-doit" href="../#parler">${I.mic}<span>Dicter dans Do It</span>${I.ext}</a>`;
 }
 
 const MARK = `<svg viewBox="0 0 32 32" aria-hidden="true"><path class="mark-drop" d="M16 3c4.5 6 9 10.6 9 16a9 9 0 0 1-18 0c0-5.4 4.5-10 9-16z"/><path class="mark-wave" d="M11.5 19v2M14 16.5v7M16.5 18v4M19 17v6M21.5 19.5v1.5"/></svg>`;
@@ -361,7 +361,7 @@ function renderHome() {
     </section>
 
     <section class="sec"><h2 class="sec-title">Notes vocales <a class="sec-link" href="#/notes" data-go>Tout voir ${I.chevron}</a></h2>
-      ${state.notes.length ? `<div class="list">${state.notes.slice(0, 4).map((n, i) => noteRow(n, i)).join('')}</div>` : `<a class="empty empty-btn" href="/#parler">Aucune note pour l’instant. Raconte quelque chose dans <b>Do It</b> : elle apparaîtra ici.</a>`}
+      ${state.notes.length ? `<div class="list">${state.notes.slice(0, 4).map((n, i) => noteRow(n, i)).join('')}</div>` : `<a class="empty empty-btn" href="../#parler">Aucune note pour l’instant. Raconte quelque chose dans <b>Do It</b> : elle apparaîtra ici.</a>`}
     </section>
 
     <footer class="foot"><button class="link" type="button" data-action="export-all">${I.download}Sauvegarder tout</button><button class="link" type="button" data-action="import">${I.upload}Importer</button><input id="import-file" type="file" accept="application/json,.json" hidden></footer>`}
@@ -417,7 +417,7 @@ function noteCards(list) {
       </a>`;
     }).join('') : state.notes.length
       ? '<div class="empty"><p class="empty-title">Aucune note ne correspond</p><p>Essaie un autre mot ou un autre thème.</p></div>'
-      : '<a class="empty empty-btn" href="/#parler"><span class="empty-title">Pas encore de note vocale</span>Ouvre <b>Do It</b>, appuie sur la bulle et raconte : ta note arrive ici, déjà réécrite.</a>';
+      : '<a class="empty empty-btn" href="../#parler"><span class="empty-title">Pas encore de note vocale</span>Ouvre <b>Do It</b>, appuie sur la bulle et raconte : ta note arrive ici, déjà réécrite.</a>';
 }
 
 let noteTimer = 0;
@@ -444,7 +444,7 @@ function renderNote(id) {
       ${n.highlights?.length ? `<div class="keypoints"><p class="eyebrow">Points clés</p><ul>${n.highlights.map((h) => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
       <div class="note-actions">
         <button class="btn btn-neon" type="button" data-action="note-to-page" data-id="${n.id}">${linked ? `${I.page}Ouvrir la page` : `${I.spark}Transformer en page`}</button>
-        <a class="btn" href="/#journal">${I.ext}Voir dans Do It</a>
+        <a class="btn" href="../#journal">${I.ext}Voir dans Do It</a>
       </div>
       ${n.segments?.length ? `<details class="raw"><summary>Ce que tu as dit <small>${plural(n.segments.length, 'prise')}</small></summary>${n.segments.map((s) => `<div class="raw-seg">${s.question ? `<p class="raw-q">« ${esc(s.question)} »</p>` : ''}<p>${esc(s.text)}</p></div>`).join('')}</details>` : ''}
     </div>
@@ -1450,7 +1450,7 @@ async function init() {
   document.body.classList.add('is-ready');
   render(true);
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('../sw.js').catch(() => {});
   }
 }
 
