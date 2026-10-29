@@ -534,7 +534,7 @@ function renderHome() {
           ${particles()}
           <p class="hc-label">${isToday ? 'Objectif du jour' : 'Ce jour-là'} · ${plural(state.goal, 'mot')}</p>
           <div class="hc-top">
-            <p class="hc-big"><span class="hc-num${st.words >= 1000 ? ' is-long' : ''}" data-count="${st.words}">${st.words.toLocaleString('fr-FR')}</span><span class="hc-side">${st.words > 1 ? 'mots' : 'mot'}<br>encrés</span></p>
+            <p class="hc-big"><span class="hc-num${st.words >= 1000 ? ' is-long' : ''}" data-count="${st.words}">${st.words.toLocaleString('fr-FR')}</span><span class="hc-side">${st.words > 1 ? 'mots<br>encrés' : 'mot<br>encré'}</span></p>
             ${ring(pct, 'de l’objectif')}
           </div>
           <p class="hc-next">${pct >= 100 ? '<b>Objectif atteint.</b> Tout ce que tu ajoutes est du bonus.' : isToday ? `Encore <b>${plural(left, 'mot')}</b> pour boucler ta journée.` : `Il manquait <b>${plural(left, 'mot')}</b> ce jour-là.`}</p>
@@ -628,7 +628,7 @@ function renderNotes() {
       ${particles(6)}
       <p class="hc-label">Ta voix, mise au propre</p>
       <div class="hc-top">
-        <p class="hc-big"><span class="hc-num" data-count="${state.notes.length}">${state.notes.length}</span><span class="hc-side">${state.notes.length > 1 ? 'notes' : 'note'}<br>encrées</span></p>
+        <p class="hc-big"><span class="hc-num" data-count="${state.notes.length}">${state.notes.length}</span><span class="hc-side">${state.notes.length > 1 ? 'notes<br>encrées' : 'note<br>encrée'}</span></p>
         <button class="sq neon lg hc-act" type="button" data-action="capture" aria-label="Parler">${I.bolt}</button>
       </div>
       <div class="hc-stats">
@@ -999,7 +999,7 @@ function renderPages() {
       ${particles(6)}
       <p class="hc-label">Ta bibliothèque</p>
       <div class="hc-top">
-        <p class="hc-big"><span class="hc-num${words >= 1000 ? ' is-long' : ''}" data-count="${words}">${words.toLocaleString('fr-FR')}</span><span class="hc-side">${words > 1 ? 'mots' : 'mot'}<br>écrits</span></p>
+        <p class="hc-big"><span class="hc-num${words >= 1000 ? ' is-long' : ''}" data-count="${words}">${words.toLocaleString('fr-FR')}</span><span class="hc-side">${words > 1 ? 'mots<br>écrits' : 'mot<br>écrit'}</span></p>
         <button class="sq neon lg hc-act" type="button" data-action="dictate-page" aria-label="Dicter une page">${I.mic}</button>
       </div>
       <div class="hc-stats">
