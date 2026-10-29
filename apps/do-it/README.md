@@ -2,6 +2,8 @@
 
 > Les paroles s'envolent. **Les tiennes restent.**
 
+**Ouvrir l'appli : https://do-it-journal.netlify.app** (sur téléphone : « Ajouter à l'écran d'accueil »)
+
 Tu appuies sur l'orbe et tu racontes ta journée, ton sport, tes soirées, ton moral, en vrac et comme ça vient. Do It retranscrit ce que tu dis, puis l'IA (Claude) le réécrit en un texte net : grammaire et syntaxe corrigées, « euh », « en fait » et « du coup » supprimés, répétitions et doublons retirés, idées remises dans l'ordre. Chaque récit est daté, titré, résumé et **classé par thème** (Sport, Alcool, Humeurs, Travail…). Au fil des jours, ça devient ton journal de bord.
 
 | Parler | Écoute | Récit écrit | Journal |
