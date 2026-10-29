@@ -17,6 +17,10 @@ using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -296,7 +300,7 @@ namespace IPhoneBureau
 
         static RectangleF Inset(RectangleF r, float d) { return new RectangleF(r.X + d, r.Y + d, r.Width - 2 * d, r.Height - 2 * d); }
 
-        public static Bitmap Draw(Layout L, Scheme s, ScreenState state, List<HotSpot> spots, DateTime now, bool hasMirrorTo)
+        public static Bitmap Draw(Layout L, Scheme s, ScreenState state, List<HotSpot> spots, DateTime now, string[] steps, string status)
         {
             Bitmap bmp = new Bitmap(L.Size.Width, L.Size.Height, PixelFormat.Format32bppArgb);
             using (Graphics g = Graphics.FromImage(bmp))
@@ -305,7 +309,7 @@ namespace IPhoneBureau
                 g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 DrawBody(g, L, s, state == ScreenState.Mirror);
-                if (state != ScreenState.Mirror) DrawScreen(g, L, state, spots, now, hasMirrorTo);
+                if (state != ScreenState.Mirror) DrawScreen(g, L, state, spots, now, steps, status);
                 DrawNotch(g, L);
             }
             return bmp;
@@ -411,7 +415,7 @@ namespace IPhoneBureau
         static Font FSemi(float px) { return new Font("Segoe UI Semibold", Math.Max(6f, px), FontStyle.Regular, GraphicsUnit.Pixel); }
 
         // Écran affiché quand aucune recopie n'est branchée (ou quand elle est en veille).
-        static void DrawScreen(Graphics g, Layout L, ScreenState state, List<HotSpot> spots, DateTime now, bool hasMirrorTo)
+        static void DrawScreen(Graphics g, Layout L, ScreenState state, List<HotSpot> spots, DateTime now, string[] steps, string status)
         {
             RectangleF S = L.Screen;
             float W = S.Width, H = S.Height;
@@ -477,7 +481,7 @@ namespace IPhoneBureau
                 }
                 else
                 {
-                    RectangleF card = new RectangleF(S.X + W * 0.06f, S.Y + H * 0.36f, W * 0.88f, H * 0.535f);
+                    RectangleF card = new RectangleF(S.X + W * 0.06f, S.Y + H * 0.3f, W * 0.88f, H * 0.6f);
                     Card(g, card, W);
                     float pad = W * 0.06f, y = card.Y + pad * 0.8f, cw = card.Width - 2 * pad;
                     using (Font f = FSemi(W * 0.058f))
@@ -485,12 +489,6 @@ namespace IPhoneBureau
                         g.DrawString("Connecter l'iPhone", f, Brushes.White, new RectangleF(card.X + pad, y, cw, W * 0.09f));
                         y += W * 0.1f;
                     }
-                    string[] steps = new string[]
-                    {
-                        "1. Touchez « Recopie Google Meet » : Meet s'ouvre ici.",
-                        "2. Nouvelle réunion → réunion instantanée, micro et caméra coupés.",
-                        "3. iPhone, appli Meet : rejoignez avec le code, puis Partager l'écran.",
-                    };
                     using (Font f = F(W * 0.04f, FontStyle.Regular))
                     using (SolidBrush b = new SolidBrush(Color.FromArgb(230, 255, 255, 255)))
                     {
@@ -501,11 +499,19 @@ namespace IPhoneBureau
                             y += sz.Height + W * 0.018f;
                         }
                     }
+                    if (!string.IsNullOrEmpty(status))
+                        using (Font f = FSemi(W * 0.04f))
+                        using (SolidBrush b = new SolidBrush(Color.FromArgb(255, 255, 214, 120)))
+                        {
+                            SizeF sz = g.MeasureString(status, f, (int)cw);
+                            g.DrawString(status, f, b, new RectangleF(card.X + pad, y, cw, sz.Height + 2));
+                            y += sz.Height + W * 0.018f;
+                        }
                     y += W * 0.02f;
                     string[][] buttons = new string[][]
                     {
+                        new string[] { "Récepteur iPhone", "recepteur" },
                         new string[] { "Recopie Google Meet", "meet" },
-                        new string[] { "Choisir la fenêtre…", "choisir" },
                         new string[] { "Messages (Lien mobile)", "liens" },
                     };
                     float bh = W * 0.105f, gap = W * 0.03f;
@@ -843,6 +849,118 @@ namespace IPhoneBureau
         }
     }
 
+    // ------------------------------------------------------- Récepteur iPhone
+    // L'appli gratuite PRISM diffuse l'écran de l'iPhone en RTMP. Le PC, relié au partage
+    // de connexion de l'iPhone, reçoit ce flux avec ffplay (FFmpeg, open source, récupéré
+    // sur GitHub) dans une fenêtre sans bord que le widget range dans le téléphone.
+    // L'image reste sur le lien local iPhone-PC : elle ne consomme pas le forfait.
+    static class Receiver
+    {
+        public const string Title = "iPhone Recopie";
+        const string ZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
+        public static volatile string Status = "";
+        static Process proc;
+        static Thread worker;
+
+        public static string Folder { get { return Path.Combine(Config.Folder, "recepteur"); } }
+        public static string Ffplay { get { return Path.Combine(Folder, "ffplay.exe"); } }
+        public static bool Installed { get { return File.Exists(Ffplay); } }
+
+        public static bool Running()
+        {
+            try { return proc != null && !proc.HasExited; } catch { return false; }
+        }
+
+        public static void Launch()
+        {
+            if (!Installed || Running()) return;
+            try
+            {
+                // -listen 1 : ffplay attend la diffusion de l'iPhone sur le port 1935.
+                ProcessStartInfo psi = new ProcessStartInfo(Ffplay,
+                    "-hide_banner -loglevel error -an -fflags nobuffer -flags low_delay -framedrop -autoexit -noborder " +
+                    "-window_title \"" + Title + "\" -listen 1 -i rtmp://0.0.0.0:1935/live/iphone");
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                psi.WorkingDirectory = Folder;
+                proc = Process.Start(psi);
+            }
+            catch (Exception ex) { Status = "Le récepteur n'a pas démarré : " + ex.Message; }
+        }
+
+        public static void Stop()
+        {
+            try { if (Running()) proc.Kill(); } catch { }
+            proc = null;
+        }
+
+        // Téléchargement unique (environ 150 Mo) : seul ffplay.exe est gardé.
+        public static void Install(MethodInvoker done)
+        {
+            if (worker != null && worker.IsAlive) return;
+            worker = new Thread(delegate()
+            {
+                string zip = Path.Combine(Folder, "ffmpeg.zip");
+                try
+                {
+                    Directory.CreateDirectory(Folder);
+                    ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+                    Status = "Téléchargement du récepteur…";
+                    HttpWebRequest req = (HttpWebRequest)WebRequest.Create(ZipUrl);
+                    req.UserAgent = "iPhoneBureau";
+                    using (WebResponse resp = req.GetResponse())
+                    using (Stream input = resp.GetResponseStream())
+                    using (FileStream output = File.Create(zip))
+                    {
+                        long total = resp.ContentLength, got = 0;
+                        byte[] buf = new byte[1 << 16];
+                        int n, last = -1;
+                        while ((n = input.Read(buf, 0, buf.Length)) > 0)
+                        {
+                            output.Write(buf, 0, n);
+                            got += n;
+                            int pct = total > 0 ? (int)(got * 100 / total) : -1;
+                            if (pct != last && pct >= 0) { last = pct; Status = "Téléchargement du récepteur… " + pct + " %"; }
+                        }
+                    }
+                    Status = "Installation du récepteur…";
+                    using (ZipArchive za = ZipFile.OpenRead(zip))
+                        foreach (ZipArchiveEntry e in za.Entries)
+                            if (e.Name.Equals("ffplay.exe", StringComparison.OrdinalIgnoreCase))
+                                e.ExtractToFile(Ffplay, true);
+                    Status = Installed ? "" : "ffplay introuvable dans le téléchargement.";
+                }
+                catch (Exception ex) { Status = "Échec du téléchargement : " + ex.Message; }
+                finally { try { File.Delete(zip); } catch { } }
+                done();
+            });
+            worker.IsBackground = true;
+            worker.Start();
+        }
+
+        // Adresse du PC à taper dans PRISM, en priorité celle du partage de connexion (172.20.10.x).
+        public static string LocalIp()
+        {
+            string fallback = null;
+            try
+            {
+                foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (ni.OperationalStatus != OperationalStatus.Up || ni.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
+                    foreach (UnicastIPAddressInformation a in ni.GetIPProperties().UnicastAddresses)
+                    {
+                        if (a.Address.AddressFamily != AddressFamily.InterNetwork) continue;
+                        string ip = a.Address.ToString();
+                        if (ip.StartsWith("172.20.10.")) return ip;
+                        if (fallback == null && !ip.StartsWith("169.254.")) fallback = ip;
+                    }
+                }
+            }
+            catch { }
+            return fallback;
+        }
+    }
+
     // ---------------------------------------------- Fenêtre de recopie pilotée
     class Mirror
     {
@@ -1059,6 +1177,7 @@ namespace IPhoneBureau
             Search(true);
             WebSource web = WebSource.Find(cfg.SourceTitle);
             if (!mirror.Attached && web != null) web.Launch();
+            else if (ReceiverMode && Receiver.Installed) Receiver.Launch();
             else if (!mirror.Attached && cfg.AutoMirrorTo && !MirrorTo.Running()) MirrorTo.Launch();
             if (!cfg.Welcomed)
             {
@@ -1122,17 +1241,51 @@ namespace IPhoneBureau
             return mirror.Iconic ? ScreenState.Asleep : ScreenState.Mirror;
         }
 
+        bool ReceiverMode { get { return cfg.SourceTitle == Receiver.Title; } }
+
+        string[] Steps()
+        {
+            if (ReceiverMode)
+            {
+                string ip = Receiver.LocalIp() ?? "IP-du-PC";
+                return new string[]
+                {
+                    "1. iPhone : Partage de connexion activé, PC connecté dessus.",
+                    "2. PRISM → RTMP personnalisé : rtmp://" + ip + ":1935/live  clé : iphone",
+                    "3. PRISM → Diffusion de l'écran. L'image arrive ici.",
+                };
+            }
+            return new string[]
+            {
+                "Récepteur iPhone : sans Wi-Fi, par le partage de connexion et l'appli PRISM.",
+                "Google Meet : par Internet, avec l'appli Meet.",
+            };
+        }
+
+        string Status()
+        {
+            if (!ReceiverMode) return "";
+            if (Receiver.Status.Length > 0) return Receiver.Status;
+            return Receiver.Installed ? "Récepteur prêt, en attente de l'iPhone…" : "";
+        }
+
         void Render()
         {
             ScreenState st = WantedState();
             DateTime now = DateTime.Now;
-            if (st == shown && (st == ScreenState.Mirror || now.Minute == shownMinute)) return;
+            string[] steps = Steps();
+            string status = Status();
+            string key = string.Join("|", steps) + status;
+            if (st == shown && (st == ScreenState.Mirror || (now.Minute == shownMinute && key == shownKey))) return;
             spots.Clear();
-            using (Bitmap bmp = Renderer.Draw(L, Scheme.Find(cfg.Color), st, spots, now, MirrorTo.FindExe() != null))
+            using (Bitmap bmp = Renderer.Draw(L, Scheme.Find(cfg.Color), st, spots, now, steps, status))
                 SetBitmap(bmp);
             shown = st;
             shownMinute = now.Minute;
+            shownKey = key;
         }
+
+        string shownKey = "";
 
         void SetBitmap(Bitmap bmp)
         {
@@ -1224,8 +1377,31 @@ namespace IPhoneBureau
 
         void Tick()
         {
+            // Le récepteur se relance tout seul après chaque diffusion.
+            if (ReceiverMode && Receiver.Installed && !mirror.Attached && !Receiver.Running()) Receiver.Launch();
             Search(false);
             Sync();
+        }
+
+        void UseReceiver()
+        {
+            mirror.Detach(); UnhookSource();
+            cfg.SourceProcess = "ffplay"; cfg.SourceTitle = Receiver.Title;
+            cfg.CropTop = cfg.CropBottom = cfg.CropLeft = cfg.CropRight = 0;
+            cfg.AutoMirrorTo = false;
+            cfg.Save();
+            if (Receiver.Installed) Receiver.Launch();
+            else
+                Receiver.Install(delegate
+                {
+                    if (IsHandleCreated) BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (Receiver.Installed) Receiver.Launch();
+                        Render();
+                    });
+                });
+            lastSearch = DateTime.MinValue;
+            Render();
         }
 
         // ---- Souris, raccourci, menu
@@ -1272,6 +1448,7 @@ namespace IPhoneBureau
                     break;
                 case "choisir": ChooseWindow(); break;
                 case "liens": OpenPhoneLink(); break;
+                case "recepteur": UseReceiver(); break;
                 case "meet": UseWeb(WebSource.Meet); break;
                 case "webcast": UseWeb(WebSource.AirDroid); break;
                 case "mirrorto":
@@ -1291,6 +1468,7 @@ namespace IPhoneBureau
 
         void UseWeb(WebSource web)
         {
+            Receiver.Stop();
             mirror.Detach(); UnhookSource();
             cfg.SourceProcess = "msedge"; cfg.SourceTitle = web.Title;
             cfg.CropTop = cfg.CropBottom = cfg.CropLeft = cfg.CropRight = 0;
@@ -1391,6 +1569,7 @@ namespace IPhoneBureau
             }
             menu.Items.Add(itemColor);
             menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Récepteur iPhone (partage de connexion)", null, delegate { Do("recepteur"); });
             menu.Items.Add("Recopie par Google Meet (gratuite)", null, delegate { Do("meet"); });
             menu.Items.Add("Recopie par AirDroid Cast Web", null, delegate { Do("webcast"); });
             menu.Items.Add("Ouvrir MirrorTo", null, delegate { Do("mirrorto"); });
@@ -1621,6 +1800,7 @@ namespace IPhoneBureau
             hooks.Clear();
             N.UnregisterHotKey(Handle, HOTKEY_ID);
             mirror.Detach();
+            Receiver.Stop();
             cfg.PosX = Left; cfg.PosY = Top;
             cfg.Save();
             tray.Visible = false;

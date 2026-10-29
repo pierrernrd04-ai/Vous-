@@ -71,6 +71,8 @@ function Build-Widget($code, $out, $icon) {
     [void]$params.ReferencedAssemblies.Add('System.dll')
     [void]$params.ReferencedAssemblies.Add('System.Drawing.dll')
     [void]$params.ReferencedAssemblies.Add('System.Windows.Forms.dll')
+    [void]$params.ReferencedAssemblies.Add('System.IO.Compression.dll')
+    [void]$params.ReferencedAssemblies.Add('System.IO.Compression.FileSystem.dll')
     if (Test-Path $out) { Remove-Item $out -Force }
     $result = $provider.CompileAssemblyFromSource($params, $code)
     $errors = @($result.Errors | Where-Object { -not $_.IsWarning })
