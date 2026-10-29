@@ -15,8 +15,25 @@ $Host.UI.RawUI.WindowTitle = 'iPhone Bureau - réparation Wi-Fi'
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).
     IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Start-Process powershell.exe -Verb RunAs -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
-    exit
+    try {
+        Start-Process powershell.exe -Verb RunAs -ErrorAction Stop `
+            -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+        exit
+    } catch {
+        # Windows ou l'antivirus refuse la relance en administrateur : on explique l'autre chemin.
+        Write-Host ''
+        Write-Host '  Windows a refusé de relancer la réparation en administrateur.' -ForegroundColor Yellow
+        Write-Host ''
+        Write-Host '  Faites plutôt ceci :' -ForegroundColor Cyan
+        Write-Host '   1. Windows + R'
+        Write-Host '   2. Ctrl + V pour recoller la commande'
+        Write-Host '   3. Ctrl + Maj + Entrée (au lieu d''Entrée seule), puis Oui'
+        Write-Host ''
+        Write-Host '  Toujours refusé ? Suivez « Réparer à la main » dans le guide.' -ForegroundColor DarkYellow
+        Write-Host ''
+        Read-Host '  Appuyez sur Entrée pour fermer'
+        exit
+    }
 }
 
 function Say($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color }
