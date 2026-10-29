@@ -251,6 +251,22 @@ main { max-width: 640px; margin: 0 auto; padding: 0 20px; }
   animation: flow 4s ease-in-out infinite alternate;
 }
 .view-head p { color: var(--muted); margin-top: 10px; }
+.encre-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #050505;
+  color: #f7f7f2;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgb(57 255 127 / .5), 0 10px 24px -12px rgb(57 255 127 / .8);
+  transition: transform .25s var(--spring);
+}
+.encre-link b { color: #39ff7f; font-weight: 600; }
+.encre-link:hover { transform: translateY(-2px); }
 
 @keyframes flow { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
 

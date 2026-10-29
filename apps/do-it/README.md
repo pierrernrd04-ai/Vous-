@@ -28,6 +28,23 @@ Tu appuies sur l'orbe et tu racontes ta journée, ton sport, tes soirées, ton m
 - **Ton journal reste sur ton téléphone** (IndexedDB). Seul le texte dicté part à l'IA, le temps d'être réécrit. Export Markdown, sauvegarde et import JSON dans Bilan › Réglages.
 - **Appli installable** (PWA) : « Ajouter à l'écran d'accueil » sur Android et iPhone, sombre ou clair.
 
+## Encré, l'atelier d'écriture
+
+> Ce qui est **encré** reste **ancré**.
+
+Encré (`/encre/`, même site que Do It) reprend toutes tes notes vocales pour que tu les travailles comme dans Notion : pages riches, dossiers, onglets, et une mémoire pour retenir l'essentiel. Fond noir, vert fluo et blanc.
+
+| Accueil | Page | Menu « / » | Dossiers | Révision |
+| --- | --- | --- | --- | --- |
+| ![Accueil](docs/screenshots-encre/02-accueil.jpg) | ![Page](docs/screenshots-encre/08-page-edition.jpg) | ![Menu](docs/screenshots-encre/07-menu-slash.jpg) | ![Dossiers](docs/screenshots-encre/11-dossiers.jpg) | ![Révision](docs/screenshots-encre/13-revision.jpg) |
+
+- **Notes vocales** : tout ce que tu racontes dans Do It arrive ici, avec recherche et filtre par thème. Une note se modifie sur place (le journal Do It suit) ou devient une page en un geste, rangée dans le dossier « Notes vocales ».
+- **Pages façon Notion** : titres, listes, cases à cocher, citations, encadrés, séparateurs. Tape `/` pour choisir un bloc, ou les raccourcis `#`, `##`, `###`, `-`, `1.`, `[]`, `>`, `!`, `---`. Gras, italique, souligné, barré, surligneur. Insertion d'une note vocale, de la date, et **dictée directement dans la page**. Sept couvertures animées, une icône par page, export Markdown.
+- **Dossiers et onglets** : dossiers et sous-dossiers, glisser-déposer à la souris ou « Déplacer vers… » au doigt, pages épinglées. Les pages ouvertes restent en onglets en haut de l'écran.
+- **Mémoire** : sélectionne un passage et touche **✦ Retenir**. Encré te le repropose au bon moment (demain, 3 jours, 7, 16, 35, 90) sous forme de carte à trous qui se retourne.
+- **Sur ordinateur**, une barre latérale avec l'arborescence des dossiers, comme dans Notion.
+- Tout reste sur l'appareil (IndexedDB), sauvegarde et import JSON en bas de l'accueil. Les deux applis partagent le site, donc les mêmes données sur un même téléphone.
+
 ## Navigateurs
 
 La dictée utilise la reconnaissance vocale du navigateur, en français :
@@ -65,6 +82,8 @@ npm test             # tests unitaires (nettoyage local, dictée, thèmes, valid
 npm run typecheck    # fonction Netlify
 npm run smoke        # parcours complet dans Chromium avec dictée et IA simulées
 npm run smoke -- --shots   # idem + met à jour docs/screenshots/
+npm run smoke:encre  # parcours complet d'Encré (notes, éditeur, dossiers, mémoire, bureau)
+npm run smoke:encre -- --shots --video   # + docs/screenshots-encre/ et une vidéo docs/encre-demo.webm (non versionnée)
 ```
 
 Avec la CLI Netlify (`netlify dev`), le front et `/api/ecrire` tournent ensemble ; la passerelle IA n'est active qu'après un premier déploiement en production.
@@ -77,7 +96,9 @@ public/                     l'appli (HTML, CSS, JS sans dépendance ni compilati
   js/local-ai.js            nettoyage et classement hors-ligne
   js/themes.js              catalogue des thèmes (partagé avec la fonction)
   js/store.js               stockage IndexedDB
-  sw.js                     cache hors-ligne
+  sw.js                     cache hors-ligne (Do It et Encré)
+  encre/                    Encré : main.js (vues), editor.js (éditeur), tree.js (dossiers),
+                            memory.js (révision espacée), voice.js (notes Do It), db.js
 netlify/functions/ecrire.mts  POST : réécriture, thèmes, humeur, relance ; GET : état de l'IA
 netlify/lib/ecrire.mts      consigne, schéma de sortie, validation, normalisation
 tests/                      tests unitaires et parcours Playwright

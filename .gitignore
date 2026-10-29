@@ -12,3 +12,6 @@ coverage/
 *.log
 .DS_Store
 .netlify/
+
+# Vidéo de démo d’Encré (générée par npm run smoke:encre -- --video)
+apps/do-it/docs/encre-demo.webm

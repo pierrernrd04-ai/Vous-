@@ -1,5 +1,5 @@
-// Do It : fonctionne hors-ligne (coquille de l'appli en cache, l'API jamais).
-const VERSION = 'do-it-v2';
+// Do It et Encré : fonctionnent hors-ligne (coquilles en cache, l'API jamais).
+const VERSION = 'do-it-v3';
 const SHELL = [
   '/',
   '/index.html',
@@ -17,6 +17,18 @@ const SHELL = [
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/icon-192.png',
+  '/encre/',
+  '/encre/index.html',
+  '/encre/css/encre.css',
+  '/encre/js/main.js',
+  '/encre/js/db.js',
+  '/encre/js/editor.js',
+  '/encre/js/markdown.js',
+  '/encre/js/memory.js',
+  '/encre/js/tree.js',
+  '/encre/js/voice.js',
+  '/encre/manifest.webmanifest',
+  '/encre/icons/icon.svg',
 ];
 
 self.addEventListener('install', (event) => {

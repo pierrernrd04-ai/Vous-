@@ -1,0 +1,21 @@
+{
+  "name": "Encré · par Do It",
+  "short_name": "Encré",
+  "description": "Tes notes vocales deviennent des pages : à retravailler, ranger et retenir.",
+  "lang": "fr",
+  "dir": "ltr",
+  "id": "/encre/",
+  "start_url": "/encre/",
+  "scope": "/encre/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    { "src": "/encre/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/encre/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/encre/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/encre/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
