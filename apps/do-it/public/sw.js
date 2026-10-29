@@ -1,5 +1,5 @@
 // Do It et Encré : fonctionnent hors-ligne (coquilles en cache, l'API jamais).
-const VERSION = 'do-it-v4';
+const VERSION = 'do-it-v5';
 const SHELL = [
   './',
   './index.html',

@@ -159,16 +159,45 @@ if (SHOTS) {
   await page.screenshot({ path: join(shotsDir, '01-intro.jpg'), type: 'jpeg', quality: 82, scale: 'css' });
 }
 await page.waitForSelector('#splash', { state: 'detached', timeout: 5000 });
-await page.waitForSelector('.home .wordmark');
-await page.waitForTimeout(700);
-assert.match(await page.textContent('.resume-title'), /Bienvenue dans Encré/);
-assert.equal(await page.locator('.home .nrow').count(), 3);
+await page.waitForSelector('.home .hero-card');
+await page.waitForTimeout(1400);
+assert.match(await page.textContent('.feature .feat-title'), /Bienvenue dans Encré/);
+assert.ok(await page.locator('.home .nrow').count() >= 1);
+assert.equal(await page.locator('.home .bars7 .bar').count(), 7);
+assert.match(await page.textContent('.streak'), /Jour \d+/);
 await shot('02-accueil');
-await page.evaluate(() => window.scrollTo(0, 720));
-await pause(700);
+await page.evaluate(() => window.scrollTo(0, 760));
+await pause(900);
 await shot('03-accueil-suite');
 await page.evaluate(() => window.scrollTo(0, 0));
-step('intro, accueil avec page de bienvenue et notes vocales de Do It');
+step('intro, ma journée : objectif, série, notes vocales de Do It');
+
+// 1 bis. Graphique, navigation par jour, recherche, réglages
+await page.click('.chart-card [data-action="metric"][data-id="notes"]');
+await page.waitForSelector('.chart-card .seg-btn.is-on[data-id="notes"]');
+assert.match(await page.textContent('.chart-card .card-total'), /^3 notes$/);
+await page.click('.daynav [data-action="day"][data-id="-1"]');
+await page.waitForSelector('.day-badge.is-past');
+assert.equal((await page.textContent('.day-badge')).trim(), 'Hier');
+assert.equal(await page.locator('.hc-ask').count(), 0);
+await page.click('.daynav .day-pill');
+await page.waitForSelector('.day-badge:not(.is-past)');
+await page.click('[data-action="search"]');
+await page.fill('#search-input', 'recettes');
+await page.waitForSelector('#search-results .nrow >> text=carnet de recettes');
+await pause(500);
+await shot('18-recherche');
+await page.keyboard.press('Escape');
+await page.waitForFunction(() => !document.querySelector('#sheet').open);
+await page.click('[data-action="settings"]');
+await page.click('#sheet [data-goal="100"]');
+await page.waitForSelector('#sheet [data-goal="100"].is-on');
+await pause(500);
+await shot('19-reglages');
+await page.keyboard.press('Escape');
+await page.waitForFunction(() => document.querySelector('.hc-label')?.textContent.includes('100 mots'));
+assert.equal(await page.evaluate(async () => (await import('/encre/js/db.js')).getValue('goal')), 100);
+step('graphique 7 jours, jour précédent, recherche, objectif dans les réglages');
 
 // 2. Notes vocales : filtre par thème et ouverture
 await page.click('#dock a[href="#/notes"]');
@@ -287,7 +316,7 @@ step('onglets des pages ouvertes');
 await page.click('[data-action="back"]');
 await page.goto(`${base}/encre/#/dossiers`);
 await page.waitForSelector('.explorer');
-await page.click('.vactions [data-action="new-folder"]');
+await page.click('.folders .phead [data-action="new-folder"]');
 await page.fill('#sheet input[name="v"]', 'Projets');
 await page.keyboard.press('Enter');
 await page.waitForSelector('.explorer .is-folder >> text=Projets');
@@ -303,11 +332,24 @@ await pause(500);
 await shot('11-dossiers');
 step('dossiers : création et rangement d’une page');
 
+// 8 bis. Onglet Pages : toutes les pages, tri
+await page.click('#dock a[href="#/pages"]');
+await page.waitForSelector('.pages .pcard');
+assert.equal(await page.locator('.pages .pcard').count(), 3);
+await page.click('.pages [data-action="page-sort"][data-id="az"]');
+await page.waitForSelector('.pages .seg-btn.is-on[data-id="az"]');
+assert.match(await page.locator('.pages .pcard-title').first().textContent(), /Bienvenue dans Encré/);
+await pause(500);
+await page.waitForFunction(() => !document.querySelector('#toast.is-visible'), null, { timeout: 5000 });
+await shot('20-pages');
+step('onglet Pages : bibliothèque triée');
+
 // 9. Mémoire : révision du passage retenu
 await page.click('#dock a[href="#/memoire"]');
 await page.waitForSelector('.memory .mcard');
 assert.equal(await page.locator('.mcard').count(), 1);
 await pause(400);
+await page.waitForFunction(() => !document.querySelector('#toast.is-visible'), null, { timeout: 5000 });
 await shot('12-memoire');
 await page.click('[data-action="start-review"]');
 await page.waitForSelector('.flip .cloze');
@@ -345,11 +387,11 @@ await page.route('**/api/ecrire', async (route) => {
   }, model: 'test' } });
 });
 await page.evaluate(() => { location.hash = '#/notes'; });
-await page.waitForSelector('.notes .vactions [data-action="capture"]');
+await page.waitForSelector('.notes .phead [data-action="capture"]');
 await page.evaluate(() => {
   window.__phrases = ['euh alors en fait je voudrais lancer un podcast sur la course à pied', 'du coup un épisode par semaine avec des invités'];
 });
-await page.click('#dock .fab');
+await page.click('#fab');
 await page.waitForSelector('#capture[data-state="listening"]');
 await page.waitForFunction(() => document.querySelector('#cap-live')?.textContent.includes('invités'));
 await pause(400);
@@ -414,7 +456,7 @@ const video = page.video();
 const storage = await context.storageState({ indexedDB: true });
 await context.close();
 
-// 11. Bureau : barre latérale façon Notion
+// 11. Bureau : barre latérale avec l'arborescence
 const desk = await browser.newContext({ storageState: storage, viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1.5, locale: 'fr-FR', colorScheme: 'dark' });
 const dp = await desk.newPage();
 dp.on('pageerror', (err) => errors.push(err.message));

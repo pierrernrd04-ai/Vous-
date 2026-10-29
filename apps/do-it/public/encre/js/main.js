@@ -8,8 +8,10 @@ import { newCard, review, dueCards, mastery, dueLabel } from './memory.js';
 import { toMarkdown } from './markdown.js';
 import { Dictation, isSpeechSupported } from '../../js/speech.js';
 import { cleanTranscript } from '../../js/local-ai.js';
-import { esc, attr, typo, ago, longDate, timeLabel, todayLabel, uid, plural, clock } from '../../js/format.js';
-import { REASONS } from '../../js/ai.js';
+import { esc, attr, typo, ago, longDate, timeLabel, uid, plural, clock, dayKey, addDays, wordCount } from '../../js/format.js';
+import { REASONS, aiStatus } from '../../js/ai.js';
+import { QUOTES } from '../../js/quotes.js';
+import { getValue as getDoItValue } from '../../js/store.js';
 import { fold, slugify } from '../../js/themes.js';
 import { download } from '../../js/export.js';
 
@@ -47,6 +49,20 @@ const I = {
   ext: svg('<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>', 16),
   keyboard: svg('<path d="M6 9l6 6 6-6"/>', 18),
   folderPlus: svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v6M9 14h6"/>', 18),
+  pages: svg('<path d="M8 3h8l4 4v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M16 3v4h4"/><path d="M4 7v12a4 4 0 0 0 4 4"/>'),
+  grid: svg('<rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>'),
+  sliders: svg('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
+  searchLg: svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
+  drop: svg('<path d="M12 3c3.6 4.6 7 8.2 7 12a7 7 0 0 1-14 0c0-3.8 3.4-7.4 7-12z"/><path d="M9.5 15.5a2.6 2.6 0 0 0 2.5 2.5"/>', 16),
+  left: svg('<path d="M15 5l-7 7 7 7"/>', 20),
+  right: svg('<path d="M9 5l7 7-7 7"/>', 20),
+  quote: '<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><path fill="currentColor" d="M0 26V15.6C0 6.9 4.3 1.7 12.6 0l1.3 3.7C9.3 5.2 7.1 8 6.9 12H13v14H0zm19.5 0V15.6C19.5 6.9 23.8 1.7 32.1 0l1.3 3.7C28.8 5.2 26.6 8 26.4 12h6.1v14H19.5z"/></svg>',
+  shuffle: svg('<path d="M3 7h3.5c4.5 0 6.5 10 11 10H21M3 17h3.5c1.6 0 2.8-1.2 3.8-2.8M14 9.8C15 8.2 16.1 7 17.5 7H21"/><path d="M18 4l3 3-3 3M18 14l3 3-3 3"/>', 15),
+  bolt: svg('<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>'),
+  chart: svg('<path d="M5 20V12M10 20V7M15 20v-5M20 20V4"/>'),
+  pen: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/>'),
+  sparkLg: svg('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>'),
+  hand: svg('<path d="M3 17c3-1 4-6 6.5-6 1.6 0 1.4 2.4 0 4-1.2 1.4-.6 3 1 3 2.6 0 4.6-5.6 7-5.6 1.2 0 1 1.6.5 2.8"/><path d="M3 21h18"/>', 18),
 };
 
 const COVERS = [
@@ -79,6 +95,12 @@ const state = {
   lastHash: null,
   depth: 0, // pages empilées par la navigation interne (pour « Retour »)
   hand: true, // notes vocales affichées en écriture manuscrite
+  day: null, // jour affiché sur l'accueil (clé « 2026-10-29 »), null = aujourd'hui
+  metric: 'words', // courbe des 7 derniers jours : mots, notes ou pages
+  pageSort: 'recent',
+  goal: 250, // objectif de mots par jour
+  activity: {}, // { '2026-10-29': { words, pages: [ids] } } : ce qui a été écrit dans les pages
+  quote: 0,
 };
 
 const findPage = (id) => state.pages.find((p) => p.id === id);
@@ -89,10 +111,61 @@ const sortRecent = (list) => [...list].sort((a, b) => b.updatedAt.localeCompare(
 
 /* ───────────── Données ───────────── */
 
-async function savePage(page, patch = {}) {
+async function savePage(page, patch = {}, { count = true } = {}) {
+  const before = page.words || 0;
   Object.assign(page, patch, { updatedAt: new Date().toISOString() });
+  // Seule l'écriture compte dans l'activité du jour (pas un déplacement ni une couverture).
+  if ('html' in patch || 'title' in patch) track(page.id, count ? Math.max(0, (page.words || 0) - before) : 0);
   await db.put('pages', page);
 }
+
+/* ───────────── Activité : mots encrés par jour, série ───────────── */
+
+const todayKey = () => dayKey(new Date());
+let activityTimer = 0;
+
+/** Mots écrits dans une page aujourd'hui (les notes vocales sont comptées à part). */
+function track(pageId, words) {
+  const key = todayKey();
+  const day = (state.activity[key] ||= { words: 0, pages: [] });
+  day.words += words;
+  if (!day.pages.includes(pageId)) day.pages.push(pageId);
+  clearTimeout(activityTimer);
+  activityTimer = setTimeout(() => db.setValue('activity', state.activity), 400);
+}
+
+function notesOn(key) {
+  return state.notes.filter((n) => dayKey(n.createdAt) === key);
+}
+
+function dayStats(key) {
+  const notes = notesOn(key);
+  const act = state.activity[key] || { words: 0, pages: [] };
+  const noteWords = notes.reduce((s, n) => s + wordCount(n.text), 0);
+  return { words: noteWords + act.words, notes: notes.length, pages: act.pages.length, list: notes };
+}
+
+/** Jours d'écriture d'affilée, jusqu'à aujourd'hui (ou hier si rien n'est encore écrit aujourd'hui). */
+function streak() {
+  const active = (key) => {
+    const st = dayStats(key);
+    return st.words > 0 || st.notes > 0 || st.pages > 0;
+  };
+  let d = new Date();
+  if (!active(dayKey(d))) d = addDays(d, -1);
+  let n = 0;
+  while (active(dayKey(d)) && n < 3650) {
+    n += 1;
+    d = addDays(d, -1);
+  }
+  return n;
+}
+
+const selectedDay = () => state.day || todayKey();
+const dateFromKey = (key) => {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d, 12);
+};
 
 async function saveFolder(folder) {
   await db.put('folders', folder);
@@ -158,7 +231,7 @@ async function seed() {
 
 function parseRoute() {
   const [, name = '', id = null] = location.hash.replace(/^#/, '').split('/');
-  const known = { '': 'home', notes: 'notes', note: 'note', dossiers: 'folders', memoire: 'memory', page: 'page' };
+  const known = { '': 'home', notes: 'notes', note: 'note', pages: 'pages', dossiers: 'folders', memoire: 'memory', page: 'page' };
   return { name: known[name] || 'home', id: id && decodeURIComponent(id) };
 }
 
@@ -200,48 +273,82 @@ function render(force = false) {
   if (name === 'page') renderPage(id);
   else if (name === 'note') renderNote(id);
   else if (name === 'notes') renderNotes();
+  else if (name === 'pages') renderPages();
   else if (name === 'folders') renderFolders();
   else if (name === 'memory') renderMemory();
   else renderHome();
   void view.offsetWidth;
   view.classList.add('is-in');
+  countUp();
   window.scrollTo(0, 0);
 }
 
-/* ───────────── Habillage : barre du haut, dock, barre latérale ───────────── */
+/* ───────────── Habillage : barre d'app, onglets du bas, barre latérale ───────────── */
+
+const NAV = [
+  ['home', '#/', 'home', 'Accueil'],
+  ['notes', '#/notes', 'wave', 'Notes'],
+  ['pages', '#/pages', 'pages', 'Pages'],
+  ['folders', '#/dossiers', 'folder', 'Dossiers'],
+  ['memory', '#/memoire', 'brain', 'Mémoire'],
+];
+
+function navActive(key) {
+  const { name } = state.route;
+  return name === key || (key === 'notes' && name === 'note') || (key === 'pages' && name === 'page');
+}
+
+function dayNav() {
+  const key = selectedDay();
+  const date = dateFromKey(key);
+  const today = todayKey();
+  const yesterday = dayKey(addDays(new Date(), -1));
+  const badge = key === today ? 'Aujourd’hui' : key === yesterday ? 'Hier' : new Intl.DateTimeFormat('fr-FR', { weekday: 'long' }).format(date);
+  const label = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(date);
+  return `<div class="daynav">
+    <button class="sq soft" type="button" data-action="day" data-id="-1" aria-label="Jour précédent">${I.left}</button>
+    <button class="day-pill" type="button" data-action="day" data-id="0" aria-label="Revenir à aujourd’hui"><span class="day-badge${key === today ? '' : ' is-past'}">${esc(badge)}</span><b>${esc(label)}</b></button>
+    <button class="sq soft" type="button" data-action="day" data-id="1" aria-label="Jour suivant"${key >= today ? ' disabled' : ''}>${I.right}</button>
+  </div>`;
+}
 
 function renderChrome() {
   const { name, id } = state.route;
   const due = dueCards(state.cards).length;
+  const days = streak();
 
   let top;
   if (name === 'page') {
-    top = `<button class="icon-btn" data-action="back" aria-label="Retour">${I.back}</button>
+    top = `<div class="bar-row"><button class="sq" data-action="back" aria-label="Retour">${I.back}</button>
       <div class="tabs" role="tablist" aria-label="Pages ouvertes">${state.tabs.map((tid) => {
         const p = findPage(tid);
         if (!p) return '';
         const active = tid === id;
         return `<a class="tab${active ? ' is-active' : ''}" href="#/page/${tid}" data-go role="tab" aria-selected="${active}"><span class="tab-ico">${esc(p.icon)}</span><span class="tab-title">${esc(p.title || 'Sans titre')}</span><button class="tab-x" type="button" data-action="close-tab" data-id="${tid}" aria-label="Fermer l’onglet">${I.close}</button></a>`;
       }).join('')}<button class="tab-new" type="button" data-action="new-page" aria-label="Nouvelle page">${I.plus}</button></div>
-      <button class="icon-btn" data-action="page-menu" data-id="${id}" aria-label="Options de la page">${I.more}</button>`;
+      <button class="sq" data-action="page-menu" data-id="${id}" aria-label="Options de la page">${I.more}</button></div>`;
   } else if (name === 'note') {
-    top = `<button class="icon-btn" data-action="back" aria-label="Retour">${I.back}</button><p class="top-title">Note vocale</p><a class="icon-btn" href="../#journal" aria-label="Ouvrir Do It">${I.ext}</a>`;
+    top = `<div class="bar-row"><button class="sq" data-action="back" aria-label="Retour">${I.back}</button><p class="top-title">Note vocale</p><a class="sq" href="../#journal" aria-label="Ouvrir Do It">${I.ext}</a></div>`;
   } else {
-    top = `<a class="brand" href="#/" data-go><span class="brand-mark">${MARK}</span><span class="brand-name">Encré<b>.</b></span></a>
-      <a class="doit-link" href="../#parler">${I.mic}<span>Do It</span></a>`;
+    top = `<div class="bar-row">
+      <a class="app-ico" href="#/" data-go aria-label="Encré : accueil">${MARK}</a>
+      <span class="streak" title="Jours d’écriture d’affilée">${I.drop}<span>Jour <b>${days}</b></span></span>
+      <button class="switch${state.hand ? ' is-on' : ''}" type="button" data-action="toggle-hand" aria-pressed="${state.hand}" aria-label="Écriture manuscrite" title="Écriture manuscrite"><i></i></button>
+      <button class="sq neon" type="button" data-action="search" aria-label="Rechercher">${I.searchLg}</button>
+      <button class="sq hide-xs" type="button" data-action="shortcuts" aria-label="Raccourcis">${I.grid}</button>
+      <button class="sq" type="button" data-action="settings" aria-label="Réglages">${I.sliders}</button>
+    </div>${name === 'home' ? dayNav() : ''}`;
   }
   $('#topbar').innerHTML = top;
   $('#topbar .tab.is-active')?.scrollIntoView({ inline: 'center', block: 'nearest' });
 
-  const nav = [['home', '#/', I.home, 'Accueil'], ['notes', '#/notes', I.wave, 'Notes'], ['folders', '#/dossiers', I.folder, 'Dossiers'], ['memory', '#/memoire', I.brain, 'Mémoire']];
-  const item = ([key, href, icon, label]) => `<a href="${href}" data-go class="${name === key ? 'is-active' : ''}" aria-current="${name === key ? 'page' : 'false'}"><span class="dock-ico">${icon}${key === 'memory' && due ? `<b class="badge">${due}</b>` : ''}</span><span>${label}</span></a>`;
-  $('#dock').innerHTML = `${item(nav[0])}${item(nav[1])}<button class="fab" type="button" data-action="capture" aria-label="Parler : nouvelle note vocale">${I.mic}</button>${item(nav[2])}${item(nav[3])}`;
+  const item = ([key, href, icon, label]) => `<a href="${href}" data-go class="${navActive(key) ? 'is-active' : ''}" aria-current="${navActive(key) ? 'page' : 'false'}"><span class="tb-ico">${I[icon]}${key === 'memory' && due ? `<b class="badge">${due}</b>` : ''}</span><span class="tb-label">${label}</span></a>`;
+  $('#dock').innerHTML = `${NAV.map(item).join('')}<a href="../#parler" class="tb-ext"><span class="tb-ico">${I.mic}</span><span class="tb-label">Do It</span></a>`;
 
-  $('#sidebar').innerHTML = `<a class="brand" href="#/" data-go><span class="brand-mark">${MARK}</span><span class="brand-name">Encré<b>.</b></span></a>
-    <nav class="side-nav">${nav.map(([key, href, icon, label]) => `<a href="${href}" data-go class="${name === key || (key === 'notes' && name === 'note') ? 'is-active' : ''}">${icon}<span>${label}</span>${key === 'notes' ? `<small>${state.notes.length}</small>` : key === 'memory' && due ? `<small class="hot">${due}</small>` : ''}</a>`).join('')}</nav>
+  $('#sidebar').innerHTML = `<a class="side-brand" href="#/" data-go><span class="app-ico">${MARK}</span><span><b>Encré</b><small>par Do It</small></span></a>
+    <nav class="side-nav">${NAV.map(([key, href, icon, label]) => `<a href="${href}" data-go class="${navActive(key) ? 'is-active' : ''}"><span class="tb-ico">${I[icon]}</span><span>${label}</span>${key === 'notes' ? `<small>${state.notes.length}</small>` : key === 'pages' ? `<small>${state.pages.length}</small>` : key === 'memory' && due ? `<small class="hot">${due}</small>` : ''}</a>`).join('')}</nav>
     <button class="btn btn-neon side-new" type="button" data-action="capture">${I.mic}Parler</button>
-    <button class="btn side-new2" type="button" data-action="new-page">${I.plus}Nouvelle page</button>
-    <p class="side-label">Dossiers <button class="mini" type="button" data-action="new-folder" aria-label="Nouveau dossier">${I.plus}</button></p>
+    <p class="side-label">${I.folder}Dossiers <button class="mini" type="button" data-action="new-folder" aria-label="Nouveau dossier">${I.plus}</button></p>
     <div class="side-tree">${treeHTML()}</div>
     <a class="side-doit" href="../#parler">${I.mic}<span>Dicter dans Do It</span>${I.ext}</a>`;
 }
@@ -284,16 +391,61 @@ function treeHTML() {
     <div class="loose" data-drop="root"><p class="loose-label">Sans dossier</p><ul class="tree">${loose.map((p) => pageNode(p, 0)).join('') || '<li class="node empty-node"><span>Glisse une page ici</span></li>'}</ul></div>`;
 }
 
-/* ───────────── Accueil ───────────── */
+/* ───────────── Briques d'interface ───────────── */
 
-function pageCard(p, i = 0, cls = '') {
+const LINES = [
+  'Ce qui est encré reste ancré.',
+  'Tu parles, Encré écrit, ta mémoire garde.',
+  'Une idée notée est une idée sauvée.',
+  'Écris peu, mais écris chaque jour.',
+  'Les grandes pages commencent par une phrase.',
+  'Ta voix d’aujourd’hui, tes notes de demain.',
+  'Relire, c’est se souvenir deux fois.',
+];
+const QUOTE_LIST = [...LINES, ...QUOTES];
+const dayIndex = (key) => Math.floor(dateFromKey(key).getTime() / 86_400_000);
+
+function cardHead(icon, label, extra = '') {
+  return `<header class="card-head"><span class="card-label">${icon}${esc(label)}</span>${extra}</header>`;
+}
+
+/** Anneau de progression (0 → 100). */
+function ring(pct, caption) {
+  return `<div class="ring" role="img" aria-label="${pct} % ${attr(caption)}"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring-track" cx="60" cy="60" r="52"/><circle class="ring-fill" cx="60" cy="60" r="52" pathLength="100" style="--p:${pct}"/></svg><span class="ring-txt"><b data-count="${pct}" data-suffix="%">${pct}%</b><small>${esc(caption)}</small></span></div>`;
+}
+
+/** Points lumineux qui flottent dans les cartes héros. */
+function particles(n = 9) {
+  return `<span class="particles" aria-hidden="true">${Array.from({ length: n }, (_, k) => `<i style="--x:${(k * 37 + 11) % 100}%;--y:${(k * 53 + 7) % 100}%;--d:${(k % 5) * 0.9}s;--s:${k % 3 === 0 ? 5 : 3}px"></i>`).join('')}</span>`;
+}
+
+function tile({ href, label, value, unit = '', bar = 0, sub, on = false, i = 0 }) {
+  return `<a class="tile" href="${href}" data-go style="--i:${i}">
+    <span class="tile-top"><span class="tile-label">${esc(label)}</span><i class="dot${on ? ' on' : ''}"></i></span>
+    <span class="tile-val"><b data-count="${value}">${value}</b>${unit ? `<small>${esc(unit)}</small>` : ''}</span>
+    <span class="meter"><i style="--w:${Math.max(0, Math.min(1, bar)).toFixed(3)}"></i></span>
+    <span class="tile-sub">${esc(sub)}</span>
+  </a>`;
+}
+
+function pageRow(p, i = 0) {
   const folder = p.folderId ? findFolder(p.folderId) : null;
-  return `<a class="pcard spot ${cls}" href="#/page/${p.id}" data-go data-cover-link style="--i:${i}">
+  return `<a class="prow" href="#/page/${p.id}" data-go style="--i:${Math.min(i, 10)}">
+    <span class="prow-ico">${esc(p.icon || '📄')}</span>
+    <span class="prow-body"><span class="prow-title">${esc(p.title || 'Sans titre')}</span><span class="prow-meta">${folder ? `${esc(folder.name)} · ` : ''}${ago(p.updatedAt)} · ${plural(p.words || 0, 'mot')}</span></span>
+    ${p.pinned ? `<span class="prow-pin">${I.pin}</span>` : ''}${I.chevron}
+  </a>`;
+}
+
+function pageCard(p, i = 0) {
+  const folder = p.folderId ? findFolder(p.folderId) : null;
+  return `<a class="pcard" href="#/page/${p.id}" data-go data-cover-link style="--i:${Math.min(i, 12)}">
     ${cover(p.cover || 'papier', 'sm')}
     <span class="pcard-body">
       <span class="pcard-icon">${esc(p.icon || '📄')}</span>
       <span class="pcard-title">${esc(p.title || 'Sans titre')}</span>
-      <span class="pcard-meta">${folder ? `${esc(folder.icon)} ${esc(folder.name)} · ` : ''}${ago(p.updatedAt)}</span>
+      <span class="pcard-text">${esc(pageText(p).slice(0, 90)) || 'Page vide'}</span>
+      <span class="pcard-meta">${folder ? `${esc(folder.name)} · ` : ''}${ago(p.updatedAt)}</span>
     </span>
   </a>`;
 }
@@ -301,9 +453,9 @@ function pageCard(p, i = 0, cls = '') {
 function noteRow(n, i = 0) {
   const t = n.themes?.[0] ? themeOf(n.themes[0], state.noteThemes) : null;
   const linked = state.pages.some((p) => p.source?.entryId === n.id);
-  return `<a class="nrow spot" href="#/note/${n.id}" data-go style="--i:${i}">
+  return `<a class="nrow" href="#/note/${n.id}" data-go style="--i:${i}">
     <span class="nrow-ico">${t ? esc(t.emoji) : '🎙️'}</span>
-    <span class="nrow-body"><span class="nrow-title">${esc(n.title || 'Note vocale')}</span><span class="nrow-meta">${longDate(n.createdAt)} · ${timeLabel(n.createdAt)}${linked ? ' · <em>page créée</em>' : ''}</span></span>
+    <span class="nrow-body"><span class="nrow-title">${esc(n.title || 'Note vocale')}</span><span class="nrow-text${state.hand ? ' hand' : ''}">${esc(n.summary || n.text)}</span><span class="nrow-meta">${timeLabel(n.createdAt)}${dayKey(n.createdAt) === selectedDay() ? '' : ` · ${ago(n.createdAt)}`}${linked ? ' · <em>page créée</em>' : ''}${n.pending ? ' · <em>en attente de l’IA</em>' : ''}</span></span>
     ${I.chevron}
   </a>`;
 }
@@ -313,61 +465,133 @@ function searchResults(q) {
   const pages = state.pages.filter((p) => fold(`${p.title} ${pageText(p)}`).includes(f));
   const notes = state.notes.filter((n) => fold(`${n.title} ${n.text}`).includes(f));
   if (!pages.length && !notes.length) return `<div class="empty"><p class="empty-title">Rien trouvé</p><p>Aucune page ni note ne contient « ${esc(q)} ».</p></div>`;
-  return `${pages.length ? `<section class="sec"><h2 class="sec-title">Pages <small>${pages.length}</small></h2><div class="grid">${pages.map((p, i) => pageCard(p, i)).join('')}</div></section>` : ''}
-    ${notes.length ? `<section class="sec"><h2 class="sec-title">Notes vocales <small>${notes.length}</small></h2><div class="list">${notes.map((n, i) => noteRow(n, i)).join('')}</div></section>` : ''}`;
+  return `${pages.length ? `<p class="sr-label">Pages · ${pages.length}</p><div class="list">${pages.slice(0, 20).map((p, i) => pageRow(p, i)).join('')}</div>` : ''}
+    ${notes.length ? `<p class="sr-label">Notes vocales · ${notes.length}</p><div class="list">${notes.slice(0, 20).map((n, i) => noteRow(n, i)).join('')}</div>` : ''}`;
 }
 
+function banner() {
+  const due = dueCards(state.cards).length;
+  const pending = state.notes.filter((n) => n.pending && !n.edited).length;
+  if (due) return `<a class="banner" href="#/memoire" data-go><span class="banner-ico">${I.brain}</span><span>${plural(due, 'passage')} à revoir aujourd’hui : deux minutes pour l’ancrer.</span>${I.chevron}</a>`;
+  if (!state.notes.length) return `<button class="banner" type="button" data-action="capture"><span class="banner-ico">${I.mic}</span><span>Touche le micro et raconte : Encré résume, classe et écrit pour toi.</span>${I.chevron}</button>`;
+  if (pending) return `<a class="banner soft" href="#/notes" data-go><span class="banner-ico">${I.bolt}</span><span>${plural(pending, 'note attend', 'notes attendent')} l’IA : elles seront réécrites dès qu’elle répond.</span>${I.chevron}</a>`;
+  const loose = state.notes.find((n) => !state.pages.some((p) => p.source?.entryId === n.id));
+  if (loose) return `<a class="banner" href="#/note/${loose.id}" data-go><span class="banner-ico">${I.spark}</span><span>Fais de « ${esc(loose.title || 'ta dernière note')} » une page à développer.</span>${I.chevron}</a>`;
+  return '';
+}
+
+const METRICS = { words: ['Mots', 'mot', 'mots'], notes: ['Notes', 'note', 'notes'], pages: ['Pages', 'page', 'pages'] };
+
+function weekChart(endKey) {
+  const end = dateFromKey(endKey);
+  const [, one, many] = METRICS[state.metric];
+  const letter = new Intl.DateTimeFormat('fr-FR', { weekday: 'narrow' });
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(end, i - 6);
+    const k = dayKey(d);
+    return { k, d, v: dayStats(k)[state.metric] };
+  });
+  const max = Math.max(1, ...days.map((x) => x.v));
+  const total = days.reduce((s, x) => s + x.v, 0);
+  return `<section class="card chart-card">
+    ${cardHead(I.chart, '7 derniers jours', `<span class="card-total">${plural(total, one, many)}</span>`)}
+    <div class="seg" role="tablist" aria-label="Mesure">${Object.entries(METRICS).map(([id, [label]]) => `<button class="seg-btn${state.metric === id ? ' is-on' : ''}" type="button" role="tab" aria-selected="${state.metric === id}" data-action="metric" data-id="${id}">${label}</button>`).join('')}</div>
+    <div class="bars7">${days.map((x) => `<button class="bar${x.k === endKey ? ' is-sel' : ''}${x.v ? '' : ' is-zero'}" type="button" data-action="pick-day" data-id="${x.k}" style="--h:${(x.v / max).toFixed(3)}" aria-label="${attr(longDate(x.d))} : ${attr(plural(x.v, one, many))}"><span class="bar-val">${x.v}</span><span class="bar-col"><i></i></span><span class="bar-day">${letter.format(x.d).toUpperCase()}</span></button>`).join('')}</div>
+  </section>`;
+}
+
+/* ───────────── Accueil : ma journée ───────────── */
+
 function renderHome() {
+  const key = selectedDay();
+  const isToday = key === todayKey();
+  const st = dayStats(key);
+  const pct = Math.min(100, Math.round((100 * st.words) / state.goal));
+  const left = Math.max(0, state.goal - st.words);
+  const due = dueCards(state.cards);
   const recent = sortRecent(state.pages);
   const last = recent[0];
-  const due = dueCards(state.cards);
+  const pinned = recent.filter((p) => p.pinned);
   const roots = childFolders(state.folders, null);
-  const pinned = state.pages.filter((p) => p.pinned);
+  const days = streak();
+  const linked = state.notes.filter((n) => state.pages.some((p) => p.source?.entryId === n.id)).length;
+  const weekAgo = Date.now() - 7 * 86_400_000;
+  const fresh = state.pages.filter((p) => new Date(p.updatedAt).getTime() > weekAgo).length;
+  const noteList = st.list.length ? st.list : isToday ? state.notes.slice(0, 3) : [];
+  const noteLabel = st.list.length ? (isToday ? 'Notes du jour' : 'Notes de ce jour') : 'Dernières notes';
+  const line = LINES[dayIndex(key) % LINES.length];
+  const quote = QUOTE_LIST[(dayIndex(key) + state.quote) % QUOTE_LIST.length];
 
   $('#view').innerHTML = `<section class="view home">
-    <header class="hero">
-      <p class="eyebrow">${esc(todayLabel())}</p>
-      <h1 class="wordmark">Encré<span class="ink-dot">.</span></h1>
-      <p class="tagline">Ce qui est <em>encré</em> reste <em>ancré</em>.</p>
+    <header class="phead">
+      <div><h1>${isToday ? 'Ma journée' : esc(new Intl.DateTimeFormat('fr-FR', { weekday: 'long' }).format(dateFromKey(key)).replace(/^./, (c) => c.toUpperCase()))}</h1><p>${isToday ? 'Ton encre du jour, en un coup d’œil' : esc(longDate(dateFromKey(key)))}</p></div>
+      <button class="sq neon lg" type="button" data-action="capture" aria-label="Parler : nouvelle note vocale">${I.mic}</button>
     </header>
 
-    <label class="search spot">${I.search}<input id="home-search" type="search" placeholder="Rechercher dans tes pages et tes notes" value="${attr(state.query)}" autocomplete="off"></label>
+    <div class="cols">
+      <div class="col">
+        <section class="hero-card">
+          ${particles()}
+          <p class="hc-label">${isToday ? 'Objectif du jour' : 'Ce jour-là'} · ${plural(state.goal, 'mot')}</p>
+          <div class="hc-top">
+            <p class="hc-big"><span class="hc-num${st.words >= 1000 ? ' is-long' : ''}" data-count="${st.words}">${st.words.toLocaleString('fr-FR')}</span><span class="hc-side">${st.words > 1 ? 'mots' : 'mot'}<br>encrés</span></p>
+            ${ring(pct, 'de l’objectif')}
+          </div>
+          <p class="hc-next">${pct >= 100 ? '<b>Objectif atteint.</b> Tout ce que tu ajoutes est du bonus.' : isToday ? `Encore <b>${plural(left, 'mot')}</b> pour boucler ta journée.` : `Il manquait <b>${plural(left, 'mot')}</b> ce jour-là.`}</p>
+          <p class="hc-line"><i></i>${esc(line)}</p>
+          ${isToday ? `<div class="hc-ask"><p>Qu’est-ce qui t’a marqué aujourd’hui ?</p><div class="pills"><button class="pill neon" type="button" data-action="capture">${I.mic}Le raconter</button><button class="pill" type="button" data-action="new-page">${I.pen}L’écrire</button></div></div>` : ''}
+          <div class="hc-stats">
+            <div><b data-count="${st.notes}">${st.notes}</b><span>${st.notes > 1 ? 'notes vocales' : 'note vocale'}</span></div>
+            <div><b data-count="${st.pages}">${st.pages}</b><span>${st.pages > 1 ? 'pages écrites' : 'page écrite'}</span></div>
+            <div><b data-count="${days}">${days}</b><span>${days > 1 ? 'jours d’affilée' : 'jour d’affilée'}</span></div>
+          </div>
+        </section>
 
-    <div id="home-body">${state.query.trim() ? searchResults(state.query.trim()) : `
-    <div class="quick">
-      <button class="qa spot is-neon" type="button" data-action="capture" style="--i:0">${I.mic}<span>Parler</span></button>
-      <button class="qa spot" type="button" data-action="new-page" style="--i:1">${I.plus}<span>Nouvelle page</span></button>
-      <button class="qa spot" type="button" data-action="new-folder" style="--i:2">${I.folderPlus}<span>Nouveau dossier</span></button>
-      <a class="qa spot" href="#/memoire" data-go style="--i:3">${I.brain}<span>Réviser${due.length ? ` <b>${due.length}</b>` : ''}</span></a>
-    </div>
+        ${banner()}
 
-    ${last ? `<section class="sec"><h2 class="sec-title">Reprendre</h2>
-      <a class="resume spot" href="#/page/${last.id}" data-go data-cover-link>
-        ${cover(last.cover || 'papier', 'md')}
-        <span class="resume-body"><span class="resume-icon">${esc(last.icon)}</span><span class="resume-title">${esc(last.title || 'Sans titre')}</span>
-        <span class="resume-text">${esc(pageText(last).slice(0, 160))}</span><span class="resume-meta">Modifiée ${ago(last.updatedAt)} · ${plural(last.words || 0, 'mot')}</span></span>
-      </a></section>` : ''}
+        <section class="card">
+          ${cardHead(I.wave, noteLabel, `<a class="pill sm" href="#/notes" data-go>Toutes · ${state.notes.length}</a>`)}
+          ${noteList.length ? `<div class="list">${noteList.map((n, i) => noteRow(n, i)).join('')}</div>` : `<div class="empty-inline"><p>${isToday ? 'Pas encore de note vocale.' : 'Aucune note ce jour-là.'}</p>${isToday ? `<button class="pill neon" type="button" data-action="capture">${I.mic}Parler</button>` : ''}</div>`}
+        </section>
 
-    ${pinned.length ? `<section class="sec"><h2 class="sec-title">${I.pin} Épinglées</h2><div class="rail">${pinned.map((p, i) => pageCard(p, i)).join('')}</div></section>` : ''}
+        ${weekChart(key)}
+      </div>
 
-    <section class="sec"><h2 class="sec-title">Récentes <a class="sec-link" href="#/dossiers" data-go>Tout ranger ${I.chevron}</a></h2>
-      ${recent.length ? `<div class="rail">${recent.slice(0, 10).map((p, i) => pageCard(p, i)).join('')}</div>` : '<div class="empty"><p>Ta première page t’attend.</p></div>'}
-    </section>
+      <div class="col">
+        <section class="card">
+          ${cardHead(I.grid, 'Mes dossiers', `<a class="pill sm" href="#/dossiers" data-go>Tous · ${state.folders.length}</a>`)}
+          <div class="apps">${roots.slice(0, 7).map((f, i) => `<a class="app" href="#/dossiers" data-go data-open-folder="${f.id}" style="--i:${i}"><span class="app-tile v${i % 4}">${esc(f.icon)}</span><span class="app-name">${esc(f.name)}</span></a>`).join('')}<button class="app" type="button" data-action="new-folder" style="--i:${Math.min(roots.length, 7)}"><span class="app-tile add">${I.plus}</span><span class="app-name">Nouveau</span></button></div>
+        </section>
 
-    ${state.cards.length ? `<section class="sec"><a class="memo spot" href="#/memoire" data-go>
-      <span class="memo-orb"><span></span></span>
-      <span class="memo-body"><span class="memo-title">${due.length ? `${plural(due.length, 'passage')} à revoir aujourd’hui` : 'Ta mémoire est à jour'}</span><span class="memo-meta">${plural(state.cards.length, 'passage retenu', 'passages retenus')} · maîtrise ${Math.round(100 * avgMastery())} %</span></span>${I.chevron}
-    </a></section>` : ''}
+        <button class="card quote-card" type="button" data-action="next-quote">
+          <span class="q-top"><span class="q-mark">${I.quote}</span><span class="q-hint">${I.shuffle}Toucher pour changer</span></span>
+          <span class="q-text">${esc(quote)}</span>
+          <span class="q-src">Encré · phrase du jour</span>
+        </button>
 
-    <section class="sec"><h2 class="sec-title">Dossiers <button class="sec-link" type="button" data-action="new-folder">${I.plus} Nouveau</button></h2>
-      ${roots.length ? `<div class="fgrid">${roots.map((f, i) => `<a class="fcard spot" href="#/dossiers" data-go data-open-folder="${f.id}" style="--i:${i}"><span class="fcard-ico">${esc(f.icon)}</span><span class="fcard-name">${esc(f.name)}</span><span class="fcard-count">${plural(deepCount(state.folders, state.pages, f.id), 'page')}</span></a>`).join('')}</div>` : '<button class="empty empty-btn" type="button" data-action="new-folder">Crée un dossier pour ranger tes pages par sujet : Projets, Idées, Sport…</button>'}
-    </section>
+        <div class="chips scroll">
+          <button class="chip" type="button" data-action="new-page">${I.plus}Nouvelle page</button>
+          <button class="chip" type="button" data-action="dictate-page">${I.mic}Dicter une page</button>
+          <button class="chip" type="button" data-action="new-folder">${I.folderPlus}Nouveau dossier</button>
+          <a class="chip" href="../#journal">${I.ext}Journal Do It</a>
+        </div>
 
-    <section class="sec"><h2 class="sec-title">Notes vocales <a class="sec-link" href="#/notes" data-go>Tout voir ${I.chevron}</a></h2>
-      ${state.notes.length ? `<div class="list">${state.notes.slice(0, 4).map((n, i) => noteRow(n, i)).join('')}</div>` : `<a class="empty empty-btn" href="../#parler">Aucune note pour l’instant. Raconte quelque chose dans <b>Do It</b> : elle apparaîtra ici.</a>`}
-    </section>
+        <div class="tiles">
+          ${tile({ href: '#/pages', label: 'Mots', value: st.words, unit: `/ ${state.goal}`, bar: st.words / state.goal, sub: pct >= 100 ? 'Objectif atteint' : 'Objectif du jour', on: pct >= 100, i: 0 })}
+          ${tile({ href: '#/notes', label: 'Notes', value: state.notes.length, unit: state.notes.length > 1 ? 'notes' : 'note', bar: state.notes.length ? linked / state.notes.length : 0, sub: `${plural(linked, 'devenue page', 'devenues pages')}`, on: st.notes > 0, i: 1 })}
+          ${tile({ href: '#/pages', label: 'Pages', value: state.pages.length, unit: state.pages.length > 1 ? 'pages' : 'page', bar: state.pages.length ? fresh / state.pages.length : 0, sub: plural(fresh, 'active cette semaine', 'actives cette semaine'), on: st.pages > 0, i: 2 })}
+          ${tile({ href: '#/memoire', label: 'Mémoire', value: Math.round(100 * avgMastery()), unit: '%', bar: avgMastery(), sub: due.length ? `${plural(due.length, 'passage')} à revoir` : state.cards.length ? 'Tout est à jour' : 'Rien à retenir encore', on: due.length > 0, i: 3 })}
+        </div>
 
-    <footer class="foot"><button class="link" type="button" data-action="export-all">${I.download}Sauvegarder tout</button><button class="link" type="button" data-action="import">${I.upload}Importer</button><input id="import-file" type="file" accept="application/json,.json" hidden></footer>`}
+        ${last ? `<a class="card feature" href="#/page/${last.id}" data-go>
+          <span class="feat-head"><span class="feat-ico">${I.pen}</span><span class="card-label">Reprendre l’écriture</span></span>
+          <span class="feat-title">${esc(last.icon || '📄')} ${esc(last.title || 'Sans titre')}</span>
+          <span class="feat-text">${esc(pageText(last).slice(0, 140))}</span>
+          <span class="feat-link">Modifiée ${ago(last.updatedAt)} · ${plural(last.words || 0, 'mot')}${I.ext}</span>
+        </a>` : ''}
+
+        ${pinned.length ? `<section class="card">${cardHead(I.pin, 'Épinglées')}<div class="list">${pinned.map((p, i) => pageRow(p, i)).join('')}</div></section>` : ''}
+      </div>
     </div>
   </section>`;
 }
@@ -390,11 +614,31 @@ function renderNotes() {
   const themes = [...counts].sort((a, b) => b[1] - a[1]);
   if (state.noteFilter !== 'all' && !counts.has(state.noteFilter)) state.noteFilter = 'all';
   const list = filteredNotes();
+  const linked = state.notes.filter((n) => state.pages.some((p) => p.source?.entryId === n.id)).length;
+  const week = state.notes.filter((n) => Date.now() - new Date(n.createdAt).getTime() < 7 * 86_400_000).length;
+  const top = themes[0] ? themeOf(themes[0][0], state.noteThemes) : null;
 
   $('#view').innerHTML = `<section class="view notes">
-    <header class="vhead"><p class="eyebrow">Encré et Do It</p><h1>Notes vocales</h1><p class="vsub">${plural(state.notes.length, 'note résumée', 'notes résumées')} et classées par thème, prêtes à devenir des pages.</p></header>
-    <div class="vactions"><button class="btn btn-neon" type="button" data-action="capture">${I.mic}Nouvelle note vocale</button></div>
-    <label class="search spot">${I.search}<input id="notes-search" type="search" placeholder="Rechercher une note" value="${attr(state.noteQuery)}" autocomplete="off"></label>
+    <header class="phead">
+      <div><h1>Notes vocales</h1><p>Résumées par l’IA et classées par thème</p></div>
+      <button class="sq neon lg" type="button" data-action="capture" aria-label="Nouvelle note vocale">${I.mic}</button>
+    </header>
+
+    <section class="hero-card compact">
+      ${particles(6)}
+      <p class="hc-label">Ta voix, mise au propre</p>
+      <div class="hc-top">
+        <p class="hc-big"><span class="hc-num" data-count="${state.notes.length}">${state.notes.length}</span><span class="hc-side">${state.notes.length > 1 ? 'notes' : 'note'}<br>encrées</span></p>
+        <button class="sq neon lg hc-act" type="button" data-action="capture" aria-label="Parler">${I.bolt}</button>
+      </div>
+      <div class="hc-stats">
+        <div><b data-count="${week}">${week}</b><span>cette semaine</span></div>
+        <div><b data-count="${linked}">${linked}</b><span>${linked > 1 ? 'devenues pages' : 'devenue page'}</span></div>
+        <div><b>${top ? esc(top.emoji) : '—'}</b><span>${top ? esc(top.label) : 'thème phare'}</span></div>
+      </div>
+    </section>
+
+    <label class="search">${I.search}<input id="notes-search" type="search" placeholder="Rechercher une note" value="${attr(state.noteQuery)}" autocomplete="off"></label>
     ${themes.length ? `<div class="chips scroll">
       <button class="chip${state.noteFilter === 'all' ? ' is-active' : ''}" type="button" data-action="note-filter" data-id="all">Toutes <small>${state.notes.length}</small></button>
       ${themes.map(([id, c]) => {
@@ -407,21 +651,22 @@ function renderNotes() {
 }
 
 function noteCards(list) {
+  const short = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
   return list.length ? list.map((n, i) => {
       const mood = moodOf(n.mood);
       const linked = state.pages.find((p) => p.source?.entryId === n.id);
-      return `<a class="ncard spot" href="#/note/${n.id}" data-go style="--i:${Math.min(i, 10)}">
-        <span class="ncard-top"><span>${longDate(n.createdAt)} · ${timeLabel(n.createdAt)}</span><span class="mood" title="${esc(mood.label)}">${mood.emoji}</span></span>
+      return `<a class="ncard" href="#/note/${n.id}" data-go style="--i:${Math.min(i, 10)}">
+        <span class="ncard-top"><span class="card-label">${esc(short.format(new Date(n.createdAt)))} · ${timeLabel(n.createdAt)}</span><span class="mood" title="${esc(mood.label)}">${mood.emoji}</span></span>
         <span class="ncard-title">${esc(n.title || 'Note vocale')}</span>
         <span class="ncard-text${state.hand ? ' hand' : ''}">${esc(n.summary || n.text)}</span>
         <span class="ncard-foot">${(n.themes || []).map((id) => {
           const t = themeOf(id, state.noteThemes);
           return `<span class="tag">${esc(t.emoji)} ${esc(t.label)}</span>`;
-        }).join('')}${linked ? `<span class="tag is-neon">${I.page} Page</span>` : ''}</span>
+        }).join('')}${linked ? `<span class="tag is-neon">${I.page} Page</span>` : ''}${n.pending ? '<span class="tag">⏳ IA</span>' : ''}</span>
       </a>`;
     }).join('') : state.notes.length
       ? '<div class="empty"><p class="empty-title">Aucune note ne correspond</p><p>Essaie un autre mot ou un autre thème.</p></div>'
-      : '<a class="empty empty-btn" href="../#parler"><span class="empty-title">Pas encore de note vocale</span>Ouvre <b>Do It</b>, appuie sur la bulle et raconte : ta note arrive ici, déjà réécrite.</a>';
+      : '<button class="empty empty-btn" type="button" data-action="capture"><span class="empty-title">Pas encore de note vocale</span>Touche le micro et raconte : Encré résume, range par thème et écrit à la main.</button>';
 }
 
 let noteTimer = 0;
@@ -433,26 +678,36 @@ function renderNote(id) {
   }
   const mood = moodOf(n.mood);
   const linked = state.pages.find((p) => p.source?.entryId === n.id);
-  $('#view').innerHTML = `<article class="page note-page">
-    ${cover('onde', 'lg')}
-    <div class="page-inner">
-      <span class="page-icon static">🎙️</span>
-      <p class="eyebrow">${longDate(n.createdAt)} · ${timeLabel(n.createdAt)} · ${mood.emoji} ${esc(mood.label)}</p>
+  const short = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#view').innerHTML = `<article class="note-page">
+    <section class="hero-card note-hero">
+      ${particles(7)}
+      <p class="hc-label">${esc(short.format(new Date(n.createdAt)))} · ${timeLabel(n.createdAt)}</p>
       <h1 class="page-title" id="note-title" contenteditable="true" spellcheck="true" data-ph="Sans titre">${attr(n.title)}</h1>
       <div class="tags">${(n.themes || []).map((tid) => {
         const t = themeOf(tid, state.noteThemes);
         return `<span class="tag">${esc(t.emoji)} ${esc(t.label)}</span>`;
-      }).join('')}</div>
-      <p class="page-meta"><span class="save" id="save-state" data-state="saved">Enregistré dans Do It</span><button class="hand-toggle" type="button" data-action="toggle-hand">${state.hand ? 'Aa Classique' : '✍︎ Manuscrit'}</button></p>
-      <div class="doc${state.hand ? ' is-hand' : ''}" id="note-doc" contenteditable="true" spellcheck="true">${String(n.text || '').split(/\n{2,}/).filter((p) => p.trim()).map((p) => `<p>${attr(p.trim())}</p>`).join('') || '<p><br></p>'}</div>
-      ${n.highlights?.length ? `<div class="keypoints"><p class="eyebrow">Points clés</p><ul>${n.highlights.map((h) => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
-      ${n.followUp ? `<div class="note-followup"><p><span>Encré te relance</span>« ${esc(n.followUp)} »</p><button class="btn" type="button" data-action="capture-reply" data-id="${n.id}">${I.mic}Répondre à voix haute</button></div>` : ''}
-      <div class="note-actions">
-        <button class="btn btn-neon" type="button" data-action="note-to-page" data-id="${n.id}">${linked ? `${I.page}Ouvrir la page` : `${I.spark}Transformer en page`}</button>
-        <a class="btn" href="../#journal">${I.ext}Voir dans Do It</a>
+      }).join('')}<span class="tag">${mood.emoji} ${esc(mood.label)}</span></div>
+      <div class="hc-stats">
+        <div><b>${wordCount(n.text)}</b><span>mots</span></div>
+        <div><b>${n.segments?.length || 1}</b><span>${(n.segments?.length || 1) > 1 ? 'prises de parole' : 'prise de parole'}</span></div>
+        <div><b>${n.source === 'ai' ? 'IA' : n.pending ? '⏳' : '—'}</b><span>${n.source === 'ai' ? 'résumé' : n.pending ? 'en attente' : 'sans IA'}</span></div>
       </div>
-      ${n.segments?.length ? `<details class="raw"><summary>Ce que tu as dit <small>${plural(n.segments.length, 'prise')}</small></summary>${n.segments.map((s) => `<div class="raw-seg">${s.question ? `<p class="raw-q">« ${esc(s.question)} »</p>` : ''}<p>${esc(s.text)}</p></div>`).join('')}</details>` : ''}
+    </section>
+
+    <section class="card paper">
+      <header class="card-head"><span class="card-label">${I.pen}La note</span><button class="hand-toggle" type="button" data-action="toggle-hand">${state.hand ? 'Aa Classique' : '✍︎ Manuscrit'}</button></header>
+      <div class="doc${state.hand ? ' is-hand' : ''}" id="note-doc" contenteditable="true" spellcheck="true">${String(n.text || '').split(/\n{2,}/).filter((p) => p.trim()).map((p) => `<p>${attr(p.trim())}</p>`).join('') || '<p><br></p>'}</div>
+      <p class="page-meta"><span class="save" id="save-state" data-state="saved">Enregistré dans Do It</span></p>
+    </section>
+
+    ${n.highlights?.length ? `<section class="card keypoints">${cardHead(I.spark, 'Points clés')}<ul>${n.highlights.map((h) => `<li>${esc(h)}</li>`).join('')}</ul></section>` : ''}
+    ${n.followUp ? `<section class="note-followup"><p><span>Encré te relance</span>« ${esc(n.followUp)} »</p><button class="pill neon" type="button" data-action="capture-reply" data-id="${n.id}">${I.mic}Répondre à voix haute</button></section>` : ''}
+    <div class="note-actions">
+      <button class="btn btn-neon" type="button" data-action="note-to-page" data-id="${n.id}">${linked ? `${I.page}Ouvrir la page` : `${I.spark}Transformer en page`}</button>
+      <a class="btn" href="../#journal">${I.ext}Voir dans Do It</a>
     </div>
+    ${n.segments?.length ? `<details class="card raw"><summary><span class="card-label">${I.wave}Ce que tu as dit</span><small>${plural(n.segments.length, 'prise')}</small></summary>${n.segments.map((s) => `<div class="raw-seg">${s.question ? `<p class="raw-q">« ${esc(s.question)} »</p>` : ''}<p>${esc(s.text)}</p></div>`).join('')}</details>` : ''}
   </article>`;
 
   const save = () => {
@@ -725,14 +980,56 @@ async function insertVoiceNote() {
 
 /* ───────────── Dossiers ───────────── */
 
+const SORTS = { recent: 'Récentes', pinned: 'Épinglées', az: 'A → Z' };
+
+function renderPages() {
+  let list = sortRecent(state.pages);
+  if (state.pageSort === 'pinned') list = list.filter((p) => p.pinned);
+  if (state.pageSort === 'az') list = [...state.pages].sort((a, b) => (a.title || 'Sans titre').localeCompare(b.title || 'Sans titre', 'fr'));
+  const words = state.pages.reduce((s, p) => s + (p.words || 0), 0);
+  const fromVoice = state.pages.filter((p) => p.source?.type === 'voice').length;
+
+  $('#view').innerHTML = `<section class="view pages">
+    <header class="phead">
+      <div><h1>Pages</h1><p>Écris, mets en forme, retiens</p></div>
+      <button class="sq neon lg" type="button" data-action="new-page" aria-label="Nouvelle page">${I.plus}</button>
+    </header>
+
+    <section class="hero-card compact">
+      ${particles(6)}
+      <p class="hc-label">Ta bibliothèque</p>
+      <div class="hc-top">
+        <p class="hc-big"><span class="hc-num${words >= 1000 ? ' is-long' : ''}" data-count="${words}">${words.toLocaleString('fr-FR')}</span><span class="hc-side">${words > 1 ? 'mots' : 'mot'}<br>écrits</span></p>
+        <button class="sq neon lg hc-act" type="button" data-action="dictate-page" aria-label="Dicter une page">${I.mic}</button>
+      </div>
+      <div class="hc-stats">
+        <div><b data-count="${state.pages.length}">${state.pages.length}</b><span>${state.pages.length > 1 ? 'pages' : 'page'}</span></div>
+        <div><b data-count="${state.folders.length}">${state.folders.length}</b><span>${state.folders.length > 1 ? 'dossiers' : 'dossier'}</span></div>
+        <div><b data-count="${fromVoice}">${fromVoice}</b><span>nées d’une note</span></div>
+      </div>
+    </section>
+
+    <div class="seg wide" role="tablist" aria-label="Trier">${Object.entries(SORTS).map(([id, label]) => `<button class="seg-btn${state.pageSort === id ? ' is-on' : ''}" type="button" role="tab" aria-selected="${state.pageSort === id}" data-action="page-sort" data-id="${id}">${label}</button>`).join('')}</div>
+    ${list.length ? `<div class="pgrid">${list.map((p, i) => pageCard(p, i)).join('')}</div>` : state.pageSort === 'pinned' ? '<div class="empty"><p class="empty-title">Aucune page épinglée</p><p>Dans une page, touche ⋯ puis « Épingler ».</p></div>' : `<button class="empty empty-btn" type="button" data-action="new-page"><span class="empty-title">Ta première page t’attend</span>Touche ici pour commencer à écrire.</button>`}
+  </section>`;
+}
+
 function renderFolders() {
+  const roots = childFolders(state.folders, null);
   $('#view').innerHTML = `<section class="view folders">
-    <header class="vhead"><p class="eyebrow">Ta bibliothèque</p><h1>Dossiers</h1><p class="vsub">${plural(state.folders.length, 'dossier')} · ${plural(state.pages.length, 'page')}. Glisse une page sur un dossier pour la ranger, ou touche ⋯.</p></header>
-    <div class="vactions">
-      <button class="btn btn-neon" type="button" data-action="new-folder">${I.folderPlus}Nouveau dossier</button>
-      <button class="btn" type="button" data-action="new-page">${I.plus}Nouvelle page</button>
-    </div>
-    <div class="explorer">${treeHTML()}</div>
+    <header class="phead">
+      <div><h1>Dossiers</h1><p>${plural(state.folders.length, 'dossier')} · ${plural(state.pages.length, 'page')}</p></div>
+      <button class="sq neon lg" type="button" data-action="new-folder" aria-label="Nouveau dossier">${I.folderPlus}</button>
+    </header>
+    ${roots.length ? `<section class="card">
+      ${cardHead(I.grid, 'Mes dossiers', `<span class="pill sm">Tous · ${state.folders.length}</span>`)}
+      <div class="apps">${roots.map((f, i) => `<button class="app" type="button" data-action="folder-menu" data-id="${f.id}" style="--i:${Math.min(i, 12)}"><span class="app-tile v${i % 4}">${esc(f.icon)}</span><span class="app-name">${esc(f.name)}</span><span class="app-count">${plural(deepCount(state.folders, state.pages, f.id), 'page')}</span></button>`).join('')}</div>
+    </section>` : ''}
+    <section class="card explorer">
+      ${cardHead(I.folder, 'Arborescence', `<button class="pill sm" type="button" data-action="new-page">${I.plus}Page</button>`)}
+      <p class="card-hint">Glisse une page sur un dossier, ou touche ⋯ pour la ranger.</p>
+      ${treeHTML()}
+    </section>
   </section>`;
 }
 
@@ -769,6 +1066,7 @@ function refresh() {
   renderChrome();
   const { name, id } = state.route;
   if (name === 'folders') renderFolders();
+  else if (name === 'pages') renderPages();
   else if (name === 'home') renderHome();
   else if (name === 'notes') renderNotes();
   else if (name === 'memory') renderMemory();
@@ -951,21 +1249,38 @@ function renderMemory() {
   const r = state.review;
   if (r) return renderReview();
   const sorted = [...state.cards].sort((a, b) => a.due.localeCompare(b.due));
+  const pct = Math.round(100 * avgMastery());
+  const solid = state.cards.filter((c) => mastery(c) >= 0.5).length;
+  const reps = state.cards.reduce((s, c) => s + (c.reps || 0), 0);
   $('#view').innerHTML = `<section class="view memory">
-    <header class="vhead"><p class="eyebrow">Ce qui est encré reste ancré</p><h1>Mémoire</h1><p class="vsub">Surligne un passage dans une page et touche <b>✦ Retenir</b>. Encré te le reproposera au bon moment : demain, dans 3 jours, dans une semaine…</p></header>
-    <div class="mstats">
-      <div class="mstat" style="--i:0"><b>${state.cards.length}</b><span>${state.cards.length > 1 ? 'passages retenus' : 'passage retenu'}</span></div>
-      <div class="mstat hot" style="--i:1"><b>${due.length}</b><span>à revoir aujourd’hui</span></div>
-      <div class="mstat" style="--i:2"><b>${Math.round(100 * avgMastery())}<small>%</small></b><span>de maîtrise</span></div>
-    </div>
-    ${due.length ? `<button class="btn btn-neon btn-lg" type="button" data-action="start-review">${I.brain}Réviser maintenant</button>` : state.cards.length ? '<p class="calm">Tout est à jour. Reviens demain ✦</p>' : ''}
+    <header class="phead">
+      <div><h1>Mémoire</h1><p>Ce qui est encré reste ancré</p></div>
+      <button class="sq neon lg" type="button" data-action="start-review" aria-label="Réviser"${due.length ? '' : ' disabled'}>${I.brain}</button>
+    </header>
+
+    <section class="hero-card">
+      ${particles()}
+      <p class="hc-label">Révision espacée · 1, 3, 7, 16 jours…</p>
+      <div class="hc-top">
+        <p class="hc-big"><span class="hc-num" data-count="${due.length}">${due.length}</span><span class="hc-side">${due.length > 1 ? 'passages' : 'passage'}<br>à revoir</span></p>
+        ${ring(pct, 'de maîtrise')}
+      </div>
+      <p class="hc-line"><i></i>${state.cards.length ? (due.length ? 'Deux minutes maintenant, des années de souvenirs.' : 'Tout est à jour. Reviens demain ✦') : 'Surligne un passage dans une page et touche ✦ Retenir.'}</p>
+      ${due.length ? `<button class="btn btn-neon btn-lg" type="button" data-action="start-review">${I.brain}Réviser maintenant</button>` : ''}
+      <div class="hc-stats">
+        <div><b data-count="${state.cards.length}">${state.cards.length}</b><span>${state.cards.length > 1 ? 'passages retenus' : 'passage retenu'}</span></div>
+        <div><b data-count="${solid}">${solid}</b><span>${solid > 1 ? 'bien ancrés' : 'bien ancré'}</span></div>
+        <div><b data-count="${reps}">${reps}</b><span>${reps > 1 ? 'révisions' : 'révision'}</span></div>
+      </div>
+    </section>
+
     <div class="mlist">${sorted.length ? sorted.map((c, i) => {
       const p = findPage(c.pageId);
       const level = Math.round(mastery(c) * 6);
-      return `<article class="mcard" style="--i:${Math.min(i, 10)}">
+      return `<article class="card mcard" style="--i:${Math.min(i, 10)}">
+        <header class="card-head"><span class="card-label">${I.sparkLg}${esc(dueLabel(c))}</span><span class="level" title="Maîtrise">${Array.from({ length: 6 }, (_, k) => `<i class="${k < level ? 'on' : ''}"></i>`).join('')}</span></header>
         <p class="mcard-text">« ${esc(c.text)} »</p>
-        <footer><span class="level" title="Maîtrise">${Array.from({ length: 6 }, (_, k) => `<i class="${k < level ? 'on' : ''}"></i>`).join('')}</span>
-        <span class="mcard-due">${dueLabel(c)}</span>
+        <footer>
         ${p ? `<a href="#/page/${p.id}" data-go class="mcard-src">${esc(p.icon)} ${esc(p.title || 'Sans titre')}</a>` : '<span class="mcard-src">Page supprimée</span>'}
         <button class="more" type="button" data-action="delete-card" data-id="${c.id}" aria-label="Retirer de la mémoire">${I.close}</button></footer>
       </article>`;
@@ -978,13 +1293,13 @@ function renderReview() {
   const card = r.queue[r.index];
   if (!card) {
     state.review = null;
-    $('#view').innerHTML = `<section class="view memory"><div class="review-done"><span class="done-orb"></span><h1>Révision terminée</h1><p>${plural(r.remembered, 'passage retenu', 'passages retenus')} sur ${r.queue.length}. Ce qui est encré reste ancré.</p><a class="btn btn-neon" href="#/memoire" data-action="end-review">Retour à la mémoire</a></div></section>`;
+    $('#view').innerHTML = `<section class="view memory"><div class="review-done hero-card">${particles()}<span class="done-orb"></span><h1>Révision terminée</h1><p>${plural(r.remembered, 'passage retenu', 'passages retenus')} sur ${r.queue.length}. Ce qui est encré reste ancré.</p><a class="btn btn-neon" href="#/memoire" data-action="end-review">Retour à la mémoire</a></div></section>`;
     burst();
     return;
   }
   const p = findPage(card.pageId);
   $('#view').innerHTML = `<section class="view memory review">
-    <div class="rv-top"><button class="icon-btn" type="button" data-action="end-review" aria-label="Arrêter">${I.close}</button><div class="rv-bar"><i style="width:${(100 * r.index) / r.queue.length}%"></i></div><span>${r.index + 1}/${r.queue.length}</span></div>
+    <div class="rv-top"><button class="sq" type="button" data-action="end-review" aria-label="Arrêter">${I.close}</button><div class="rv-bar"><i style="width:${(100 * r.index) / r.queue.length}%"></i></div><span>${r.index + 1}/${r.queue.length}</span></div>
     <div class="flip${r.flipped ? ' is-flipped' : ''}" data-action="flip" role="button" tabindex="0" aria-label="Retourner la carte">
       <div class="face front"><p class="eyebrow">${p ? `${esc(p.icon)} ${esc(p.title || 'Sans titre')}` : 'Passage retenu'}</p><p class="rv-text">${clozeHTML(card.text)}</p><p class="rv-hint">Te souviens-tu des mots cachés ? Touche pour révéler.</p></div>
       <div class="face back"><p class="eyebrow">Le passage</p><p class="rv-text">« ${esc(card.text)} »</p></div>
@@ -1024,7 +1339,7 @@ function openSheet(html, bind) {
 }
 
 function sheetHead(title) {
-  return `<header class="sheet-head"><h2>${esc(title)}</h2><button class="icon-btn" type="button" data-sheet-close aria-label="Fermer">${I.close}</button></header>`;
+  return `<header class="sheet-head"><h2>${esc(title)}</h2><button class="sq" type="button" data-sheet-close aria-label="Fermer">${I.close}</button></header>`;
 }
 
 function openMenu(title, items) {
@@ -1099,6 +1414,139 @@ function pickNote() {
   });
 }
 
+/* ───────────── Recherche, réglages, raccourcis ───────────── */
+
+function searchHint() {
+  const pages = sortRecent(state.pages).slice(0, 4);
+  const notes = state.notes.slice(0, 3);
+  if (!pages.length && !notes.length) return '<p class="set-foot">Tes pages et tes notes vocales apparaîtront ici.</p>';
+  return `${pages.length ? `<p class="sr-label">Pages récentes</p><div class="list">${pages.map((p, i) => pageRow(p, i)).join('')}</div>` : ''}
+    ${notes.length ? `<p class="sr-label">Dernières notes</p><div class="list">${notes.map((n, i) => noteRow(n, i)).join('')}</div>` : ''}`;
+}
+
+function openSearch() {
+  return openSheet(`${sheetHead('Rechercher')}<label class="search">${I.search}<input id="search-input" type="search" placeholder="Pages, notes vocales…" value="${attr(state.query)}" autocomplete="off" enterkeyhint="search"></label><div class="search-results" id="search-results">${state.query.trim() ? searchResults(state.query.trim()) : searchHint()}</div>`, (dlg, finish) => {
+    const input = dlg.querySelector('#search-input');
+    const out = dlg.querySelector('#search-results');
+    setTimeout(() => input.focus(), 60);
+    // Échap ferme la recherche d'un coup (sinon le champ « search » se contente de s'effacer).
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        finish(undefined);
+      }
+    });
+    input.addEventListener('input', () => {
+      state.query = input.value;
+      const q = input.value.trim();
+      out.innerHTML = q ? searchResults(q) : searchHint();
+    });
+    out.addEventListener('click', (e) => {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      e.preventDefault();
+      e.stopPropagation();
+      finish(a.getAttribute('href'));
+    });
+  }).then((href) => {
+    if (href) go(href);
+  });
+}
+
+async function checkAi(dlg) {
+  const label = dlg.querySelector('#ai-state');
+  const dot = dlg.querySelector('#ai-dot');
+  const settings = await getDoItValue('settings', {});
+  const st = await aiStatus(settings?.accessCode || '');
+  if (!label?.isConnected) return;
+  const ok = Boolean(st?.ai && (!st.needsCode || st.authorized));
+  label.textContent = typo(ok ? 'Connectée : tes notes sont résumées et classées par Claude.' : st?.ai ? 'Code d’accès requis (à saisir dans Do It).' : 'Hors d’atteinte : Encré écrit en mode local, puis réécrit dès que l’IA répond.');
+  dot.classList.toggle('on', ok);
+}
+
+async function openSettings() {
+  const goals = [100, 250, 500, 1000];
+  const html = `${sheetHead('Réglages')}
+    <div class="set-list">
+      <div class="set-row"><span class="set-ico">${I.hand}</span><span class="set-txt"><b>Écriture manuscrite</b><small>Tes notes vocales s’affichent écrites à la main</small></span><button class="switch${state.hand ? ' is-on' : ''}" type="button" data-set="hand" aria-pressed="${state.hand}" aria-label="Écriture manuscrite"><i></i></button></div>
+      <div class="set-row wrap"><span class="set-ico">${I.bolt}</span><span class="set-txt"><b>Objectif du jour</b><small>Mots à encrer chaque jour, notes et pages comprises</small></span><div class="seg">${goals.map((g) => `<button class="seg-btn${state.goal === g ? ' is-on' : ''}" type="button" data-goal="${g}">${g}</button>`).join('')}</div></div>
+      <div class="set-row"><span class="set-ico">${I.sparkLg}</span><span class="set-txt"><b>Résumés par l’IA</b><small id="ai-state">Vérification…</small></span><i class="dot" id="ai-dot"></i></div>
+    </div>
+    <p class="sr-label">Données</p>
+    <div class="menu">
+      <button type="button" class="menu-item" data-choice="export">${I.download}<span>Sauvegarder tout <small>Pages, dossiers et mémoire en JSON</small></span></button>
+      <button type="button" class="menu-item" data-choice="import">${I.upload}<span>Importer une sauvegarde</span></button>
+      <a class="menu-item" href="../#parler">${I.ext}<span>Ouvrir Do It</span></a>
+    </div>
+    <p class="set-foot">Encré · par Do It. Tout reste sur cet appareil.</p>`;
+  const choice = await openSheet(html, (dlg, finish) => {
+    const sw = dlg.querySelector('[data-set="hand"]');
+    sw.addEventListener('click', () => {
+      state.hand = !state.hand;
+      db.setValue('hand', state.hand);
+      sw.classList.toggle('is-on', state.hand);
+      sw.setAttribute('aria-pressed', String(state.hand));
+    });
+    dlg.querySelectorAll('[data-goal]').forEach((b) => b.addEventListener('click', () => {
+      state.goal = Number(b.dataset.goal);
+      db.setValue('goal', state.goal);
+      dlg.querySelectorAll('[data-goal]').forEach((x) => x.classList.toggle('is-on', x === b));
+    }));
+    dlg.querySelectorAll('[data-choice]').forEach((b) => b.addEventListener('click', () => finish(b.dataset.choice)));
+    checkAi(dlg);
+  });
+  if (state.route.name === 'page') renderChrome();
+  else render(true);
+  if (choice === 'export') exportAll();
+  if (choice === 'import') $('#import-file')?.click();
+}
+
+async function openShortcuts() {
+  const due = dueCards(state.cards).length;
+  const choice = await openMenu('Raccourcis', [
+    { id: 'capture', icon: I.mic, label: 'Parler : nouvelle note vocale' },
+    { id: 'page', icon: I.plus, label: 'Nouvelle page' },
+    { id: 'dictate', icon: I.pen, label: 'Dicter une page' },
+    { id: 'folder', icon: I.folderPlus, label: 'Nouveau dossier' },
+    due && { id: 'review', icon: I.brain, label: `Réviser ${plural(due, 'passage')}` },
+    { id: 'doit', icon: I.ext, label: 'Ouvrir le journal Do It' },
+    { id: 'export', icon: I.download, label: 'Sauvegarder tout' },
+  ]);
+  if (choice === 'capture') openCapture();
+  if (choice === 'page') newPageIn(null);
+  if (choice === 'dictate') onAction('dictate-page', document.body);
+  if (choice === 'folder') newFolder(null);
+  if (choice === 'review') {
+    go('#/memoire');
+    setTimeout(() => onAction('start-review', document.body), 80);
+  }
+  if (choice === 'doit') location.href = '../#journal';
+  if (choice === 'export') exportAll();
+}
+
+function exportAll() {
+  const data = { app: 'encre', version: 1, exportedAt: new Date().toISOString(), pages: state.pages, folders: state.folders, cards: state.cards };
+  download(`encre-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json');
+}
+
+/** Les chiffres clés défilent jusqu'à leur valeur. */
+function countUp(root = document) {
+  if (reduced()) return;
+  for (const el of $$('[data-count]', root)) {
+    const to = Number(el.dataset.count);
+    if (!Number.isFinite(to) || to <= 0) continue;
+    const suffix = el.dataset.suffix || '';
+    const t0 = performance.now();
+    const dur = 700 + Math.min(500, to);
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / dur);
+      el.textContent = `${Math.round(to * (1 - (1 - k) ** 3)).toLocaleString('fr-FR')}${suffix}`;
+      if (k < 1 && el.isConnected) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+}
+
 /* ───────────── Capture vocale : tu parles, Encré écrit ───────────── */
 
 const CAPTURE_STEPS = ['Je résume l’essentiel…', 'Je range par thèmes…', 'Je passe à l’encre…', 'Je soigne chaque mot…'];
@@ -1147,7 +1595,7 @@ function renderCapture(status, { animate = true } = {}) {
   const el = $('#capture');
   el.dataset.state = status;
   const e = cap.entry;
-  const head = `<header class="cap-head"><button class="icon-btn" type="button" data-cap="close" aria-label="Fermer">${I.close}</button><p class="eyebrow">${e && status !== 'done' ? 'Tu complètes ta note' : 'Note vocale'}</p><span class="cap-timer" id="cap-timer"></span></header>`;
+  const head = `<header class="cap-head"><button class="sq" type="button" data-cap="close" aria-label="Fermer">${I.close}</button><p class="eyebrow">${e && status !== 'done' ? 'Tu complètes ta note' : 'Note vocale'}</p><span class="cap-timer" id="cap-timer"></span></header>`;
 
   if (status === 'done') {
     el.innerHTML = `${head}<div class="cap-body${animate ? '' : ' no-anim'}">${handCard(e)}
@@ -1327,7 +1775,7 @@ async function appendNoteTo(entry, page) {
     state.editor.flush();
   } else {
     const html = `${page.html || ''}${section}`;
-    await savePage(page, { html, words: countWords(htmlToText(html)) });
+    await savePage(page, { html, words: countWords(htmlToText(html)) }, { count: false });
   }
   toast(`Note ajoutée à « ${page.title || 'Sans titre'} »`);
 }
@@ -1495,7 +1943,42 @@ async function onAction(name, el, event) {
       state.hand = !state.hand;
       db.setValue('hand', state.hand);
       render(true);
+      if (state.route.name !== 'note') toast(state.hand ? '✍︎ Notes en écriture manuscrite' : 'Aa Notes en écriture classique');
       return;
+    case 'search':
+      return openSearch();
+    case 'settings':
+      return openSettings();
+    case 'shortcuts':
+      return openShortcuts();
+    case 'day': {
+      const step = Number(id);
+      const next = step === 0 ? todayKey() : dayKey(addDays(dateFromKey(selectedDay()), step));
+      if (next > todayKey()) return;
+      state.day = next === todayKey() ? null : next;
+      return render(true);
+    }
+    case 'pick-day':
+      state.day = id === todayKey() ? null : id;
+      return render(true);
+    case 'metric':
+      state.metric = id;
+      $('.chart-card').outerHTML = weekChart(selectedDay());
+      return;
+    case 'page-sort':
+      state.pageSort = id;
+      return renderPages();
+    case 'next-quote': {
+      state.quote += 1;
+      const q = $('.quote-card .q-text');
+      if (q) {
+        q.classList.remove('swap');
+        void q.offsetWidth;
+        q.textContent = typo(QUOTE_LIST[(dayIndex(selectedDay()) + state.quote) % QUOTE_LIST.length]);
+        q.classList.add('swap');
+      }
+      return;
+    }
     case 'note-to-page':
       return noteToPage(id);
     case 'start-review': {
@@ -1537,11 +2020,8 @@ async function onAction(name, el, event) {
       renderMemory();
       renderChrome();
       return;
-    case 'export-all': {
-      const data = { app: 'encre', version: 1, exportedAt: new Date().toISOString(), pages: state.pages, folders: state.folders, cards: state.cards };
-      download(`encre-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json');
-      return;
-    }
+    case 'export-all':
+      return exportAll();
     case 'import':
       $('#import-file')?.click();
       return;
@@ -1622,14 +2102,6 @@ function bind() {
 
   document.addEventListener('input', (e) => {
     if (e.target.closest?.('#doc, #note-doc, #page-title, #note-title')) keepCaretVisible();
-    if (e.target.id === 'home-search') {
-      state.query = e.target.value;
-      const body = $('#home-body');
-      const q = state.query.trim();
-      if (q) body.innerHTML = searchResults(q);
-      else renderHome();
-      if (!q) $('#home-search')?.focus();
-    }
     if (e.target.id === 'notes-search') {
       state.noteQuery = e.target.value;
       const list = $('#note-list');
@@ -1669,15 +2141,6 @@ function bind() {
       /* dépôt étranger */
     }
   });
-
-  // Halo qui suit le doigt ou la souris sur les cartes.
-  document.addEventListener('pointermove', (e) => {
-    const el = e.target.closest?.('.spot');
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty('--mx', `${e.clientX - r.left}px`);
-    el.style.setProperty('--my', `${e.clientY - r.top}px`);
-  }, { passive: true });
 
   // La barre d'édition reste au-dessus du clavier.
   const vv = window.visualViewport;
@@ -1756,10 +2219,10 @@ function splash() {
 async function init() {
   splash();
   bind();
-  const [pages, folders, cards, tabs, notes, noteThemes, hand] = await Promise.all([
-    db.getAll('pages'), db.getAll('folders'), db.getAll('cards'), db.getValue('tabs', []), loadVoiceNotes(), loadVoiceThemes(), db.getValue('hand', true),
+  const [pages, folders, cards, tabs, notes, noteThemes, hand, goal, activity] = await Promise.all([
+    db.getAll('pages'), db.getAll('folders'), db.getAll('cards'), db.getValue('tabs', []), loadVoiceNotes(), loadVoiceThemes(), db.getValue('hand', true), db.getValue('goal', 250), db.getValue('activity', {}),
   ]);
-  Object.assign(state, { pages, folders, cards, notes, noteThemes, hand, tabs: tabs.filter((t) => pages.some((p) => p.id === t)) });
+  Object.assign(state, { pages, folders, cards, notes, noteThemes, hand, goal, activity, tabs: tabs.filter((t) => pages.some((p) => p.id === t)) });
   await seed();
   if (!state.pages.length) state.pages = await db.getAll('pages');
   navigator.storage?.persist?.().catch(() => {});
