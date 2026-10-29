@@ -60,6 +60,26 @@ function Install-MirrorTo {
     else { Say '  [--] MirrorTo n''est pas encore détecté (son installation continue peut-être).' DarkYellow }
 }
 
+function Build-Widget($code, $out, $icon) {
+    $provider = New-Object Microsoft.CSharp.CSharpCodeProvider
+    $params = New-Object System.CodeDom.Compiler.CompilerParameters
+    $params.GenerateExecutable = $true
+    $params.GenerateInMemory = $false
+    $params.OutputAssembly = $out
+    $params.CompilerOptions = '/target:winexe /optimize+'
+    if ($icon) { $params.CompilerOptions += ' /win32icon:"' + $icon + '"' }
+    [void]$params.ReferencedAssemblies.Add('System.dll')
+    [void]$params.ReferencedAssemblies.Add('System.Drawing.dll')
+    [void]$params.ReferencedAssemblies.Add('System.Windows.Forms.dll')
+    if (Test-Path $out) { Remove-Item $out -Force }
+    $result = $provider.CompileAssemblyFromSource($params, $code)
+    $errors = @($result.Errors | Where-Object { -not $_.IsWarning })
+    if ($errors.Count -gt 0) {
+        $errors | Select-Object -First 5 | ForEach-Object { Say "  $_" DarkYellow }
+        throw 'La compilation sur ce PC a échoué.'
+    }
+}
+
 # Ferme proprement un widget déjà lancé : il rend sa forme d'origine à la fenêtre de recopie.
 function Stop-Widget {
     if (-not (Get-Process iPhoneBureau -ErrorAction SilentlyContinue)) { return }
@@ -96,30 +116,32 @@ try {
         Ok 'Code du widget récupéré'
     }
 
-    # Le compilateur C# fait partie de Windows (.NET Framework 4.8).
-    $csc = @(
-        (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'),
-        (Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe')
-    ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-
+    # Compilation par l'API .NET de Windows (pas de ligne de commande à construire,
+    # donc aucun souci avec les espaces ou les accents dans le nom du dossier).
     Say '  Compilation du widget...'
-    $common = @('/nologo', '/target:winexe', '/optimize+', '/codepage:65001',
-                '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll')
-    if ($csc) {
-        # Premier passage pour dessiner l'icône, second pour l'intégrer à l'exe.
-        $tmp = Join-Path $env:TEMP 'iPhoneBureau-icone.exe'
-        & $csc @common "/out:$tmp" $Src | Out-Host
-        if ($LASTEXITCODE -ne 0) { throw 'La compilation a échoué (voir les messages ci-dessus).' }
-        Start-Process $tmp -ArgumentList '--icone', "`"$Ico`"" -Wait
-        Remove-Item $tmp -Force -ErrorAction SilentlyContinue
-        $iconArg = if (Test-Path $Ico) { @("/win32icon:$Ico") } else { @() }
-        & $csc @common @iconArg "/out:$Exe" $Src | Out-Host
-        if ($LASTEXITCODE -ne 0) { throw 'La compilation a échoué (voir les messages ci-dessus).' }
-    } else {
-        if (Test-Path $Exe) { Remove-Item $Exe -Force }
-        Add-Type -TypeDefinition (Get-Content $Src -Raw -Encoding UTF8) `
-                 -ReferencedAssemblies System.Windows.Forms, System.Drawing `
-                 -OutputAssembly $Exe -OutputType WindowsApplication
+    $code = Get-Content $Src -Raw -Encoding UTF8
+    $built = $false
+    try {
+        Build-Widget $code $Exe ''
+        Start-Process $Exe -ArgumentList '--icone', "`"$Ico`"" -Wait
+        if (Test-Path $Ico) {
+            # Second passage pour intégrer l'icône à l'exe ; sans elle, le premier suffit.
+            try {
+                Build-Widget $code "$Exe.new" $Ico
+                Move-Item "$Exe.new" $Exe -Force
+            } catch { Remove-Item "$Exe.new" -Force -ErrorAction SilentlyContinue }
+        }
+        $built = Test-Path $Exe
+    } catch {
+        Say "  [!!] $($_.Exception.Message)" Yellow
+    }
+    if (-not $built) {
+        # Plan B : la version déjà compilée publiée avec le code.
+        Say '  Récupération de la version déjà compilée...'
+        $local = Join-Path $PSScriptRoot 'iPhoneBureau.exe'
+        if (Test-Path $local) { Copy-Item $local $Exe -Force }
+        else { Invoke-WebRequest "$RepoRaw/iPhoneBureau.exe" -OutFile $Exe -UseBasicParsing }
+        Unblock-File $Exe -ErrorAction SilentlyContinue
         Start-Process $Exe -ArgumentList '--icone', "`"$Ico`"" -Wait
     }
     Ok "Widget compilé : $Exe"
