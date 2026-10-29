@@ -1,0 +1,240 @@
+<title>BoitePC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : une colonne de mode d'emploi — la commande complète en tête, puis les 5 outils en grille, puis la sécurité. */
+:root {
+  --bg: #F3F5F9; --surface: #FFFFFF; --ink: #121A2B; --muted: #566179; --line: #D9DEE8;
+  --accent: #1F4FD8; --accent-ink: #FFFFFF; --accent-soft: #E3EAFC;
+  --secu: #0E7A5A; --secu-soft: #DDF2EA; --perf: #1F4FD8; --perf-soft: #E3EAFC;
+  --key: #FFFFFF; --key-edge: #BCC4D4; --code-bg: #0F1729; --code-fg: #D7E0F5;
+  --f-display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D1220; --surface: #151C2E; --ink: #E8ECF5; --muted: #9AA5BD; --line: #27304A;
+  --accent: #6E93FF; --accent-ink: #0D1220; --accent-soft: #1D2A4F;
+  --secu: #4FD1A5; --secu-soft: #123327; --perf: #8AA8FF; --perf-soft: #1D2A4F;
+  --key: #1E2740; --key-edge: #3A4566; --code-bg: #080C17; --code-fg: #CBD6F2; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0D1220; --surface: #151C2E; --ink: #E8ECF5; --muted: #9AA5BD; --line: #27304A;
+  --accent: #6E93FF; --accent-ink: #0D1220; --accent-soft: #1D2A4F;
+  --secu: #4FD1A5; --secu-soft: #123327; --perf: #8AA8FF; --perf-soft: #1D2A4F;
+  --key: #1E2740; --key-edge: #3A4566; --code-bg: #080C17; --code-fg: #CBD6F2; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--f-body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 48px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15 }
+h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); font-weight: 700; letter-spacing: -0.02em }
+h2 { font-size: 1.6rem; font-weight: 700 }
+h3 { font-size: 1.35rem; font-weight: 700 }
+p { margin: 0 }
+.eyebrow { font: 500 .78rem/1 var(--f-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted) }
+.lead { font-size: 1.1rem; color: var(--muted); max-width: 62ch }
+.intro { display: grid; gap: 14px }
+
+.hero { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: clamp(20px, 4vw, 36px); display: grid; gap: 22px }
+.hero-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px }
+.steps li { display: grid; gap: 8px; align-content: start; min-width: 0 }
+.steps .n { font: 500 .75rem/1 var(--f-mono); color: var(--muted) }
+.keys { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .9rem; color: var(--muted) }
+kbd { font: 500 .9rem/1 var(--f-mono); color: var(--ink); background: var(--key); border: 1px solid var(--key-edge);
+  border-bottom-width: 3px; border-radius: 7px; padding: 7px 10px; white-space: nowrap }
+.steps p { font-size: .92rem; color: var(--muted) }
+
+.cmd { display: flex; gap: 0; background: var(--code-bg); border-radius: 10px; overflow: hidden; min-width: 0 }
+.cmd code { flex: 1; min-width: 0; font: 400 .78rem/1.5 var(--f-mono); color: var(--code-fg); padding: 12px 14px;
+  overflow-wrap: anywhere; user-select: all }
+.cmd-big code { font-size: .85rem; padding: 16px 18px }
+.copy { flex: none; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 .9rem/1 var(--f-body);
+  padding: 0 18px; cursor: pointer; min-width: 96px }
+.copy:hover { filter: brightness(1.08) }
+.copy:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px }
+.copy.done { background: var(--secu); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: .92rem; color: var(--muted) }
+.facts b { color: var(--ink); font-weight: 600 }
+
+.alt { display: grid; gap: 10px; padding-top: 18px; border-top: 1px dashed var(--line) }
+.alt p { color: var(--muted); font-size: .95rem }
+
+.section-head { display: grid; gap: 6px; margin-bottom: 18px }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px }
+.tool { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 12px; align-content: start; min-width: 0 }
+.tool-head { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+.tag { font: 600 .72rem/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; padding: 6px 9px; border-radius: 999px }
+.tag-perf { color: var(--perf); background: var(--perf-soft) }
+.tag-secu { color: var(--secu); background: var(--secu-soft) }
+.dur { font: 400 .8rem/1 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.tool ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; font-size: .94rem }
+.note { font-size: .86rem; color: var(--muted) }
+.zip { background: var(--accent-soft); border-radius: 12px; padding: 20px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between }
+.zip p { max-width: 60ch; min-width: 0 }
+.btn { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600; padding: 12px 18px; border-radius: 9px }
+.btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px }
+
+.safety { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px }
+.safety div { display: grid; gap: 6px; align-content: start; border-top: 2px solid var(--ink); padding-top: 12px }
+.safety h3 { font-size: 1.05rem }
+.safety p { font-size: .93rem; color: var(--muted) }
+footer { font-size: .85rem; color: var(--muted) }
+
+@media (max-width: 760px) {
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+  .safety { grid-template-columns: 1fr }
+  .cmd { flex-direction: column }
+  .copy { padding: 13px }
+}
+@media (prefers-reduced-motion: no-preference) { .copy { transition: background .2s } }
+</style>
+
+<div class="wrap">
+  <section class="intro">
+    <span class="eyebrow">Windows 11 · Celeron N4020 · 6 Go</span>
+    <h1>BoitePC</h1>
+    <p class="lead">Cinq outils pour rendre ton PC plus fluide et mieux protégé. Une seule commande à coller, le PC fait le reste tout seul.</p>
+  </section>
+
+  <section class="hero" aria-labelledby="h-full">
+    <div class="hero-top">
+      <h2 id="h-full">Entretien complet, sans rien faire</h2>
+      <span class="eyebrow">Recommandé</span>
+    </div>
+    <ol class="steps">
+      <li><span class="n">1</span><div class="keys"><kbd>Copier</kbd></div><p>Le bouton bleu ci-dessous.</p></li>
+      <li><span class="n">2</span><div class="keys"><kbd>⊞ Win</kbd>+<kbd>R</kbd></div><p>Ouvre la fenêtre « Exécuter ».</p></li>
+      <li><span class="n">3</span><div class="keys"><kbd>Ctrl</kbd>+<kbd>V</kbd><kbd>Entrée</kbd></div><p>Colle la commande et lance-la.</p></li>
+      <li><span class="n">4</span><div class="keys"><kbd>Oui</kbd></div><p>Autorise Windows à faire les réglages.</p></li>
+    </ol>
+    <div class="cmd cmd-big">
+  <code id="c-full">powershell -NoP -EP Bypass -c &quot;$f=Join-Path $env:TEMP BoitePC.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/turbo-pc/BoitePC.ps1 -OutFile $f; &amp; $f -Auto&quot;</code>
+  <button type="button" class="copy" data-target="c-full" id="btn-c-full">Copier</button>
+</div>
+    <div class="facts">
+      <span><b>45 min à 1 h 30</b> · laisse le PC branché</span>
+      <span>Ordre : Allège → Mise à jour → Réparation → Sécurité → Turbo</span>
+      <span>Point de restauration créé au début, redémarrage automatique à la fin</span>
+    </div>
+    <div class="alt">
+      <p>Tu préfères choisir ce qui est lancé ? Cette commande ouvre le menu des 5 outils.</p>
+      <div class="cmd">
+  <code id="c-menu">powershell -NoP -EP Bypass -c &quot;$f=Join-Path $env:TEMP BoitePC.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/turbo-pc/BoitePC.ps1 -OutFile $f; &amp; $f&quot;</code>
+  <button type="button" class="copy" data-target="c-menu" id="btn-c-menu">Copier</button>
+</div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tools">
+    <div class="section-head">
+      <span class="eyebrow">Un outil à la fois</span>
+      <h2 id="h-tools">Les 5 outils</h2>
+      <p class="lead">Même méthode : Copier, <kbd>⊞ Win</kbd>+<kbd>R</kbd>, <kbd>Ctrl</kbd>+<kbd>V</kbd>, <kbd>Entrée</kbd>. Chaque outil ouvre un menu, tape 1 pour le mode recommandé.</p>
+    </div>
+    <div class="grid">
+      <article class="tool">
+  <header class="tool-head">
+    <span class="tag tag-perf">Accélérer</span>
+    <span class="dur">5 min</span>
+  </header>
+  <h3>TurboPC</h3>
+  <ul><li>Processeur en mode Hautes performances, plus de bridage sur secteur</li><li>Animations, transparence et ombres coupées : menus instantanés</li><li>Applis en arrière-plan, Game DVR, pubs et télémétrie arrêtés</li><li>Fichiers temporaires nettoyés, SSD optimisé (TRIM)</li></ul>
+  <p class="note">Option 3 du menu : remet chaque réglage comme avant.</p>
+  <div class="cmd">
+  <code id="c-turbopc">powershell -NoP -EP Bypass -c &quot;$f=Join-Path $env:TEMP TurboPC.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/turbo-pc/TurboPC.ps1 -OutFile $f; &amp; $f&quot;</code>
+  <button type="button" class="copy" data-target="c-turbopc" id="btn-c-turbopc">Copier</button>
+</div>
+</article><article class="tool">
+  <header class="tool-head">
+    <span class="tag tag-secu">Sécuriser</span>
+    <span class="dur">10 à 20 min</span>
+  </header>
+  <h3>BouclierPC</h3>
+  <ul><li>Bilan de sécurité avec un score (antivirus, pare-feu, TPM, chiffrement…)</li><li>Defender renforcé : logiciels indésirables, sites piégés, cloud</li><li>Clés USB sans exécution automatique, extensions de fichiers visibles</li><li>Assistance à distance fermée contre les arnaques au faux support</li></ul>
+  <p class="note">Le bilan seul (option 2) ne change rien.</p>
+  <div class="cmd">
+  <code id="c-bouclierpc">powershell -NoP -EP Bypass -c &quot;$f=Join-Path $env:TEMP BouclierPC.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/turbo-pc/BouclierPC.ps1 -OutFile $f; &amp; $f&quot;</code>
+  <button type="button" class="copy" data-target="c-bouclierpc" id="btn-c-bouclierpc">Copier</button>
+</div>
+</article><article class="tool">
+  <header class="tool-head">
+    <span class="tag tag-perf">Mettre à jour</span>
+    <span class="dur">10 à 40 min</span>
+  </header>
+  <h3>MajPC</h3>
+  <ul><li>Windows Update et pilotes installés sans passer par les menus</li><li>Toutes les applis à jour d’un coup (Chrome, VLC, Zoom…) via winget</li><li>Définitions de virus et applis du Store</li><li>Option : mise à jour automatique des applis chaque mercredi</li></ul>
+  <p class="note">Les mises à jour facultatives sont laissées de côté.</p>
+  <div class="cmd">
+  <code id="c-majpc">powershell -NoP -EP Bypass -c &quot;$f=Join-Path $env:TEMP MajPC.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/turbo-pc/MajPC.ps1 -OutFile $f; &amp; $f&quot;</code>
+  <button type="button" class="copy" data-target="c-majpc" id="btn-c-majpc">Copier</button>
+</div>
+</article><article class="tool">
+  <header class="tool-head">
+    <span class="tag tag-secu">Réparer</span>
+    <span class="dur">20 à 45 min</span>
+  </header>
+  <h3>ReparePC</h3>
+  <ul><li>Fichiers Windows abîmés réparés (DISM puis SFC), cause classique des bugs</li><li>Santé du SSD, place libre et usure de la batterie</li><li>Arrêts brutaux et écrans bleus des 30 derniers jours</li><li>Réparation d’Internet et test de la mémoire, au choix</li></ul>
+  <p class="note">Le rapport batterie est enregistré sur le Bureau.</p>
+  <div class="cmd">
+  <code id="c-reparepc">powershell -NoP -EP Bypass -c &quot;$f=Join-Path $env:TEMP ReparePC.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/turbo-pc/ReparePC.ps1 -OutFile $f; &amp; $f&quot;</code>
+  <button type="button" class="copy" data-target="c-reparepc" id="btn-c-reparepc">Copier</button>
+</div>
+</article><article class="tool">
+  <header class="tool-head">
+    <span class="tag tag-perf">Alléger</span>
+    <span class="dur">5 min</span>
+  </header>
+  <h3>AllegePC</h3>
+  <ul><li>Applis préinstallées retirées : Clipchamp, Xbox, Solitaire, TikTok, essais d’antivirus…</li><li>Recherche Bing et recommandations retirées du menu Démarrer</li><li>Corbeille, caches et rapports d’erreur vidés</li><li>Vous choisissez les numéros des applis à garder</li></ul>
+  <p class="note">Toutes les applis se réinstallent depuis le Microsoft Store.</p>
+  <div class="cmd">
+  <code id="c-allegepc">powershell -NoP -EP Bypass -c &quot;$f=Join-Path $env:TEMP AllegePC.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/turbo-pc/AllegePC.ps1 -OutFile $f; &amp; $f&quot;</code>
+  <button type="button" class="copy" data-target="c-allegepc" id="btn-c-allegepc">Copier</button>
+</div>
+</article>
+      <div class="zip">
+        <p><b>Sans Internet ?</b> Télécharge le dossier, fais clic droit puis « Extraire tout », et double-clique sur <code>Lancer-BoitePC.bat</code>.</p>
+        <a class="btn" href="https://github.com/pierrernrd04-ai/Vous-/raw/HEAD/turbo-pc/BoitePC.zip" target="_blank" rel="noopener">Télécharger BoitePC.zip</a>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-safe">
+    <div class="section-head">
+      <span class="eyebrow">Avant de lancer</span>
+      <h2 id="h-safe">Ce qu'il faut savoir</h2>
+    </div>
+    <div class="safety">
+      <div><h3>Retour en arrière</h3><p>Un point de restauration « Avant BoitePC » est créé. En cas de souci : Démarrer, tape « restauration », puis Restauration du système.</p></div>
+      <div><h3>Fenêtre bleue Windows</h3><p>Le contrôle de compte demande si l'appli peut modifier l'appareil. C'est normal : clique sur Oui, sinon rien ne s'applique.</p></div>
+      <div><h3>Ce que ça ne fait pas</h3><p>Aucun logiciel ne rend le processeur plus puissant. Le plus gros gain matériel reste de passer à 8 Go de RAM, si l'ordinateur le permet.</p></div>
+    </div>
+  </section>
+
+  <footer>Les scripts sont publics et lisibles sur GitHub : <a href="https://github.com/pierrernrd04-ai/Vous-/tree/HEAD/turbo-pc" target="_blank" rel="noopener">pierrernrd04-ai/Vous- · turbo-pc</a></footer>
+</div>
+
+<script>
+document.querySelectorAll('.copy').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var code = document.getElementById(btn.dataset.target);
+    var text = code.textContent;
+    function done(label) {
+      btn.textContent = label; btn.classList.add('done');
+      setTimeout(function () { btn.textContent = 'Copier'; btn.classList.remove('done'); }, 2200);
+    }
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents(code);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      done('Ctrl+C');
+    }
+    try {
+      navigator.clipboard.writeText(text).then(function () { done('Copié'); }, fallback);
+    } catch (e) { fallback(); }
+  });
+});
+</script>
