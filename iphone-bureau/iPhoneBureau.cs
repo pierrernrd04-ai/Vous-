@@ -487,9 +487,9 @@ namespace IPhoneBureau
                     }
                     string[] steps = new string[]
                     {
-                        "1. Touchez « Recopie gratuite » ci-dessous : un code s'affiche ici.",
-                        "2. Sur l'iPhone, appli AirDroid Cast (gratuite) : tapez ce code.",
-                        "3. Acceptez ici, puis « Démarrer la diffusion » sur l'iPhone.",
+                        "1. Touchez « Recopie Google Meet » : Meet s'ouvre ici.",
+                        "2. Nouvelle réunion → réunion instantanée, micro et caméra coupés.",
+                        "3. iPhone, appli Meet : rejoignez avec le code, puis Partager l'écran.",
                     };
                     using (Font f = F(W * 0.04f, FontStyle.Regular))
                     using (SolidBrush b = new SolidBrush(Color.FromArgb(230, 255, 255, 255)))
@@ -504,7 +504,7 @@ namespace IPhoneBureau
                     y += W * 0.02f;
                     string[][] buttons = new string[][]
                     {
-                        new string[] { "Recopie gratuite", "webcast" },
+                        new string[] { "Recopie Google Meet", "meet" },
                         new string[] { "Choisir la fenêtre…", "choisir" },
                         new string[] { "Messages (Lien mobile)", "liens" },
                     };
@@ -811,15 +811,25 @@ namespace IPhoneBureau
         }
     }
 
-    // ---------------------------------------------------- AirDroid Cast Web
-    // Recopie gratuite sans logiciel sur le PC : la page web reçoit l'écran envoyé par
-    // l'appli AirDroid Cast de l'iPhone. Ouverte dans Edge en mode appli (sans onglets).
-    static class WebCast
+    // ------------------------------------------------ Recopie par le navigateur
+    // L'iPhone envoie son écran à une page web (Google Meet ou AirDroid Cast Web) ouverte
+    // dans Edge en mode appli, sans onglets. Edge sort déjà par le pare-feu : rien à débloquer.
+    class WebSource
     {
-        public const string Title = "AirDroid Cast";
-        const string Url = "https://webcast.airdroid.com/";
+        public readonly string Title, Url;
+        WebSource(string title, string url) { Title = title; Url = url; }
 
-        public static bool Launch()
+        public static readonly WebSource Meet = new WebSource("Meet", "https://meet.google.com/");
+        public static readonly WebSource AirDroid = new WebSource("AirDroid Cast", "https://webcast.airdroid.com/");
+
+        public static WebSource Find(string title)
+        {
+            if (title == Meet.Title) return Meet;
+            if (title == AirDroid.Title) return AirDroid;
+            return null;
+        }
+
+        public bool Launch()
         {
             foreach (Candidate c in Finder.List())
                 if (c.Process.Equals("msedge", StringComparison.OrdinalIgnoreCase) && c.Title.IndexOf(Title, StringComparison.OrdinalIgnoreCase) >= 0)
@@ -1047,7 +1057,8 @@ namespace IPhoneBureau
             SystemEvents.DisplaySettingsChanged += OnDisplayChanged;
             timer.Start();
             Search(true);
-            if (!mirror.Attached && cfg.SourceTitle == WebCast.Title) WebCast.Launch();
+            WebSource web = WebSource.Find(cfg.SourceTitle);
+            if (!mirror.Attached && web != null) web.Launch();
             else if (!mirror.Attached && cfg.AutoMirrorTo && !MirrorTo.Running()) MirrorTo.Launch();
             if (!cfg.Welcomed)
             {
@@ -1261,17 +1272,8 @@ namespace IPhoneBureau
                     break;
                 case "choisir": ChooseWindow(); break;
                 case "liens": OpenPhoneLink(); break;
-                case "webcast":
-                    // Recopie par le navigateur : Edge est déjà autorisé par le pare-feu, rien à débloquer.
-                    mirror.Detach(); UnhookSource();
-                    cfg.SourceProcess = "msedge"; cfg.SourceTitle = WebCast.Title;
-                    cfg.CropTop = cfg.CropBottom = cfg.CropLeft = cfg.CropRight = 0;
-                    cfg.AutoMirrorTo = false;
-                    cfg.Save();
-                    if (!WebCast.Launch())
-                        tray.ShowBalloonTip(6000, "Edge introuvable", "Ouvrez webcast.airdroid.com dans votre navigateur, puis « Choisir la fenêtre… ».", ToolTipIcon.Warning);
-                    lastSearch = DateTime.MinValue;
-                    break;
+                case "meet": UseWeb(WebSource.Meet); break;
+                case "webcast": UseWeb(WebSource.AirDroid); break;
                 case "mirrorto":
                     if (!MirrorTo.Launch())
                         tray.ShowBalloonTip(6000, "MirrorTo introuvable", "Réinstallez-le avec la commande de la page d'aide, ou choisissez une autre appli de recopie.", ToolTipIcon.Warning);
@@ -1285,6 +1287,18 @@ namespace IPhoneBureau
                     }
                     break;
             }
+        }
+
+        void UseWeb(WebSource web)
+        {
+            mirror.Detach(); UnhookSource();
+            cfg.SourceProcess = "msedge"; cfg.SourceTitle = web.Title;
+            cfg.CropTop = cfg.CropBottom = cfg.CropLeft = cfg.CropRight = 0;
+            cfg.AutoMirrorTo = false;
+            cfg.Save();
+            if (!web.Launch())
+                tray.ShowBalloonTip(6000, "Edge introuvable", "Ouvrez " + web.Url + " dans votre navigateur, puis « Choisir la fenêtre… ».", ToolTipIcon.Warning);
+            lastSearch = DateTime.MinValue;
         }
 
         void Toggle()
@@ -1377,7 +1391,8 @@ namespace IPhoneBureau
             }
             menu.Items.Add(itemColor);
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Recopie gratuite (AirDroid Cast Web)", null, delegate { Do("webcast"); });
+            menu.Items.Add("Recopie par Google Meet (gratuite)", null, delegate { Do("meet"); });
+            menu.Items.Add("Recopie par AirDroid Cast Web", null, delegate { Do("webcast"); });
             menu.Items.Add("Ouvrir MirrorTo", null, delegate { Do("mirrorto"); });
             itemAutoMirror = new ToolStripMenuItem("Ouvrir MirrorTo avec le widget", null, delegate { cfg.AutoMirrorTo = !cfg.AutoMirrorTo; cfg.Save(); });
             menu.Items.Add(itemAutoMirror);
