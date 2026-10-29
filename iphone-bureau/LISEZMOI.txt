@@ -1,0 +1,81 @@
+﻿IPHONE BUREAU - mode d emploi
+=============================
+
+Un widget en forme d iPhone 13 mini, à taille réelle (131,5 x 64,2 mm),
+posé sur le bureau Windows 11. Son écran affiche l écran de votre iPhone
+en direct : on clique, on fait défiler, on tape des messages au clavier.
+
+
+1. INSTALLER (une seule fois, 30 secondes)
+------------------------------------------
+- Décompressez tout le dossier (clic droit sur le .zip > Extraire tout).
+- Double-cliquez sur Installer-iPhoneBureau.bat.
+  Si Windows affiche « Windows a protégé votre ordinateur » :
+  Informations complémentaires > Exécuter quand même.
+- Le widget apparaît en bas à droite, avec un raccourci sur le Bureau.
+  Rien n est téléchargé : le programme est compilé sur votre PC.
+
+
+2. BRANCHER L ÉCRAN DE L IPHONE
+-------------------------------
+Apple ne permet pas de piloter un iPhone depuis Windows sans aide
+(sa « Recopie de l iPhone » n existe que sur Mac). Il faut donc une appli
+de recopie sur le PC. iPhone Bureau prend sa fenêtre et la met dans le
+téléphone. Selon ce que vous voulez :
+
+  VOIR ET UTILISER L IPHONE (cliquer, ouvrir les applis, écrire)
+  Une appli qui recopie l écran ET pilote l iPhone par Bluetooth
+  (via AssistiveTouch), par exemple iMyFone MirrorTo ou AirDroid Cast.
+  Le contrôle est en général une option payante : vérifiez avant.
+  Une fois l iPhone associé en Bluetooth, vos clics dans le widget
+  deviennent des touchers et votre clavier écrit sur l iPhone.
+
+  SEULEMENT VOIR L ÉCRAN (gratuit)
+  LetsView, UxPlay, LonelyScreen... (recopie AirPlay sans contrôle).
+
+  ÉCRIRE DES MESSAGES SANS RECOPIE (gratuit, inclus dans Windows 11)
+  Lien mobile : iMessage/SMS, appels, notifications. Bouton « Messages »
+  dans le widget, ou clic droit > Ouvrir Lien mobile.
+
+Ensuite :
+  a. iPhone et PC sur le même Wi-Fi, appli de recopie ouverte sur le PC.
+  b. Sur l iPhone : Centre de contrôle > Recopie de l écran > votre PC.
+  c. Le widget trouve la fenêtre tout seul en 2 secondes.
+     Sinon : bouton « Choisir la fenêtre... » et cliquez sur la bonne.
+     Le choix est retenu pour les fois suivantes.
+  d. Si une barre d outils de l appli dépasse ou si l image est décalée :
+     clic droit sur le contour > Régler le cadrage... (en pixels, en direct).
+
+
+3. UTILISATION
+--------------
+- Glisser le contour noir      déplacer le téléphone
+- Clic dans l écran            toucher l iPhone (si l appli le pilote)
+- Clavier                      écrit sur l iPhone quand l écran a le focus
+- Ctrl + Alt + I               afficher / masquer, et prêt à taper
+- Clic droit sur le contour    réglages :
+    Taille réelle, 115 %... 200 %   ou « Calibrer la taille réelle »
+    Couleur                        Minuit, Lumière stellaire, Bleu, Rose,
+                                   Vert, (PRODUCT)RED
+    Toujours au premier plan       sinon il reste posé sur le bureau
+    Lancer au démarrage de Windows
+- Icône près de l horloge       clic : afficher ; clic droit : réglages
+
+Taille réelle : le widget lit la taille physique de votre écran.
+Si le téléphone ne fait pas exactement 6,4 cm de large, clic droit >
+Taille > Calibrer la taille réelle..., posez une carte bancaire sur
+l écran et ajustez le curseur.
+
+
+4. EN CAS DE SOUCI
+------------------
+- La fenêtre de recopie ne se colle pas au téléphone : l appli de recopie
+  est peut-être lancée en administrateur. Relancez-la normalement.
+- L écran affiche « Écran en veille » : la recopie a été réduite.
+  Cliquez dessus pour la réveiller.
+- Quitter : clic droit > Quitter. La fenêtre de recopie retrouve
+  sa forme normale.
+- Journal d erreurs : %LOCALAPPDATA%\iPhoneBureau\erreurs.txt
+- Réglages : %LOCALAPPDATA%\iPhoneBureau\reglages.ini
+
+Désinstaller : double-cliquez sur Desinstaller-iPhoneBureau.bat.
