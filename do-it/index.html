@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Do It · De l’oral à l’écrit</title>
+  <meta name="description" content="Raconte à voix haute, Do It l’écrit&#8239;: ton journal de bord vocal, réécrit proprement et rangé par thème.">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="dark light">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Do It">
+  <meta property="og:title" content="Do It · De l’oral à l’écrit">
+  <meta property="og:description" content="Les paroles s’envolent. Les tiennes restent.">
+  <meta property="og:image" content="icons/icon-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body data-view="parler">
+  <div class="aura" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="topbar">
+    <a class="brand" href="#parler" aria-label="Do It, accueil">
+      <span class="brand-mark"></span>
+      <span class="brand-name">Do It</span>
+    </a>
+    <a class="streak" id="streak" href="#bilan" hidden></a>
+  </header>
+
+  <main>
+    <!-- Parler -->
+    <section class="view view-parler" id="view-parler" data-state="idle">
+      <div class="hero">
+        <p class="hello"><span id="hello">Bonjour.</span> <span class="hello-date" id="today"></span></p>
+        <h1 class="pun">De l’<em class="gold">or</em>al <span class="pun-to">à</span> l’écrit<span class="pun-dot">.</span></h1>
+        <p class="quote" id="quote" aria-live="polite"></p>
+      </div>
+
+      <div class="stage" id="stage" data-state="idle">
+        <div class="reply-banner" id="reply-banner" hidden>
+          <span class="reply-tag">Tu réponds à</span>
+          <p id="reply-question"></p>
+          <button class="icon-btn sm" id="reply-clear" type="button" data-action="clear-reply" aria-label="Ne pas répondre"></button>
+        </div>
+
+        <button class="orb" id="orb" type="button" aria-label="Commencer l’enregistrement" aria-pressed="false">
+          <span class="orb-glow"></span>
+          <span class="orb-orbit"><i></i><i></i><i></i><i></i></span>
+          <span class="orb-orbit o2"><i></i><i></i></span>
+          <span class="orb-ring"></span>
+          <span class="orb-ring r2"></span>
+          <span class="orb-core"><span class="orb-sheen"></span><span class="orb-icon"></span></span>
+        </button>
+
+        <p class="stage-hint" id="stage-hint" aria-live="polite">Appuie et raconte</p>
+        <div class="meter" id="meter" aria-hidden="true"></div>
+        <div class="live" id="live" aria-live="polite"></div>
+
+        <div class="stage-actions" id="stage-actions" hidden>
+          <button class="btn btn-ghost" id="cancel-rec" type="button" data-action="cancel-rec">Annuler</button>
+          <button class="btn btn-primary" id="finish-rec" type="button" data-action="finish-rec">Terminer</button>
+        </div>
+      </div>
+
+      <div class="ideas" id="ideas">
+        <p class="ideas-label">Besoin d’une idée&#8239;? Touche un sujet et parle.</p>
+        <div class="ideas-row" id="ideas-row"></div>
+        <button class="link" id="keyboard-btn" type="button" data-action="keyboard">Écrire plutôt</button>
+      </div>
+
+      <div class="feed" id="feed"></div>
+    </section>
+
+    <!-- Journal -->
+    <section class="view" id="view-journal" hidden>
+      <header class="view-head">
+        <h2>Journal de bord</h2>
+        <p id="journal-count"></p>
+        <a class="encre-link" href="encre/">✍️ Retravailler mes notes dans <b>Encré</b> ↗</a>
+      </header>
+      <label class="search">
+        <span id="search-icon"></span>
+        <input type="search" id="search" placeholder="Rechercher dans tes récits" autocomplete="off">
+      </label>
+      <div class="tabs" id="tabs" role="toolbar" aria-label="Thèmes"></div>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <!-- Thèmes -->
+    <section class="view" id="view-themes" hidden>
+      <header class="view-head">
+        <h2>Thèmes</h2>
+        <p>Do It comprend de quoi tu parles et range chaque récit dans le bon onglet.</p>
+      </header>
+      <div class="theme-grid" id="theme-grid"></div>
+      <div class="themes-ghost" id="themes-ghost"></div>
+    </section>
+
+    <!-- Bilan -->
+    <section class="view" id="view-bilan" hidden>
+      <header class="view-head">
+        <h2>Bilan</h2>
+        <p>Ce que ta voix raconte de toi.</p>
+      </header>
+      <div class="stats" id="stats"></div>
+      <div class="card" id="mood-card"></div>
+      <div class="card" id="mix-card"></div>
+      <div class="card settings" id="settings"></div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Navigation">
+    <a href="#parler" data-nav="parler"><span class="tab-icon"></span><span>Parler</span></a>
+    <a href="#journal" data-nav="journal"><span class="tab-icon"></span><span>Journal</span></a>
+    <a href="#themes" data-nav="themes"><span class="tab-icon"></span><span>Thèmes</span></a>
+    <a href="#bilan" data-nav="bilan"><span class="tab-icon"></span><span>Bilan</span></a>
+  </nav>
+
+  <dialog class="sheet" id="sheet" aria-label="Récit"></dialog>
+
+  <dialog class="sheet composer" id="composer" aria-label="Écrire un récit">
+    <form class="sheet-inner" id="composer-form" method="dialog">
+      <header class="sheet-head">
+        <h2 class="sheet-title sm">Écris-le</h2>
+        <button class="icon-btn" id="composer-close" type="submit" value="cancel" aria-label="Fermer"></button>
+      </header>
+      <p class="composer-note" id="composer-note"></p>
+      <textarea id="composer-text" rows="9" placeholder="Raconte, même en vrac…"></textarea>
+      <footer class="sheet-actions">
+        <button class="btn" type="submit" value="cancel">Annuler</button>
+        <button class="btn btn-primary" type="submit" value="ok">Do It ✨</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div class="onboarding" id="onboarding" hidden>
+    <form class="onboarding-card" id="onboarding-form">
+      <span class="onboarding-mark" id="onboarding-mark"></span>
+      <h1 class="onboarding-title">Do It</h1>
+      <p class="pun small">De l’<em class="gold">or</em>al à l’écrit.</p>
+      <p class="onboarding-lead">Les paroles s’envolent. <b>Les tiennes restent.</b></p>
+      <ol class="steps">
+        <li><span>🎙️</span><div><b>Tu parles</b><p>Raconte ta journée, ton sport, tes soirées, ton moral. En vrac, comme ça vient.</p></div></li>
+        <li><span>✍️</span><div><b>Do It écrit</b><p>Fautes, répétitions et «&#8239;en fait&#8239;» disparaissent. Il reste un texte net.</p></div></li>
+        <li><span>🗂️</span><div><b>Tout est rangé</b><p>Chaque récit est daté et classé par thème. Ton journal de bord se construit tout seul.</p></div></li>
+      </ol>
+      <label class="field">
+        <span>Comment tu t’appelles&#8239;?</span>
+        <input id="onboarding-name" type="text" autocomplete="given-name" maxlength="30" placeholder="Ton prénom (facultatif)">
+      </label>
+      <button class="btn btn-primary btn-lg" type="submit">C’est parti</button>
+      <p class="fineprint">Ton journal reste sur ton téléphone.</p>
+    </form>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
