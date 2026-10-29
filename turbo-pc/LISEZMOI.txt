@@ -1,21 +1,20 @@
-﻿TURBO PC - mode d emploi
+﻿BOITE PC - mode d emploi
 ========================
 
-1. Copiez le dossier TurboPC sur le PC (par exemple sur le Bureau).
-2. Double-cliquez sur Lancer-TurboPC.bat.
-3. Windows demande l autorisation administrateur : cliquez sur Oui.
-   (Si un écran bleu SmartScreen apparaît : Informations complémentaires > Exécuter quand même.)
-4. Tapez 1 puis Entrée. Répondez O ou N aux deux questions.
-5. Redémarrez le PC.
+Le plus rapide : appuyez sur Windows + R, collez la commande copiée
+depuis la page BoitePC, appuyez sur Entrée, puis cliquez sur Oui.
 
-Pour tout annuler : relancez, tapez 3. Un point de restauration Windows
-« Avant TurboPC » est aussi créé au début, par sécurité.
+Sans Internet ou sans la page : double-cliquez sur Lancer-BoitePC.bat,
+cliquez sur Oui, puis tapez 1 pour l entretien complet.
 
-Ce que fait TurboPC
-- Mode d alimentation Hautes performances (le processeur ne ralentit plus sur secteur)
-- Coupe animations, transparence et ombres : les fenêtres et menus s ouvrent tout de suite
-- Bloque les applis en arrière-plan, la télémétrie, Game DVR, les pubs/suggestions, Edge caché
-- Option : coupe l indexation de recherche (gros consommateur sur Celeron)
-- Nettoie les fichiers temporaires et optimise le SSD (TRIM)
-- Option : nettoyage automatique chaque dimanche
-- Ouvre la liste des programmes au démarrage pour que vous désactiviez l inutile
+Les 5 outils
+- TurboPC     accélère Windows (alimentation, animations, tâches de fond)
+- BouclierPC  bilan de sécurité noté et renforcement de Defender et Windows
+- MajPC       met à jour Windows, les pilotes, l antivirus et les applis
+- ReparePC    répare les fichiers système, vérifie SSD, batterie et plantages
+- AllegePC    supprime les applis préinstallées inutiles et libère de la place
+
+Sécurité
+Un point de restauration « Avant BoitePC » est créé au début.
+En cas de souci : Démarrer > tapez « restauration » > Créer un point de
+restauration > Restauration du système. TurboPC a aussi son option Annuler.

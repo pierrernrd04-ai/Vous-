@@ -5,6 +5,7 @@
     Tout ce que le script modifie est sauvegardé avant, et l'option
     "Annuler" remet chaque réglage exactement comme il était.
 #>
+param([switch]$Auto)   # -Auto : tout appliquer sans poser de question
 
 $ErrorActionPreference = 'Stop'
 $Host.UI.RawUI.WindowTitle = 'TurboPC'
@@ -13,8 +14,9 @@ $Host.UI.RawUI.WindowTitle = 'TurboPC'
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).
     IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Start-Process powershell.exe -Verb RunAs -ArgumentList @(
-        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+    $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+    if ($Auto) { $argList += '-Auto' }
+    Start-Process powershell.exe -Verb RunAs -ArgumentList $argList
     exit
 }
 
@@ -27,7 +29,8 @@ function Say($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color 
 function Ok($text)   { Write-Host "  [OK] $text" -ForegroundColor Green }
 function Skip($text) { Write-Host "  [--] $text" -ForegroundColor DarkYellow }
 
-function Ask($question) {
+function Ask($question, $default = $true) {
+    if ($Auto) { return $default }
     do { $r = (Read-Host "$question (O/N)").Trim().ToUpper() } while ($r -notin 'O', 'N')
     return $r -eq 'O'
 }
@@ -80,6 +83,7 @@ function Set-ServiceStart($name, $startType) {
 
 # --- Étapes d'optimisation -------------------------------------------------
 function Step-RestorePoint {
+    if ($env:BOITEPC_RESTOREPOINT) { return }   # déjà créé par BoitePC
     Say "`n> Point de restauration Windows (filet de sécurité)" Cyan
     try {
         Enable-ComputerRestore -Drive "$env:SystemDrive\" -ErrorAction SilentlyContinue
@@ -202,7 +206,7 @@ function Step-Startup {
     Say '  Le Gestionnaire des tâches va s''ouvrir sur l''onglet "Applications de démarrage".'
     Say '  Clic droit > Désactiver sur tout ce dont vous n''avez pas besoin dès l''allumage'
     Say '  (gardez l''antivirus, le pilote audio/Wi-Fi et le pavé tactile).' DarkYellow
-    Start-Process taskmgr.exe -ArgumentList '/0', '/startup'
+    if (-not $Auto) { Start-Process taskmgr.exe -ArgumentList '/0', '/startup' }
 }
 
 function Step-WeeklyTask {
@@ -246,6 +250,26 @@ function Undo-All {
     Say "`nTout est revenu comme avant. Redémarrez le PC pour terminer." Green
 }
 
+# Une étape qui échoue ne doit pas empêcher les suivantes.
+function Invoke-Step([scriptblock]$step) {
+    try { & $step } catch { Skip "Étape interrompue : $($_.Exception.Message)" }
+    Save-Backup
+}
+
+function Invoke-Optimize {
+    Invoke-Step { Step-RestorePoint }
+    Invoke-Step { Step-Power }
+    Invoke-Step { Step-Visual }
+    Invoke-Step { Step-Background }
+    Invoke-Step { Step-Search }
+    Invoke-Step { Step-Clean }
+    Invoke-Step { Step-WeeklyTask }
+    Invoke-Step { Step-Startup }
+    Say "`nTurboPC terminé. Redémarrez le PC pour que tout prenne effet." Green
+}
+
+if ($Auto) { Invoke-Optimize; return }
+
 # --- Menu ------------------------------------------------------------------
 function Show-Header {
     Clear-Host
@@ -271,18 +295,10 @@ while ($true) {
     $choice = Read-Host "`n  Votre choix"
     switch ($choice) {
         '1' {
-            Step-RestorePoint
-            Step-Power;      Save-Backup
-            Step-Visual;     Save-Backup
-            Step-Background; Save-Backup
-            Step-Search;     Save-Backup
-            Step-Clean
-            Step-WeeklyTask
-            Step-Startup
-            Say "`nTerminé ! Redémarrez le PC pour que tout prenne effet." Green
+            Invoke-Optimize
             Read-Host "`nEntrée pour revenir au menu" | Out-Null
         }
-        '2' { Step-Clean; Read-Host "`nEntrée pour revenir au menu" | Out-Null }
+        '2' { Invoke-Step { Step-Clean }; Read-Host "`nEntrée pour revenir au menu" | Out-Null }
         '3' { if (Ask "`n  Remettre tous les réglages d'origine ?") { Undo-All }
               Read-Host "`nEntrée pour revenir au menu" | Out-Null }
         '4' { exit }
