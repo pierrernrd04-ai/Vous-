@@ -8,6 +8,13 @@ en direct : on clique, on fait défiler, on tape des messages au clavier.
 
 1. INSTALLER (une seule fois, 30 secondes)
 ------------------------------------------
+Le plus rapide : Windows + R, collez cette commande, Entrée :
+
+powershell -NoP -EP Bypass -c "$f=Join-Path $env:TEMP iPhoneBureau.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/iphone-bureau/Installer.ps1 -OutFile $f; & $f"
+
+Elle installe le widget ET propose d'installer MirrorTo (recommandé).
+
+Sinon, avec ce dossier :
 - Décompressez tout le dossier (clic droit sur le .zip > Extraire tout).
 - Double-cliquez sur Installer-iPhoneBureau.bat.
   Si Windows affiche « Windows a protégé votre ordinateur » :

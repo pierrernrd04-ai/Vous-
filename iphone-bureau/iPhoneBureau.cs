@@ -58,7 +58,7 @@ namespace IPhoneBureau
         [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr hwnd);
         [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
         [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hwnd, int cmd);
-        [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+        [DllImport("user32.dll", SetLastError = true)] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
         [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out RECT r);
         [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr hwnd, int index);
         [DllImport("user32.dll")] public static extern int SetWindowLong(IntPtr hwnd, int index, int value);
@@ -128,6 +128,7 @@ namespace IPhoneBureau
         public bool TopMost;
         public int PosX = int.MinValue, PosY = int.MinValue;
         public bool Welcomed;
+        public bool AutoMirrorTo = true;  // ouvre MirrorTo en même temps que le widget
 
         public static string Folder
         {
@@ -164,6 +165,7 @@ namespace IPhoneBureau
                         case "X": c.PosX = Int(v, int.MinValue); break;
                         case "Y": c.PosY = Int(v, int.MinValue); break;
                         case "Bienvenue": c.Welcomed = v == "1"; break;
+                        case "OuvrirMirrorTo": c.AutoMirrorTo = v != "0"; break;
                     }
                 }
             }
@@ -197,6 +199,7 @@ namespace IPhoneBureau
                 if (PosX != int.MinValue) sb.AppendLine("X=" + PosX);
                 if (PosY != int.MinValue) sb.AppendLine("Y=" + PosY);
                 sb.AppendLine("Bienvenue=" + (Welcomed ? "1" : "0"));
+                sb.AppendLine("OuvrirMirrorTo=" + (AutoMirrorTo ? "1" : "0"));
                 File.WriteAllText(FilePath, sb.ToString(), Encoding.UTF8);
             }
             catch { }
@@ -293,7 +296,7 @@ namespace IPhoneBureau
 
         static RectangleF Inset(RectangleF r, float d) { return new RectangleF(r.X + d, r.Y + d, r.Width - 2 * d, r.Height - 2 * d); }
 
-        public static Bitmap Draw(Layout L, Scheme s, ScreenState state, List<HotSpot> spots, DateTime now)
+        public static Bitmap Draw(Layout L, Scheme s, ScreenState state, List<HotSpot> spots, DateTime now, bool hasMirrorTo)
         {
             Bitmap bmp = new Bitmap(L.Size.Width, L.Size.Height, PixelFormat.Format32bppArgb);
             using (Graphics g = Graphics.FromImage(bmp))
@@ -302,7 +305,7 @@ namespace IPhoneBureau
                 g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 DrawBody(g, L, s, state == ScreenState.Mirror);
-                if (state != ScreenState.Mirror) DrawScreen(g, L, state, spots, now);
+                if (state != ScreenState.Mirror) DrawScreen(g, L, state, spots, now, hasMirrorTo);
                 DrawNotch(g, L);
             }
             return bmp;
@@ -408,7 +411,7 @@ namespace IPhoneBureau
         static Font FSemi(float px) { return new Font("Segoe UI Semibold", Math.Max(6f, px), FontStyle.Regular, GraphicsUnit.Pixel); }
 
         // Écran affiché quand aucune recopie n'est branchée (ou quand elle est en veille).
-        static void DrawScreen(Graphics g, Layout L, ScreenState state, List<HotSpot> spots, DateTime now)
+        static void DrawScreen(Graphics g, Layout L, ScreenState state, List<HotSpot> spots, DateTime now, bool hasMirrorTo)
         {
             RectangleF S = L.Screen;
             float W = S.Width, H = S.Height;
@@ -484,9 +487,9 @@ namespace IPhoneBureau
                     }
                     string[] steps = new string[]
                     {
-                        "1. iPhone et PC sur le même Wi-Fi.",
-                        "2. Ouvrez votre appli de recopie sur le PC (MirrorTo, AirDroid Cast, LetsView…).",
-                        "3. Sur l'iPhone : Centre de contrôle → Recopie de l'écran → votre PC.",
+                        "1. Ouvrez MirrorTo sur le PC, choisissez iOS.",
+                        "2. Branchez l'iPhone en USB (ou Wi-Fi) et touchez « Se fier ».",
+                        "3. L'écran arrive ici tout seul. Pour cliquer : associez l'iPhone au PC en Bluetooth.",
                     };
                     using (Font f = F(W * 0.04f, FontStyle.Regular))
                     using (SolidBrush b = new SolidBrush(Color.FromArgb(230, 255, 255, 255)))
@@ -501,7 +504,7 @@ namespace IPhoneBureau
                     y += W * 0.02f;
                     string[][] buttons = new string[][]
                     {
-                        new string[] { "Rechercher l'écran", "chercher" },
+                        hasMirrorTo ? new string[] { "Ouvrir MirrorTo", "mirrorto" } : new string[] { "Rechercher l'écran", "chercher" },
                         new string[] { "Choisir la fenêtre…", "choisir" },
                         new string[] { "Messages (Lien mobile)", "liens" },
                     };
@@ -705,6 +708,106 @@ namespace IPhoneBureau
         }
     }
 
+    // ------------------------------------------------------ iMyFone MirrorTo
+    // L'appli de recopie conseillée : elle affiche l'iPhone et le pilote par Bluetooth.
+    static class MirrorTo
+    {
+        static string cached;
+        static DateTime cachedAt = DateTime.MinValue;
+
+        public static string FindExe()
+        {
+            if ((DateTime.Now - cachedAt).TotalSeconds < 30) return cached;
+            cachedAt = DateTime.Now;
+            cached = Locate();
+            return cached;
+        }
+
+        static string Locate()
+        {
+            string[] roots = new string[]
+            {
+                @"Software\Microsoft\Windows\CurrentVersion\Uninstall",
+                @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+            };
+            RegistryKey[] hives = new RegistryKey[] { Registry.CurrentUser, Registry.LocalMachine };
+            foreach (RegistryKey hive in hives)
+                foreach (string root in roots)
+                {
+                    try
+                    {
+                        using (RegistryKey k = hive.OpenSubKey(root))
+                        {
+                            if (k == null) continue;
+                            foreach (string name in k.GetSubKeyNames())
+                                using (RegistryKey app = k.OpenSubKey(name))
+                                {
+                                    string display = app == null ? null : app.GetValue("DisplayName") as string;
+                                    if (display == null || display.IndexOf("MirrorTo", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                                    string exe = FromFolder(app.GetValue("InstallLocation") as string);
+                                    if (exe != null) return exe;
+                                    string icon = app.GetValue("DisplayIcon") as string;
+                                    if (icon != null)
+                                    {
+                                        icon = icon.Split(',')[0].Trim('"');
+                                        if (icon.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && File.Exists(icon)) return icon;
+                                        exe = FromFolder(Path.GetDirectoryName(icon));
+                                        if (exe != null) return exe;
+                                    }
+                                }
+                        }
+                    }
+                    catch { }
+                }
+            return null;
+        }
+
+        static string FromFolder(string dir)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(dir)) return null;
+                dir = dir.Trim('"');
+                if (!Directory.Exists(dir)) return null;
+                string fallback = null;
+                foreach (string f in Directory.GetFiles(dir, "*.exe"))
+                {
+                    string n = Path.GetFileNameWithoutExtension(f).ToLowerInvariant();
+                    if (n.Contains("unins") || n.Contains("update") || n.Contains("crash") || n.Contains("helper")) continue;
+                    if (n.Contains("mirrorto")) return f;
+                    if (fallback == null && n.Contains("mirror")) fallback = f;
+                }
+                return fallback;
+            }
+            catch { return null; }
+        }
+
+        public static bool Running()
+        {
+            foreach (Process p in Process.GetProcesses())
+            {
+                string n;
+                try { n = p.ProcessName; } catch { continue; }
+                if (n.IndexOf("mirrorto", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
+        }
+
+        public static bool Launch()
+        {
+            string exe = FindExe();
+            if (exe == null) return false;
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo(exe);
+                psi.WorkingDirectory = Path.GetDirectoryName(exe);
+                Process.Start(psi);
+                return true;
+            }
+            catch { return false; }
+        }
+    }
+
     // ---------------------------------------------- Fenêtre de recopie pilotée
     class Mirror
     {
@@ -716,6 +819,7 @@ namespace IPhoneBureau
         bool origTopMost;
         string rgnKey = "";
 
+        public bool Blocked;  // Windows refuse de déplacer la fenêtre (appli lancée en administrateur)
         public bool Attached { get { return Hwnd != IntPtr.Zero; } }
         public bool Alive { get { return Attached && N.IsWindow(Hwnd); } }
         public bool Iconic { get { return Attached && N.IsIconic(Hwnd); } }
@@ -733,6 +837,7 @@ namespace IPhoneBureau
             N.SetWindowLong(Hwnd, N.GWL_EXSTYLE, origEx & ~(N.WS_EX_DLGMODALFRAME | N.WS_EX_WINDOWEDGE | N.WS_EX_CLIENTEDGE | N.WS_EX_STATICEDGE));
             N.SetWindowPos(Hwnd, IntPtr.Zero, 0, 0, 0, 0, N.SWP_NOMOVE | N.SWP_NOSIZE | N.SWP_NOZORDER | N.SWP_NOACTIVATE | N.SWP_FRAMECHANGED);
             lastTarget = Rectangle.Empty; settled = Rectangle.Empty; rgnKey = "";
+            Blocked = false;
         }
 
         // Rend la fenêtre telle qu'on l'a trouvée.
@@ -762,8 +867,9 @@ namespace IPhoneBureau
             {
                 if (cur != target)
                 {
-                    N.SetWindowPos(Hwnd, IntPtr.Zero, target.X, target.Y, target.Width, target.Height,
-                        N.SWP_NOZORDER | N.SWP_NOACTIVATE | N.SWP_NOOWNERZORDER);
+                    if (!N.SetWindowPos(Hwnd, IntPtr.Zero, target.X, target.Y, target.Width, target.Height,
+                        N.SWP_NOZORDER | N.SWP_NOACTIVATE | N.SWP_NOOWNERZORDER) && Marshal.GetLastWin32Error() == 5)
+                        Blocked = true;
                     cur = N.Rect(Hwnd);
                 }
                 // Si l'appli impose sa propre taille, on l'accepte au lieu de lutter sans fin.
@@ -871,7 +977,7 @@ namespace IPhoneBureau
         DateTime lastSearch = DateTime.MinValue;
         N.WinEventProc winEvents;
         List<IntPtr> hooks = new List<IntPtr>();
-        bool syncing;
+        bool syncing, warnedBlocked;
 
         public PhoneForm()
         {
@@ -916,6 +1022,7 @@ namespace IPhoneBureau
             SystemEvents.DisplaySettingsChanged += OnDisplayChanged;
             timer.Start();
             Search(true);
+            if (!mirror.Attached && cfg.AutoMirrorTo && !MirrorTo.Running()) MirrorTo.Launch();
             if (!cfg.Welcomed)
             {
                 cfg.Welcomed = true;
@@ -984,7 +1091,7 @@ namespace IPhoneBureau
             DateTime now = DateTime.Now;
             if (st == shown && (st == ScreenState.Mirror || now.Minute == shownMinute)) return;
             spots.Clear();
-            using (Bitmap bmp = Renderer.Draw(L, Scheme.Find(cfg.Color), st, spots, now))
+            using (Bitmap bmp = Renderer.Draw(L, Scheme.Find(cfg.Color), st, spots, now, MirrorTo.FindExe() != null))
                 SetBitmap(bmp);
             shown = st;
             shownMinute = now.Minute;
@@ -1068,6 +1175,12 @@ namespace IPhoneBureau
                 Rectangle hole = new Rectangle(Left + L.Screen.X, Top + L.Screen.Y, L.Screen.Width, L.Screen.Height);
                 mirror.Place(hole, (int)Math.Round(L.ScreenRadius), cfg);
                 mirror.KeepBelow(Handle, cfg.TopMost);
+                if (mirror.Blocked && !warnedBlocked)
+                {
+                    warnedBlocked = true;
+                    tray.ShowBalloonTip(12000, mirror.Process + " tourne en administrateur",
+                        "Windows empêche de la placer dans le téléphone. Clic droit sur le widget > Relancer en administrateur.", ToolTipIcon.Warning);
+                }
             }
             finally { syncing = false; }
         }
@@ -1122,6 +1235,10 @@ namespace IPhoneBureau
                     break;
                 case "choisir": ChooseWindow(); break;
                 case "liens": OpenPhoneLink(); break;
+                case "mirrorto":
+                    if (!MirrorTo.Launch())
+                        tray.ShowBalloonTip(6000, "MirrorTo introuvable", "Réinstallez-le avec la commande de la page d'aide, ou choisissez une autre appli de recopie.", ToolTipIcon.Warning);
+                    break;
                 case "reveiller":
                     if (mirror.Attached)
                     {
@@ -1164,7 +1281,7 @@ namespace IPhoneBureau
             catch { try { Process.Start("ms-phone:"); } catch { } }
         }
 
-        ToolStripMenuItem itemSource, itemTop, itemStartup, itemSize, itemColor;
+        ToolStripMenuItem itemSource, itemTop, itemStartup, itemSize, itemColor, itemAutoMirror;
 
         void BuildMenu()
         {
@@ -1223,10 +1340,14 @@ namespace IPhoneBureau
             }
             menu.Items.Add(itemColor);
             menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Ouvrir MirrorTo", null, delegate { Do("mirrorto"); });
+            itemAutoMirror = new ToolStripMenuItem("Ouvrir MirrorTo avec le widget", null, delegate { cfg.AutoMirrorTo = !cfg.AutoMirrorTo; cfg.Save(); });
+            menu.Items.Add(itemAutoMirror);
             menu.Items.Add("Ouvrir Lien mobile (messages, appels)", null, delegate { OpenPhoneLink(); });
             itemStartup = new ToolStripMenuItem("Lancer au démarrage de Windows", null, delegate { SetStartup(!IsStartup()); });
             menu.Items.Add(itemStartup);
             menu.Items.Add("Afficher / masquer (Ctrl+Alt+I)", null, delegate { Toggle(); });
+            menu.Items.Add("Relancer en administrateur", null, delegate { RestartElevated(); });
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Quitter", null, delegate { Close(); });
 
@@ -1235,6 +1356,7 @@ namespace IPhoneBureau
                 itemSource.Text = mirror.Attached ? "Écran : " + Shorten(mirror.Title, 40) + " (" + mirror.Process + ")" : "Aucune recopie branchée";
                 itemTop.Checked = cfg.TopMost;
                 itemStartup.Checked = IsStartup();
+                itemAutoMirror.Checked = cfg.AutoMirrorTo;
                 foreach (ToolStripItem it in itemSize.DropDownItems)
                 {
                     ToolStripMenuItem mi = it as ToolStripMenuItem;
@@ -1246,6 +1368,20 @@ namespace IPhoneBureau
                     if (mi != null) mi.Checked = (string)mi.Tag == Scheme.Find(cfg.Color).Id;
                 }
             };
+        }
+
+        // Nécessaire quand l'appli de recopie est elle-même lancée en administrateur.
+        void RestartElevated()
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo(Application.ExecutablePath, "--attendre");
+                psi.Verb = "runas";
+                psi.UseShellExecute = true;
+                Process.Start(psi);
+                Close(); // la nouvelle instance attend que celle-ci ait rendu la main
+            }
+            catch { } // l'utilisateur a refusé la demande d'autorisation
         }
 
         static string Shorten(string s, int n) { return s.Length <= n ? s : s.Substring(0, n - 1) + "…"; }
@@ -1457,6 +1593,11 @@ namespace IPhoneBureau
             bool created;
             using (Mutex mutex = new Mutex(true, "Local\\iPhoneBureau_Widget", out created))
             {
+                if (!created && Array.IndexOf(args, "--attendre") >= 0)
+                {
+                    try { created = mutex.WaitOne(8000); }
+                    catch (AbandonedMutexException) { created = true; }
+                }
                 if (!created)
                 {
                     // Déjà lancé : on demande simplement au widget existant de se montrer.
