@@ -15,13 +15,14 @@ import { ICONS } from './icons.js';
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-const DEFAULT_SETTINGS = { name: '', style: 'professionnel', appearance: 'auto', accessCode: '', onboarded: false };
+const DEFAULT_SETTINGS = { name: '', style: 'professionnel', appearance: 'light', accessCode: '', onboarded: false };
 const STYLE_OPTIONS = [['professionnel', 'Pro'], ['recit', 'Récit'], ['synthese', 'Synthèse']];
 const APPEARANCE_OPTIONS = [['auto', 'Auto'], ['dark', 'Sombre'], ['light', 'Clair']];
 const VIEWS = ['parler', 'journal', 'themes', 'bilan'];
 const MAX_RECORDING_S = 20 * 60;
 
-const LOGO_MARK = `<svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset=".55" stop-color="#ff5d8f"/><stop offset="1" stop-color="#ffb547"/></linearGradient></defs><g fill="none" stroke="url(#lm)" stroke-width="4.2" stroke-linecap="round"><path d="M8 20v8M15 14v20M22 18v12"/><path d="M28 24c3-7 6-7 7 0s4 7 6 0"/></g></svg>`;
+const LOGO_MARK = `<svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lm" gradientUnits="userSpaceOnUse" x1="6" y1="12" x2="44" y2="36"><stop offset="0" stop-color="#ff2d95"/><stop offset=".55" stop-color="#1fa2ff"/><stop offset="1" stop-color="#3ee39d"/></linearGradient></defs><g fill="none" stroke="url(#lm)" stroke-width="4.2" stroke-linecap="round"><path class="logo-bar" d="M8 20v8"/><path class="logo-bar" d="M15 14v20"/><path class="logo-bar" d="M22 18v12"/><path d="M28 24c3-7 6-7 7 0s4 7 6 0"/></g><circle cx="42.5" cy="31" r="2.2" fill="#7d1533"/></svg>`;
+const CONFETTI_COLORS = ['#ff2d95', '#1fa2ff', '#3ee39d', '#7d1533', '#ff7ab9', '#8fe9ff'];
 
 const state = {
   entries: [], // du plus récent au plus ancien
@@ -170,7 +171,11 @@ async function processEntry(entry, { foreground = false, silent = false, isNew =
   }
   renderAll();
   if (foreground) {
-    requestAnimationFrame(() => $(`#feed [data-entry="${entry.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    requestAnimationFrame(() => {
+      const card = $(`#feed [data-entry="${entry.id}"]`);
+      card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => burst(card || $('#orb'), isNew ? 34 : 20), 450);
+    });
     setTimeout(() => {
       if (state.revealId === entry.id) state.revealId = null;
     }, 2500);
@@ -400,7 +405,7 @@ function skeletonCard(e) {
   </article>`;
 }
 
-function entryCard(e, { full = false } = {}) {
+function entryCard(e, { full = false, i = 0 } = {}) {
   if (state.processing.has(e.id) && !e.text) return skeletonCard(e);
   const mood = getMood(e.mood);
   const updating = state.processing.has(e.id);
@@ -410,7 +415,8 @@ function entryCard(e, { full = false } = {}) {
     e.segments.length > 1 ? `<span class="badge soft">${e.segments.length} prises</span>` : '',
     updating ? '<span class="badge glow">Mise à jour…</span>' : '',
   ].join('');
-  return `<article class="entry${full ? ' is-full' : ''}${updating ? ' is-updating' : ''}${reveal ? ' is-reveal' : ''}" data-entry="${e.id}" tabindex="0" role="button" aria-label="Ouvrir « ${esc(e.title)} »">
+  const hue = getTheme(e.themes?.[0] || 'quotidien', state.customThemes).hue;
+  return `<article class="entry${full ? ' is-full' : ''}${updating ? ' is-updating' : ''}${reveal ? ' is-reveal' : ''}" style="--h:${hue};--i:${Math.min(i, 8)}" data-entry="${e.id}" tabindex="0" role="button" aria-label="Ouvrir « ${esc(e.title)} »">
     <header class="entry-meta"><time datetime="${e.createdAt}">${timeLabel(e.createdAt)}</time><span class="mood" title="Humeur : ${mood.label}">${mood.emoji}</span>${badges}</header>
     <h3 class="entry-title">${esc(e.title || 'Sans titre')}</h3>
     <div class="entry-text${full ? '' : ' clamp'}">${reveal ? revealHtml(e.text) : paragraphs(e.text)}</div>
@@ -447,7 +453,7 @@ function renderParler() {
 
   const counts = sortedThemeCounts().map(([id]) => id);
   $('#ideas-row').innerHTML = promptIdeas(counts, state.ideaSeed)
-    .map((q) => `<button class="idea" type="button" data-action="idea" data-q="${esc(q)}">${esc(q)}</button>`)
+    .map((q, i) => `<button class="idea" type="button" style="--i:${i}" data-action="idea" data-q="${esc(q)}">${esc(q)}</button>`)
     .join('');
 
   const todayKey = dayKey(new Date());
@@ -462,7 +468,7 @@ function renderParler() {
     return;
   }
   feed.innerHTML = `<div class="feed-head"><h2>Aujourd’hui</h2><a class="link" href="#journal">Tout le journal ${ICONS.chevron}</a></div>
-    ${todays.map((e, i) => `${entryCard(e, { full: true })}${i === 0 ? followUpBubble(e) : ''}`).join('')}`;
+    ${todays.map((e, i) => `${entryCard(e, { full: true, i })}${i === 0 ? followUpBubble(e) : ''}`).join('')}`;
 }
 
 function matchesQuery(e, q) {
@@ -500,7 +506,7 @@ function renderJournal() {
     groups.get(k).push(e);
   }
   timeline.innerHTML = [...groups.values()]
-    .map((items) => `<section class="day"><h3 class="day-label"><span>${dayLabel(items[0].createdAt)}</span><small>${plural(items.length, 'récit')}</small></h3>${items.map((e) => entryCard(e)).join('')}</section>`)
+    .map((items) => `<section class="day"><h3 class="day-label"><span>${dayLabel(items[0].createdAt)}</span><small>${plural(items.length, 'récit')}</small></h3>${items.map((e, i) => entryCard(e, { i })).join('')}</section>`)
     .join('');
 }
 
@@ -518,9 +524,9 @@ function sparkline(themeId) {
 function renderThemes() {
   const counts = sortedThemeCounts();
   const grid = $('#theme-grid');
-  const tiles = counts.map(([id, info]) => {
+  const tiles = counts.map(([id, info], i) => {
     const t = getTheme(id, state.customThemes);
-    return `<button class="tile" type="button" style="--h:${t.hue}" data-action="open-theme" data-id="${esc(id)}">
+    return `<button class="tile" type="button" style="--h:${t.hue};--i:${Math.min(i, 10)}" data-action="open-theme" data-id="${esc(id)}">
       <span class="tile-emoji">${esc(t.emoji)}</span>
       <span class="tile-label">${esc(t.label)}</span>
       <span class="tile-meta">${plural(info.count, 'récit')} · ${ago(info.last)}</span>
@@ -557,10 +563,10 @@ function moodChart() {
   const path = known.map((p, k) => `${k ? 'L' : 'M'}${x(p.i).toFixed(1)} ${y(p.avg).toFixed(1)}`).join(' ');
   const weekday = new Intl.DateTimeFormat('fr-FR', { weekday: 'narrow' });
   return `<svg class="mood-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Humeur des 14 derniers jours">
-    <defs><linearGradient id="mg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#8b5cf6"/><stop offset=".5" stop-color="#ff5d8f"/><stop offset="1" stop-color="#ffb547"/></linearGradient></defs>
+    <defs><linearGradient id="mg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7d1533"/><stop offset=".35" stop-color="#1fa2ff"/><stop offset=".7" stop-color="#ff2d95"/><stop offset="1" stop-color="#3ee39d"/></linearGradient><linearGradient id="ma" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff2d95" stop-opacity=".22"/><stop offset="1" stop-color="#1fa2ff" stop-opacity="0"/></linearGradient></defs>
     ${MOODS.map((m) => `<line x1="${padL}" x2="${W - 8}" y1="${y(m.score)}" y2="${y(m.score)}" class="grid"/><text x="2" y="${y(m.score) + 5}" class="emo">${m.emoji}</text>`).join('')}
-    ${known.length > 1 ? `<path d="${path}" class="line"/>` : ''}
-    ${known.map((p) => `<circle cx="${x(p.i)}" cy="${y(p.avg)}" r="4.5" class="dot"/>`).join('')}
+    ${known.length > 1 ? `<path d="${path} L${x(known.at(-1).i).toFixed(1)} ${y(-2)} L${x(known[0].i).toFixed(1)} ${y(-2)} Z" class="area"/><path d="${path}" class="line" pathLength="1"/>` : ''}
+    ${known.map((p, k) => `<circle cx="${x(p.i)}" cy="${y(p.avg)}" r="5" class="dot" style="--i:${k}"/>`).join('')}
     ${points.map((p, i) => `<text x="${x(i)}" y="${H - 4}" class="day${dayKey(p.date) === dayKey(now) ? ' is-today' : ''}">${weekday.format(p.date).toUpperCase()}</text>`).join('')}
   </svg>`;
 }
@@ -575,7 +581,7 @@ function renderBilan() {
     ['📖', entries.length, entries.length > 1 ? 'récits' : 'récit'],
     ['🎙️', minutes, minutes > 1 ? 'minutes racontées' : 'minute racontée'],
     ['✍️', words, words > 1 ? 'mots écrits' : 'mot écrit'],
-  ].map(([emoji, value, label]) => `<div class="stat"><span class="stat-emoji">${emoji}</span><b class="stat-value">${value.toLocaleString('fr-FR')}</b><span class="stat-label">${label}</span></div>`).join('');
+  ].map(([emoji, value, label], i) => `<div class="stat" style="--i:${i}"><span class="stat-emoji">${emoji}</span><b class="stat-value" data-value="${value}">${value.toLocaleString('fr-FR')}</b><span class="stat-label">${label}</span></div>`).join('');
 
   const moods = entries.filter((e) => Date.now() - new Date(e.createdAt) < 14 * 86400e3);
   const avg = moods.length ? moods.reduce((s, e) => s + getMood(e.mood).score, 0) / moods.length : null;
@@ -587,7 +593,7 @@ function renderBilan() {
   const top = counts.slice(0, 6);
   const others = counts.slice(6).reduce((s, [, i]) => s + i.count, 0);
   $('#mix-card').innerHTML = `<header class="card-head"><h3>De quoi tu parles</h3><span class="muted">${counts.length ? plural(counts.length, 'thème') : 'pas encore de thème'}</span></header>
-    ${total ? `<div class="mix-bar">${top.map(([id, i]) => `<i style="--h:${getTheme(id, state.customThemes).hue};flex:${i.count}" title="${esc(getTheme(id, state.customThemes).label)}"></i>`).join('')}${others ? `<i class="others" style="flex:${others}"></i>` : ''}</div>
+    ${total ? `<div class="mix-bar">${top.map(([id, i], k) => `<i style="--h:${getTheme(id, state.customThemes).hue};--i:${k};flex:${i.count}" title="${esc(getTheme(id, state.customThemes).label)}"></i>`).join('')}${others ? `<i class="others" style="--i:6;flex:${others}"></i>` : ''}</div>
     <ul class="mix-legend">${top.map(([id, i]) => {
       const t = getTheme(id, state.customThemes);
       return `<li style="--h:${t.hue}"><span class="dot"></span>${esc(t.emoji)} ${esc(t.label)}<b>${Math.round((100 * i.count) / total)} %</b></li>`;
@@ -778,8 +784,49 @@ function route() {
     $(`.tabbar [data-nav="${v}"]`).setAttribute('aria-current', v === target ? 'page' : 'false');
   }
   document.body.dataset.view = target;
+  $('.tabbar').style.setProperty('--idx', VIEWS.indexOf(target));
   if (target === 'journal') renderJournal();
+  if (target === 'themes') renderThemes();
+  if (target === 'bilan') {
+    renderBilan();
+    countUp();
+  }
   window.scrollTo({ top: 0 });
+}
+
+/** Les chiffres du bilan défilent jusqu'à leur valeur. */
+function countUp() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  for (const el of $$('#stats .stat-value')) {
+    const target = Number(el.dataset.value) || 0;
+    const start = performance.now();
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / 1100);
+      el.textContent = Math.round(target * (1 - (1 - t) ** 3)).toLocaleString('fr-FR');
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+}
+
+/** Pluie de confettis aux couleurs de Do It, depuis un élément. */
+function burst(from, count = 30) {
+  if (!from || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = from.getBoundingClientRect();
+  const layer = document.createElement('div');
+  layer.className = 'confetti';
+  const cx = r.left + r.width / 2;
+  const cy = r.top + Math.min(r.height / 2, 120);
+  for (let k = 0; k < count; k++) {
+    const piece = document.createElement('i');
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 90 + Math.random() * 170;
+    if (Math.random() < 0.4) piece.className = 'round';
+    piece.style.cssText = `left:${cx}px;top:${cy}px;--c:${CONFETTI_COLORS[k % CONFETTI_COLORS.length]};--s:${6 + Math.random() * 7}px;--dx:${Math.cos(angle) * dist}px;--dy:${Math.sin(angle) * dist + 120}px;--r:${Math.random() * 720 - 360}deg;animation-delay:${Math.random() * 90}ms`;
+    layer.append(piece);
+  }
+  document.body.append(layer);
+  setTimeout(() => layer.remove(), 1600);
 }
 
 /* ───────────── Interactions ───────────── */
@@ -806,15 +853,17 @@ function celebrate() {
   const total = state.entries.length;
   const { n, today } = streakInfo();
   const firstToday = state.entries.filter((e) => dayKey(e.createdAt) === dayKey(new Date())).length === 1;
-  if (total === 1) return toast('✍️ Premier chapitre écrit. Ton journal est lancé !');
-  if (today && firstToday && [3, 7, 14, 30, 50, 100, 365].includes(n)) return toast(`🔥 ${n} jours d’affilée. Continue comme ça !`);
-  if ([10, 25, 50, 100, 250, 500].includes(total)) return toast(`📖 ${total} récits dans ton journal. Respect.`);
+  const party = (message) => {
+    toast(message);
+    setTimeout(() => burst($('#orb'), 60), 900);
+  };
+  if (total === 1) return party('✍️ Premier chapitre écrit. Ton journal est lancé !');
+  if (today && firstToday && [3, 7, 14, 30, 50, 100, 365].includes(n)) return party(`🔥 ${n} jours d’affilée. Continue comme ça !`);
+  if ([10, 25, 50, 100, 250, 500].includes(total)) return party(`📖 ${total} récits dans ton journal. Respect.`);
 }
 
 function applyAppearance() {
-  const a = state.settings.appearance;
-  if (a === 'auto') delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = a;
+  document.documentElement.dataset.theme = state.settings.appearance;
 }
 
 async function action(name, el) {

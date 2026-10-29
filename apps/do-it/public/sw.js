@@ -1,5 +1,5 @@
 // Do It : fonctionne hors-ligne (coquille de l'appli en cache, l'API jamais).
-const VERSION = 'do-it-v1';
+const VERSION = 'do-it-v2';
 const SHELL = [
   '/',
   '/index.html',

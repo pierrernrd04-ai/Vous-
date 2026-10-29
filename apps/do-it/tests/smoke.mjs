@@ -213,7 +213,8 @@ step('fiche : humeur modifiable');
 // 7. Thèmes et bilan
 await page.click('.tabbar [data-nav="themes"]');
 assert.equal(await page.locator('#theme-grid .tile').count(), 5);
-await page.waitForTimeout(500);
+await page.waitForTimeout(1400);
+assert.equal(await page.textContent('#theme-grid .tile[data-id="amis"] .tile-emoji'), '🎉');
 await shot('09-themes');
 await page.click('#theme-grid .tile[data-id="bricolage"]');
 await page.waitForSelector('#view-journal:not([hidden])');
@@ -250,17 +251,18 @@ assert.match(localText, /^Je me sens un peu fatigué ce soir je suis stressé pa
 assert.match(await page.textContent('#toast'), /mode local/);
 step('mode local : texte nettoyé et classé sans IA');
 
-// 10. Clair, écrire au clavier
+// 10. Sombre, écrire au clavier
+assert.equal(await page.getAttribute('html', 'data-theme'), 'light');
 await page.click('.tabbar [data-nav="bilan"]');
-await page.click('[data-action="set-appearance"][data-value="light"]');
-await page.waitForFunction(() => document.documentElement.dataset.theme === 'light');
+await page.click('[data-action="set-appearance"][data-value="dark"]');
+await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
 await page.click('.tabbar [data-nav="parler"]');
 await page.waitForTimeout(400);
-await shot('11-clair');
+await shot('11-sombre');
 await page.click('#keyboard-btn');
 await page.waitForSelector('#composer[open]');
 await page.click('#composer button[value="cancel"]');
-step('apparence claire et saisie au clavier');
+step('fond blanc par défaut, mode sombre et saisie au clavier');
 
 assert.deepEqual(errors, []);
 await browser.close();
