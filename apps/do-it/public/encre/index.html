@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-title" content="Encré">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Geist:wght@400..800&family=Geist+Mono:wght@400..600&display=swap">
   <link rel="stylesheet" href="css/encre.css">
   <script type="module" src="js/main.js"></script>
 </head>
@@ -24,11 +24,12 @@
   <div class="glow" aria-hidden="true"><span></span><span></span></div>
 
   <div class="splash" id="splash" hidden aria-hidden="true">
-    <svg class="splash-word" viewBox="0 0 360 120">
-      <text x="50%" y="78" text-anchor="middle">Encré</text>
-    </svg>
-    <span class="splash-line"></span>
+    <span class="splash-ico">
+      <svg viewBox="0 0 32 32"><path class="mark-drop" d="M16 3c4.5 6 9 10.6 9 16a9 9 0 0 1-18 0c0-5.4 4.5-10 9-16z"/><path class="mark-wave" d="M11.5 19v2M14 16.5v7M16.5 18v4M19 17v6M21.5 19.5v1.5"/></svg>
+    </span>
+    <p class="splash-word"><span>E</span><span>n</span><span>c</span><span>r</span><span>é</span><b>.</b></p>
     <p class="splash-tag">Ce qui est encré reste ancré.</p>
+    <span class="splash-bar"><i></i></span>
   </div>
 
   <div class="shell">
@@ -40,6 +41,10 @@
   </div>
 
   <nav class="dock" id="dock" aria-label="Navigation"></nav>
+  <button class="fab" id="fab" type="button" data-action="capture" aria-label="Parler : nouvelle note vocale">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+  </button>
+  <input id="import-file" type="file" accept="application/json,.json" hidden>
 
   <div class="toolbar" id="toolbar" role="toolbar" aria-label="Mise en forme">
     <button type="button" data-tb="block" class="tb-block" aria-label="Type de bloc">Aa <span>Texte</span></button>
