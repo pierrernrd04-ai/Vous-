@@ -1,0 +1,23 @@
+﻿MES WIDGETS DANS RAINMETER - mode d'emploi
+==========================================
+
+Tous les widgets sur le bureau Windows, sans Lively :
+- les 14 widgets du tracker Routine & Performance,
+- les 3 widgets Dan't Procrastiner.
+Rainmeter est l'appli gratuite de référence pour les widgets de bureau.
+Un plugin (WebView2) lui permet d'afficher nos pages de widgets en direct.
+
+INSTALLER : Windows + R, collez cette commande, Entrée :
+
+powershell -NoP -EP Bypass -c "$f=Join-Path $env:TEMP MesWidgets.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/rainmeter/Installer.ps1 -OutFile $f; & $f"
+
+Le script installe Rainmeter s'il manque, ajoute le plugin, puis demande :
+- le lien (ou le code) de vos widgets du tracker, celui collé dans Lively ;
+- le code Dan't (iPhone : Dan't > roue dentée > Widgets sur le PC).
+
+UTILISER
+- Ctrl + glisser : déplacer un bloc de widgets.
+- Ctrl + clic droit : menu Rainmeter.
+- Dans Lively, choisissez un fond simple ou quittez Lively.
+
+RETIRER : même commande en ajoutant -Desinstaller juste après & $f
