@@ -43,6 +43,10 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
 @keyframes d2{to{transform:translate(-20vmax,16vmax) scale(.88)}}
 @keyframes d3{to{transform:translate(20vmax,-14vmax) scale(1.2)}}
 .still *,.still *::before,.still *::after{animation:none!important}
+/* intégré dans les widgets du tracker (…&integre=1) : fond transparent, le décor du tracker passe dessous */
+html.integre,html.integre body{background:transparent}
+html.integre{color-scheme:normal!important}
+.integre .sky{display:none}
 
 /* ---------- grille iPhone : 2 petits + 1 grand ---------- */
 .stage{position:fixed;inset:0;z-index:2;display:flex;align-items:center;padding:var(--pad,40px)}
@@ -199,7 +203,9 @@ function applyTheme() {
 }
 applyTheme(); setInterval(applyTheme, 60000);
 if (OPT.anim === '0') root.classList.add('still');
-const side = { gauche: 'left', left: 'left', centre: 'center', center: 'center', droite: 'right', right: 'right' }[(OPT.cote || '').toLowerCase()] || 'right';
+const INTEGRE = OPT.integre === '1'; // affiché dans la marge des widgets du tracker (…/widgets/#CODE&dant=CODE)
+if (INTEGRE) root.classList.add('integre');
+const side = INTEGRE ? 'center' : { gauche: 'left', left: 'left', centre: 'center', center: 'center', droite: 'right', right: 'right' }[(OPT.cote || '').toLowerCase()] || 'right';
 document.getElementById('stage').className = `stage ${side}`;
 const SCALE = Math.max(.5, Math.min(1.6, (+OPT.taille || 100) / 100));
 const IN_LIVELY = !!(window.chrome && window.chrome.webview);
@@ -217,8 +223,8 @@ const jset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } cat
 function fit() {
   if (BUREAU) { root.style.setProperty('--s', `${Math.max(100, Math.min(400, +OPT.s || 180))}px`); return; }
   const vw = innerWidth, vh = innerHeight, padPx = Math.max(20, Math.round(vh * .045)), bottom = Math.max(40, Math.round(vh * .05));
-  let s = Math.min((vh - padPx * 2 - bottom) / (3 + 2 * .11), (vw * .42) / (2 + .11));
-  s = Math.max(110, Math.min(300, s)) * SCALE;
+  let s = Math.min((vh - padPx * 2 - bottom) / (3 + 2 * .11), (INTEGRE ? vw - padPx * 2 : vw * .42) / (2 + .11));
+  s = Math.max(INTEGRE ? 70 : 110, Math.min(300, s)) * SCALE;
   root.style.setProperty('--s', `${s.toFixed(1)}px`);
   root.style.setProperty('--pad', `${padPx}px`);
   root.style.setProperty('--bottom', `${bottom}px`);
@@ -420,7 +426,7 @@ weather(); setInterval(weather, 20 * 60e3);
 let pi = 0; setInterval(() => { pi = (pi + 1) % PUNCH.length; $('punch').textContent = PUNCH[pi]; }, 12000);
 checkVersion(); setInterval(checkVersion, 20 * 60e3);
 if (!CODE) { if (BUREAU) $('list').innerHTML = '<div class="empty"><div><i>🔑</i>Clic droit › Changer le code</div></div>'; else setup(); }
-else { start(); if (!IN_LIVELY && !BUREAU) livelyBar(); }
+else { start(); if (!IN_LIVELY && !BUREAU && !INTEGRE) livelyBar(); }
 /* Dan't Bureau : glisser par les en-têtes déplace les widgets, clic droit ouvre le menu du programme */
 if (BUREAU && window.chrome && window.chrome.webview) {
   document.addEventListener('mousedown', (e) => {
