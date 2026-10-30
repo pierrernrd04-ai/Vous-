@@ -34,5 +34,6 @@ Tapez le code de 12 caractères dans la fenêtre qui s'ouvre sur le PC.
 
 4. DÉSINSTALLER
 ---------------
-Double-cliquez sur Desinstaller-DantBureau.bat, ou relancez la commande
-d'installation en ajoutant -Desinstaller à la fin.
+Double-cliquez sur Desinstaller-DantBureau.bat, ou Windows + R :
+
+powershell -NoP -EP Bypass -c "$f=Join-Path $env:TEMP DantBureau.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/dant-bureau/Installer.ps1 -OutFile $f; & $f -Desinstaller"
