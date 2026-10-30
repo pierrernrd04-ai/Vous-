@@ -138,6 +138,17 @@ html.integre{color-scheme:normal!important}
 .bar-top code{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;opacity:.8}
 .bar-top .btn{padding:8px 12px;font-size:13px;white-space:nowrap}
 .bar-top .btn.ghost{background:rgba(255,255,255,.14);color:#fff}
+
+/* ---------- mode bureau (programme Dan't Bureau) : fenêtre découpée à la forme des widgets ---------- */
+:root{--solid:linear-gradient(160deg,#ffffff,#eef8ff 55%,#fff0f8)}
+:root[data-theme=dark]{--solid:linear-gradient(160deg,#151c3f,#0e1430 60%,#2a1033)}
+.bureau,.bureau body{background:transparent}
+.bureau .sky{display:none}
+.bureau .stage{padding:0;align-items:flex-start;justify-content:flex-start}
+.bureau .grid{margin:0}
+.bureau .w{background:var(--solid);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.bureau .w:hover{transform:none}
+.bureau .d-head,.bureau .p-head,.bureau .t-day{cursor:grab}
 </style>
 </head>
 <body>
@@ -182,6 +193,8 @@ const H = (location.hash || '').slice(1).split('&'), OPT = {};
 H.slice(1).forEach((kv) => { const p = kv.split('='); OPT[decodeURIComponent(p[0]).toLowerCase()] = decodeURIComponent(p[1] || ''); });
 const CODE = window.RPLink.parse(H[0]);
 const root = document.documentElement;
+const BUREAU = (OPT.mode || '') === 'bureau';
+if (BUREAU) root.classList.add('bureau');
 const theme = (OPT.theme || 'clair').toLowerCase();
 function applyTheme() {
   let t = theme;
@@ -208,6 +221,7 @@ const jset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } cat
 
 /* taille : 2 colonnes × 3 rangées, à droite (les icônes du bureau restent à gauche) */
 function fit() {
+  if (BUREAU) { root.style.setProperty('--s', `${Math.max(100, Math.min(400, +OPT.s || 180))}px`); return; }
   const vw = innerWidth, vh = innerHeight, padPx = Math.max(20, Math.round(vh * .045)), bottom = Math.max(40, Math.round(vh * .05));
   let s = Math.min((vh - padPx * 2 - bottom) / (3 + 2 * .11), (INTEGRE ? vw - padPx * 2 : vw * .42) / (2 + .11));
   s = Math.max(INTEGRE ? 70 : 110, Math.min(300, s)) * SCALE;
@@ -411,7 +425,15 @@ paint(); state(); setInterval(state, 60e3);
 weather(); setInterval(weather, 20 * 60e3);
 let pi = 0; setInterval(() => { pi = (pi + 1) % PUNCH.length; $('punch').textContent = PUNCH[pi]; }, 12000);
 checkVersion(); setInterval(checkVersion, 20 * 60e3);
-if (!CODE) setup(); else { start(); if (!IN_LIVELY && !INTEGRE) livelyBar(); }
+if (!CODE) { if (BUREAU) $('list').innerHTML = '<div class="empty"><div><i>🔑</i>Clic droit › Changer le code</div></div>'; else setup(); }
+else { start(); if (!IN_LIVELY && !BUREAU && !INTEGRE) livelyBar(); }
+/* Dan't Bureau : glisser par les en-têtes déplace les widgets, clic droit ouvre le menu du programme */
+if (BUREAU && window.chrome && window.chrome.webview) {
+  document.addEventListener('mousedown', (e) => {
+    if (e.button === 0 && e.target.closest('.d-head, .p-head, .t-day')) { e.preventDefault(); window.chrome.webview.postMessage('drag'); }
+  });
+  document.addEventListener('contextmenu', (e) => { e.preventDefault(); window.chrome.webview.postMessage('menu'); });
+}
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 </script>
 </body>

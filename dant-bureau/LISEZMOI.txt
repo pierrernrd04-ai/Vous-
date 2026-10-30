@@ -1,0 +1,38 @@
+﻿DAN'T BUREAU - mode d'emploi
+============================
+
+Les 3 widgets Dan't Procrastiner (Aujourd'hui, Progrès, À faire) posés sur
+le bureau Windows. Ils s'ajoutent à Lively et aux widgets du tracker :
+rien n'est remplacé. Ils restent au fond, sous toutes les fenêtres.
+
+
+1. INSTALLER (une seule fois, 1 minute)
+---------------------------------------
+Windows + R, collez cette commande, Entrée :
+
+powershell -NoP -EP Bypass -c "$f=Join-Path $env:TEMP DantBureau.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/dant-bureau/Installer.ps1 -OutFile $f; & $f"
+
+Sinon, avec ce dossier : double-cliquez sur Installer-DantBureau.bat.
+Si Windows affiche « Windows a protégé votre ordinateur » :
+Informations complémentaires > Exécuter quand même.
+
+
+2. RELIER À L'IPHONE
+--------------------
+Sur l'iPhone : Dan't > roue dentée > Widgets sur le PC > Activer les widgets PC.
+Tapez le code de 12 caractères dans la fenêtre qui s'ouvre sur le PC.
+
+
+3. UTILISER
+-----------
+- Glissez un widget par son titre pour déplacer les trois.
+- Clic droit sur un widget, ou sur l'icône rose près de l'horloge :
+  taille, thème clair / sombre / auto, coin de l'écran, changer le code,
+  démarrer avec Windows, quitter.
+- Cochez un rappel : il est coché sur l'iPhone dès que Dan't y est ouvert.
+
+
+4. DÉSINSTALLER
+---------------
+Double-cliquez sur Desinstaller-DantBureau.bat, ou relancez la commande
+d'installation en ajoutant -Desinstaller à la fin.
