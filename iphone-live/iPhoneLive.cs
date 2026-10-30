@@ -85,6 +85,8 @@ namespace IPhoneLive
         public bool TopMost;
         public int PosX = int.MinValue, PosY = int.MinValue;
         public bool Welcomed;
+        public string Source = "app";            // app = appli iPhone Live, rtmp = PRISM
+        public string IphoneIp = "172.20.10.1";  // adresse de l'iPhone dans son partage de connexion
 
         public static string Folder
         {
@@ -114,6 +116,8 @@ namespace IPhoneLive
                         case "X": if (int.TryParse(v, out i)) c.PosX = i; break;
                         case "Y": if (int.TryParse(v, out i)) c.PosY = i; break;
                         case "Bienvenue": c.Welcomed = v == "1"; break;
+                        case "Source": c.Source = v == "rtmp" ? "rtmp" : "app"; break;
+                        case "AdresseIphone": if (v.Length > 0) c.IphoneIp = v; break;
                     }
                 }
             }
@@ -135,6 +139,8 @@ namespace IPhoneLive
                 if (PosX != int.MinValue) sb.AppendLine("X=" + PosX);
                 if (PosY != int.MinValue) sb.AppendLine("Y=" + PosY);
                 sb.AppendLine("Bienvenue=" + (Welcomed ? "1" : "0"));
+                sb.AppendLine("Source=" + Source);
+                sb.AppendLine("AdresseIphone=" + IphoneIp);
                 File.WriteAllText(FilePath, sb.ToString(), Encoding.UTF8);
             }
             catch { }
@@ -389,7 +395,7 @@ namespace IPhoneLive
         static Font Font(string face, float px) { return new Font(face, Math.Max(6f, px), FontStyle.Regular, GraphicsUnit.Pixel); }
 
         // Écran d'attente façon écran verrouillé, avec l'adresse à taper dans PRISM.
-        public static Bitmap Waiting(Size size, DateTime now, string ip, string status, bool lost, List<KeyValuePair<RectangleF, string>> spots)
+        public static Bitmap Waiting(Size size, DateTime now, string label, string mainLine, string subLine, string status, bool lost, string[][] buttons, List<KeyValuePair<RectangleF, string>> spots)
         {
             int W = size.Width, H = size.Height;
             Bitmap bmp = new Bitmap(W, H, PixelFormat.Format32bppPArgb);
@@ -466,25 +472,19 @@ namespace IPhoneLive
                 // L'adresse à taper dans PRISM, en gros.
                 using (Font f = Font("Segoe UI", W * 0.034f))
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(190, 255, 255, 255)))
-                    g.DrawString("ADRESSE À TAPER DANS PRISM", f, b, card.X + pad, y);
+                    g.DrawString(label, f, b, card.X + pad, y);
                 y += W * 0.055f;
                 RectangleF addr = new RectangleF(card.X + pad, y, cw, W * 0.2f);
                 using (GraphicsPath p = RoundRect(addr, W * 0.035f))
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(110, 0, 0, 0))) g.FillPath(b, p);
-                string url = ip != null ? "rtmp://" + ip + "/live" : "Connectez le PC au partage de connexion";
-                using (Font f = Font("Consolas", W * (ip != null ? 0.05f : 0.036f)))
-                    g.DrawString(url, f, Brushes.White, new RectangleF(addr.X, addr.Y, addr.Width, addr.Height * 0.6f), center);
+                using (Font f = Font("Consolas", W * (mainLine.Length <= 24 ? 0.05f : 0.036f)))
+                    g.DrawString(mainLine, f, Brushes.White, new RectangleF(addr.X, addr.Y, addr.Width, addr.Height * 0.6f), center);
                 using (Font f = Font("Segoe UI", W * 0.036f))
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(200, 255, 255, 255)))
-                    g.DrawString("clé de stream : iphone", f, b, new RectangleF(addr.X, addr.Y + addr.Height * 0.52f, addr.Width, addr.Height * 0.42f), center);
+                    g.DrawString(subLine, f, b, new RectangleF(addr.X, addr.Y + addr.Height * 0.52f, addr.Width, addr.Height * 0.42f), center);
                 y = addr.Bottom + W * 0.04f;
 
                 // Boutons.
-                string[][] buttons = new string[][]
-                {
-                    new string[] { "Autoriser dans le pare-feu", "parefeu" },
-                    new string[] { "Messages (Lien mobile)", "liens" },
-                };
                 float bh2 = W * 0.105f, gap = W * 0.028f;
                 float room = card.Bottom - pad * 0.7f - y, needed = buttons.Length * bh2 + gap;
                 if (room > needed) y += room - needed;
@@ -582,7 +582,13 @@ namespace IPhoneLive
     // standard. Un fil lit ces images dans deux tampons épinglés qui alternent.
     class Receiver
     {
-        public const int Port = 1935;
+        public const int Port = 1935, AppPort = 5000;
+        // Mode appli : le PC se connecte lui-même à l'appli iPhone Live (aucune connexion
+        // entrante, donc rien à régler dans le pare-feu). Mode RTMP : PRISM envoie au PC.
+        public volatile bool AppMode = true;
+        public volatile string IphoneIp = "172.20.10.1";
+        public volatile bool Reachable;
+        Thread prober;
         const string ZipUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
 
         public static string Folder { get { return Config.Folder; } }
@@ -607,11 +613,43 @@ namespace IPhoneLive
 
         public bool Running { get { try { return proc != null && !proc.HasExited; } catch { return false; } } }
 
+        // Vérifie en arrière-plan, toutes les 1,5 s, si l'appli iPhone diffuse : ffmpeg n'est lancé
+        // qu'à ce moment-là, et l'interface ne bloque jamais sur une connexion qui traîne.
+        public void StartProber()
+        {
+            if (prober != null) return;
+            prober = new Thread(delegate()
+            {
+                while (true)
+                {
+                    bool ok = false;
+                    if (AppMode && !Running)
+                    {
+                        try
+                        {
+                            using (TcpClient c = new TcpClient())
+                            {
+                                IAsyncResult ar = c.BeginConnect(IphoneIp, AppPort, null, null);
+                                if (ar.AsyncWaitHandle.WaitOne(800) && c.Connected) ok = true;
+                                try { c.EndConnect(ar); } catch { }
+                            }
+                        }
+                        catch { }
+                    }
+                    Reachable = ok;
+                    Thread.Sleep(1500);
+                }
+            });
+            prober.IsBackground = true;
+            prober.Start();
+        }
+
         public void Start(int canvas)
         {
             if (!Installed || Running) return;
             // Évite de relancer en boucle si ffmpeg échoue tout de suite.
-            if ((DateTime.Now - lastStart).TotalSeconds < Math.Min(30, 2 << Math.Min(quickFails, 4))) return;
+            double wait = AppMode ? 1 : Math.Min(30, 2 << Math.Min(quickFails, 4));
+            if ((DateTime.Now - lastStart).TotalSeconds < wait) return;
             lastStart = DateTime.Now;
             // L'ancien fil de lecture doit avoir fini avant de remplacer les tampons.
             try { if (reader != null) reader.Join(1500); } catch { }
@@ -627,13 +665,14 @@ namespace IPhoneLive
             }
             SrcW = SrcH = 0;
 
-            string vf = "fps=30,scale=" + canvas + ":" + canvas + ":force_original_aspect_ratio=decrease:flags=bilinear," +
-                        "pad=" + canvas + ":" + canvas + ":(ow-iw)/2:(oh-ih)/2:black,format=bgra";
+            string scale = "scale=" + canvas + ":" + canvas + ":force_original_aspect_ratio=decrease:flags=bilinear," +
+                           "pad=" + canvas + ":" + canvas + ":(ow-iw)/2:(oh-ih)/2:black,format=bgra";
+            string input = AppMode
+                // Flux H.264 brut de l'appli : chaque image est affichée dès qu'elle est décodée.
+                ? "-probesize 100000 -analyzeduration 0 -f h264 -i tcp://" + IphoneIp + ":" + AppPort + " -an -vf \"" + scale + "\" -fps_mode passthrough"
+                : "-probesize 1000000 -analyzeduration 1000000 -listen 1 -i rtmp://0.0.0.0:" + Port + "/live/iphone -an -vf \"fps=30," + scale + "\"";
             ProcessStartInfo psi = new ProcessStartInfo(Ffmpeg,
-                "-hide_banner -loglevel info -nostats -fflags nobuffer -flags low_delay " +
-                "-probesize 1000000 -analyzeduration 1000000 " +
-                "-listen 1 -i rtmp://0.0.0.0:" + Port + "/live/iphone " +
-                "-an -vf \"" + vf + "\" -f rawvideo -");
+                "-hide_banner -loglevel info -nostats -fflags nobuffer -flags low_delay " + input + " -f rawvideo -");
             psi.UseShellExecute = false;
             psi.CreateNoWindow = true;
             psi.RedirectStandardOutput = true;
@@ -971,6 +1010,8 @@ namespace IPhoneLive
             Text = WindowTitle;
             TopMost = cfg.TopMost;
 
+            rx.AppMode = AppMode;
+            rx.IphoneIp = cfg.IphoneIp;
             BuildMenu();
             tray = new NotifyIcon();
             using (Bitmap b = Art.Icon(32)) tray.Icon = System.Drawing.Icon.FromHandle(b.GetHicon());
@@ -1009,6 +1050,7 @@ namespace IPhoneLive
             N.RegisterHotKey(Handle, HOTKEY_ID, 0x1 | 0x2 | 0x4000, (uint)Keys.I); // Ctrl+Alt+I
             SystemEvents.DisplaySettingsChanged += OnDisplayChanged;
             timer.Start();
+            rx.StartProber();
             EnsureReceiver();
             if (!cfg.Welcomed)
             {
@@ -1160,6 +1202,8 @@ namespace IPhoneLive
 
         // ---- Écran d'attente
 
+        bool AppMode { get { return cfg.Source != "rtmp"; } }
+
         void Redraw()
         {
             if (L == null || surface == null) return;
@@ -1168,12 +1212,28 @@ namespace IPhoneLive
             string status = StatusText();
             DateTime now = DateTime.Now;
             bool lost = rx.LastFrame != DateTime.MinValue;
-            string key = now.ToString("HH:mm") + ip + status + lost + L.Size;
+            string label, mainLine, subLine;
+            string[][] buttons;
+            if (AppMode)
+            {
+                label = "APPLI IPHONE LIVE";
+                mainLine = cfg.IphoneIp + " : " + Receiver.AppPort;
+                subLine = "rien à taper : le PC se connecte tout seul";
+                buttons = new string[][] { new string[] { "Messages (Lien mobile)", "liens" }, new string[] { "Utiliser PRISM à la place", "prism" } };
+            }
+            else
+            {
+                label = "ADRESSE À TAPER DANS PRISM";
+                mainLine = ip != null ? "rtmp://" + ip + "/live" : "Connectez le PC au partage de connexion";
+                subLine = "clé de stream : iphone";
+                buttons = new string[][] { new string[] { "Autoriser dans le pare-feu", "parefeu" }, new string[] { "Utiliser l'appli iPhone Live", "app" } };
+            }
+            string key = now.ToString("HH:mm") + ip + status + lost + L.Size + mainLine;
             if (key == waitingKey) return;
             waitingKey = key;
             spots.Clear();
             List<KeyValuePair<RectangleF, string>> local = new List<KeyValuePair<RectangleF, string>>();
-            using (Bitmap screen = Art.Waiting(L.Screen.Size, now, ip, status, lost, local))
+            using (Bitmap screen = Art.Waiting(L.Screen.Size, now, label, mainLine, subLine, status, lost, buttons, local))
             {
                 foreach (KeyValuePair<RectangleF, string> kv in local)
                 {
@@ -1193,8 +1253,10 @@ namespace IPhoneLive
         {
             if (rx.Status.Length > 0 && !rx.Status.StartsWith("Prêt")) return rx.Status;
             if (!Receiver.Installed) return "Le récepteur va se télécharger (une seule fois).";
-            if (!Receiver.OnHotspot())
+            if (!Receiver.OnHotspot() && (!AppMode || cfg.IphoneIp.StartsWith("172.20.10.")))
                 return "Activez le partage de connexion de l'iPhone et connectez-y le PC (Wi-Fi ou câble USB).";
+            if (AppMode)
+                return rx.Running ? "Connexion à l'iPhone…" : "Prêt : sur l'iPhone, ouvrez l'appli iPhone Live et touchez le bouton rond.";
             return rx.Running ? "Prêt : lancez la diffusion de l'écran dans PRISM." : "Démarrage du récepteur…";
         }
 
@@ -1212,7 +1274,50 @@ namespace IPhoneLive
                     });
                 return;
             }
+            // Mode appli : ffmpeg ne démarre que quand l'iPhone diffuse vraiment.
+            if (AppMode && !rx.Reachable) return;
             rx.Start(CanvasFor());
+        }
+
+        void SetSource(string source)
+        {
+            cfg.Source = source;
+            cfg.Save();
+            rx.Stop();
+            rx.AppMode = AppMode;
+            rx.IphoneIp = cfg.IphoneIp;
+            rx.Status = "";
+            waitingKey = "";
+            Redraw();
+        }
+
+        void AskIphoneIp()
+        {
+            using (Form f = new Form())
+            {
+                f.Text = "Adresse de l'iPhone";
+                f.FormBorderStyle = FormBorderStyle.FixedDialog;
+                f.MaximizeBox = false; f.MinimizeBox = false;
+                f.StartPosition = FormStartPosition.CenterScreen;
+                f.TopMost = true;
+                f.ClientSize = new Size(420, 150);
+                Label l = new Label();
+                l.Text = "Partage de connexion : 172.20.10.1 (par défaut). Sur un autre Wi-Fi, tape l'adresse affichée dans l'appli iPhone Live.";
+                l.SetBounds(12, 10, 396, 48);
+                TextBox t = new TextBox();
+                t.Text = cfg.IphoneIp;
+                t.SetBounds(12, 64, 396, 26);
+                Button ok = new Button(); ok.Text = "Enregistrer"; ok.SetBounds(288, 104, 120, 32);
+                ok.DialogResult = DialogResult.OK;
+                f.Controls.AddRange(new Control[] { l, t, ok });
+                f.AcceptButton = ok;
+                IPAddress parsed;
+                if (f.ShowDialog() == DialogResult.OK && IPAddress.TryParse(t.Text.Trim(), out parsed))
+                {
+                    cfg.IphoneIp = parsed.ToString();
+                    SetSource("app");
+                }
+            }
         }
 
         void Tick()
@@ -1276,6 +1381,8 @@ namespace IPhoneLive
             switch (action)
             {
                 case "parefeu": AllowFirewall(); break;
+                case "prism": SetSource("rtmp"); break;
+                case "app": SetSource("app"); break;
                 case "liens":
                     try { Process.Start("explorer.exe", "shell:AppsFolder\\Microsoft.YourPhone_8wekyb3d8bbwe!App"); } catch { }
                     break;
@@ -1310,7 +1417,7 @@ namespace IPhoneLive
             }
         }
 
-        ToolStripMenuItem itemAddr, itemTop, itemStartup, itemSize, itemColor;
+        ToolStripMenuItem itemAddr, itemTop, itemStartup, itemSize, itemColor, itemSrcApp, itemSrcRtmp;
 
         void BuildMenu()
         {
@@ -1318,6 +1425,11 @@ namespace IPhoneLive
             itemAddr = new ToolStripMenuItem("");
             itemAddr.Enabled = false;
             menu.Items.Add(itemAddr);
+            itemSrcApp = new ToolStripMenuItem("Source : appli iPhone Live (recommandé)", null, delegate { SetSource("app"); });
+            itemSrcRtmp = new ToolStripMenuItem("Source : PRISM (RTMP)", null, delegate { SetSource("rtmp"); });
+            menu.Items.Add(itemSrcApp);
+            menu.Items.Add(itemSrcRtmp);
+            menu.Items.Add("Adresse de l'iPhone…", null, delegate { AskIphoneIp(); });
             menu.Items.Add("Copier l'adresse pour PRISM", null, delegate
             {
                 string ip = Receiver.LocalIp();
@@ -1371,7 +1483,10 @@ namespace IPhoneLive
             menu.Opening += delegate
             {
                 string ip = Receiver.LocalIp();
-                itemAddr.Text = ip != null ? "PRISM : rtmp://" + ip + "/live  ·  clé iphone" : "PC non connecté au partage de connexion";
+                itemAddr.Text = AppMode ? "Appli iPhone Live : " + cfg.IphoneIp + ":" + Receiver.AppPort
+                    : (ip != null ? "PRISM : rtmp://" + ip + "/live  ·  clé iphone" : "PC non connecté au partage de connexion");
+                itemSrcApp.Checked = AppMode;
+                itemSrcRtmp.Checked = !AppMode;
                 itemTop.Checked = cfg.TopMost;
                 itemStartup.Checked = IsStartup();
                 foreach (ToolStripItem it in itemSize.DropDownItems)
