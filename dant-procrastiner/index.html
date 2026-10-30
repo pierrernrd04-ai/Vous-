@@ -179,6 +179,17 @@
         <button class="btn ghost small" id="sCityAuto" type="button">Utiliser ma position</button>
       </div>
 
+      <div class="set-block">
+        <h4>🖥️ Widgets sur le PC</h4>
+        <p class="muted" id="pcState">Tes rappels en direct sur le bureau Windows (Lively Wallpaper). Coche un rappel sur le PC, il est coché ici aussi.</p>
+        <p class="pc-code" id="pcCode" hidden></p>
+        <div class="btn-row">
+          <button class="btn sky" id="pcOn" type="button">Activer les widgets PC</button>
+          <button class="btn ghost" id="pcCopy" type="button" hidden>Copier le lien</button>
+          <button class="btn ghost danger" id="pcOff" type="button" hidden>Désactiver</button>
+        </div>
+      </div>
+
       <div class="set-block" id="installBlock">
         <h4>📲 Installer l’appli</h4>
         <p class="muted" id="installText">Sur iPhone : bouton Partager puis « Sur l’écran d’accueil ». C’est obligatoire pour recevoir les notifications sur iPhone. Sur Android : menu ⋮ puis « Installer l’application ».</p>
@@ -199,6 +210,7 @@
 
   <div class="toasts" id="toasts" aria-live="assertive"></div>
 
+  <script src="link.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

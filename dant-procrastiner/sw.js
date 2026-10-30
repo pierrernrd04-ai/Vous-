@@ -2,8 +2,8 @@
 importScripts('core.js');
 const { check, get, set, applyAction } = self.DantCore;
 
-const CACHE = 'dant-v1';
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'core.js', 'saints.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/badge.png'];
+const CACHE = 'dant-v2';
+const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'core.js', 'link.js', 'saints.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/badge.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

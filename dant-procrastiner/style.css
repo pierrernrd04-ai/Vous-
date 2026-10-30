@@ -259,6 +259,7 @@ button { cursor: pointer; border: 0; background: none; }
 .sheet-actions .btn.danger { margin-right: auto; }
 .set-block { padding: 14px; margin-bottom: 12px; border-radius: 22px; background: #fff; border: 1px solid var(--line); }
 .set-block h4 { margin: 0 0 6px; font-size: 16px; }
+.pc-code { margin: 0 0 10px; padding: 12px; border-radius: 16px; text-align: center; font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: .12em; background: linear-gradient(120deg, rgba(57, 255, 136, .35), rgba(127, 211, 255, .35)); }
 .muted { margin: 0 0 10px; color: var(--ink-2); font-size: 13.5px; line-height: 1.45; }
 
 /* ---------- Toasts ---------- */
