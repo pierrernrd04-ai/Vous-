@@ -858,42 +858,81 @@ namespace IPhoneLive
     {
         const double Phone = 2340.0 / 1080.0;
 
-        public static RectangleF Find(IntPtr px, int c)
+        public static RectangleF Find(IntPtr px, int c, out bool phoneShaped)
         {
-            // Toute l'image est analysée : le fond noir ajouté par ffmpeg est sous le seuil,
-            // et une rotation en cours de diffusion est suivie sans connaître la taille d'origine.
-            RectangleF src = new RectangleF(0, 0, c, c);
-            int x0 = int.MaxValue, y0 = int.MaxValue, x1 = -1, y1 = -1;
-            int step = Math.Max(2, c / 200);
-            for (int y = (int)src.Top; y < (int)src.Bottom; y += step)
+            phoneShaped = false;
+            RectangleF all = new RectangleF(0, 0, c, c);
+            int step = Math.Max(2, c / 200), n = c / step;
+            bool[] lit = new bool[n * n];
+            int[] cols = new int[n];
+            for (int j = 0; j < n; j++)
             {
-                IntPtr row = new IntPtr(px.ToInt64() + (long)y * c * 4);
-                for (int x = (int)src.Left; x < (int)src.Right; x += step)
+                IntPtr row = new IntPtr(px.ToInt64() + (long)(j * step) * c * 4);
+                for (int i = 0; i < n; i++)
                 {
-                    int v = Marshal.ReadInt32(row, x * 4);
+                    int v = Marshal.ReadInt32(row, i * step * 4);
                     if (((v >> 16) & 255) > 22 || ((v >> 8) & 255) > 22 || (v & 255) > 22)
                     {
-                        if (x < x0) x0 = x;
-                        if (x > x1) x1 = x;
-                        if (y < y0) y0 = y;
-                        if (y > y1) y1 = y;
+                        lit[j * n + i] = true;
+                        cols[i]++;
                     }
                 }
             }
-            if (x1 < 0) return src;
-            RectangleF box = RectangleF.FromLTRB(x0, y0, x1 + step, y1 + step);
+            // Colonnes « pleines » : l'écran de l'iPhone. Un logo ou un filigrane posé dans le
+            // noir (« PRISM Live ») n'occupe que quelques lignes et ne compte pas.
+            int c0, c1;
+            if (!DenseRun(cols, out c0, out c1)) return all;
+            int[] rows = new int[n];
+            for (int j = 0; j < n; j++)
+                for (int i = c0; i <= c1; i++)
+                    if (lit[j * n + i]) rows[j]++;
+            int r0, r1;
+            if (!DenseRun(rows, out r0, out r1)) return all;
+            RectangleF box = RectangleF.FromLTRB(c0 * step, r0 * step, (c1 + 1) * step, (r1 + 1) * step);
+
             double ratio = box.Height / Math.Max(1f, box.Width);
-            // On ne retient la boîte que si elle a la forme d'un écran d'iPhone : une image
-            // simplement sombre sur les bords ne doit pas être recadrée par erreur.
-            bool portrait = Math.Abs(ratio - Phone) / Phone < 0.12, landscape = Math.Abs(ratio - 1 / Phone) / (1 / Phone) < 0.12;
-            if (!portrait && !landscape) return box; // forme inattendue : on garde tout ce qui est visible
+            bool portrait = Math.Abs(ratio - Phone) / Phone < 0.15, landscape = Math.Abs(ratio - 1 / Phone) / (1 / Phone) < 0.15;
+            if (!portrait && !landscape) return box;
+            phoneShaped = true;
             double target = portrait ? Phone : 1 / Phone;
             float cx = box.X + box.Width / 2, cy = box.Y + box.Height / 2;
             float bw = box.Width, bh = box.Height;
             if (bh / bw > target) bw = (float)(bh / target); else bh = (float)(bw * target);
             RectangleF snapped = new RectangleF(cx - bw / 2, cy - bh / 2, bw, bh);
-            snapped.Intersect(src);
+            snapped.Intersect(all);
             return snapped;
+        }
+
+        // Plus longue suite de valeurs fortes (au moins 20 % du maximum), en tolérant de petits
+        // trous : une bande sombre dans une appli ne coupe pas l'écran en deux.
+        static bool DenseRun(int[] v, out int start, out int end)
+        {
+            start = end = -1;
+            int max = 0;
+            foreach (int x in v) if (x > max) max = x;
+            if (max == 0) return false;
+            int threshold = Math.Max(1, max / 5), gapMax = Math.Max(2, v.Length / 30);
+            int bestLen = 0, s = -1, last = -1, gap = 0;
+            for (int i = 0; i <= v.Length; i++)
+            {
+                bool dense = i < v.Length && v[i] >= threshold;
+                if (dense)
+                {
+                    if (s < 0) s = i;
+                    last = i;
+                    gap = 0;
+                }
+                else if (s >= 0)
+                {
+                    gap++;
+                    if (gap > gapMax || i == v.Length)
+                    {
+                        if (last - s + 1 > bestLen) { bestLen = last - s + 1; start = s; end = last; }
+                        s = -1; gap = 0;
+                    }
+                }
+            }
+            return bestLen > 0;
         }
     }
 
@@ -1094,9 +1133,12 @@ namespace IPhoneLive
                     // Le cadrage est recalculé toutes les 30 images (rotation, changement de taille).
                     if (rx.Frames - framesAtCrop >= 30 || content.IsEmpty)
                     {
-                        RectangleF found = Framing.Find(px, c);
-                        if (content.IsEmpty || Math.Abs(found.Width - content.Width) > 2 || Math.Abs(found.Height - content.Height) > 2
-                            || Math.Abs(found.X - content.X) > 2 || Math.Abs(found.Y - content.Y) > 2)
+                        bool phone;
+                        RectangleF found = Framing.Find(px, c, out phone);
+                        // Un écran d'iPhone reconnu remplace toujours l'ancien cadrage ; une image
+                        // ambiguë (écran noir pendant un changement d'appli) ne le remplace pas.
+                        if (content.IsEmpty || (phone && (Math.Abs(found.Width - content.Width) > 2 || Math.Abs(found.Height - content.Height) > 2
+                            || Math.Abs(found.X - content.X) > 2 || Math.Abs(found.Y - content.Y) > 2)))
                             content = found;
                         framesAtCrop = rx.Frames;
                     }
