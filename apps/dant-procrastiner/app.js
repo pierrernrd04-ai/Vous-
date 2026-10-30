@@ -4,6 +4,7 @@ const C = await loadCore();
 const { CATS, catById, HOUR } = C;
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+let link = null, snapT = 0; // widgets PC (plus bas)
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
 function loadCore() {
@@ -37,7 +38,7 @@ let nags = (await C.get('nags')) || {};
 let current = 'all';
 let showDone = false;
 
-async function save() { await C.set('state', state); }
+async function save() { await C.set('state', state); pushSnap(); }
 
 // ---------- Horloge, date, saint ----------
 const fmtDay = new Intl.DateTimeFormat('fr-FR', { weekday: 'long' });
@@ -78,6 +79,7 @@ async function locate() {
     const j = await r.json();
     place.name = j.city || j.locality || j.principalSubdivision || place.name;
   } catch (e) {}
+  if (JSON.stringify(state.settings.lastPlace) !== JSON.stringify(place)) { state.settings.lastPlace = place; save(); }
   return place;
 }
 async function loadWeather() {
@@ -544,6 +546,7 @@ function openSettings() {
   $('#sSound').checked = s.sound;
   $('#cityState').textContent = s.place ? `Ville choisie : ${s.place.name}` : 'Position automatique (Paris si refusée).';
   renderNotifUI();
+  renderLinkUI();
   openSheet($('#setWrap'));
 }
 $('#settingsBtn').addEventListener('click', openSettings);
@@ -585,6 +588,63 @@ let installEvt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; $('#sInstall').hidden = false; });
 $('#sInstall').addEventListener('click', async () => { if (installEvt) { installEvt.prompt(); installEvt = null; $('#sInstall').hidden = true; } });
 if (standalone) $('#installBlock').hidden = true;
+
+// ---------- Widgets PC : relais chiffré partagé avec les widgets Lively (link.js) ----------
+const DEV = (() => { try { let d = localStorage.getItem('dant-dev'); if (!d) { d = uid(); localStorage.setItem('dant-dev', d); } return d; } catch (e) { return uid(); } })();
+const WIDGETS_URL = new URL('widgets/', location.href).href;
+function linkStart() {
+  if (link) { link.close(); link = null; }
+  const code = state.settings.linkCode;
+  if (!code || !window.RPLink) return;
+  link = RPLink.connect(code, { since: state.settings.linkSince || 0, onData: onLinkData });
+  pushSnap();
+}
+async function onLinkData(m, meta) {
+  if (!m || m.app !== 'dant' || m.dev === DEV) return;
+  if (meta.time > (state.settings.linkSince || 0)) state.settings.linkSince = meta.time;
+  if (m.k === 'h') pushSnap();
+  if (m.k === 'a') {
+    // l'action ne vaut que pour l'échéance vue sur le PC : un message rejoué ne coche jamais deux fois
+    const r = state.reminders.find((x) => x.id === m.id);
+    if (!r || r.done || C.baseOf(r) !== m.base) return;
+    if (m.action === 'done') await complete(m.id);
+    else { C.applyAction(state, m.id, 'snooze', Date.now()); await save(); render(); toast('Reporté depuis le PC', r.title, '🖥️'); }
+  }
+}
+// un instantané léger : rappels en cours et faits aujourd'hui, série, ville de la météo
+function pushSnap() {
+  if (!link) return;
+  clearTimeout(snapT);
+  snapT = setTimeout(() => {
+    const since = new Date(); since.setHours(0, 0, 0, 0);
+    const keep = state.reminders.filter((r) => !r.done || r.doneAt >= since.getTime())
+      .map(({ id, title, cat, due, snoozeUntil, repeat, nag, done, doneAt, lastDone }) => ({ id, title, cat, due, snoozeUntil, repeat, nag, done, doneAt, lastDone }));
+    const hist = {};
+    for (let i = 0; i < 60; i++) { const k = C.dayKey(Date.now() - i * 864e5); if (state.history[k]) hist[k] = state.history[k]; }
+    link.send({ app: 'dant', v: 1, k: 's', dev: DEV, at: Date.now(), reminders: keep, history: hist, place: state.settings.place || state.settings.lastPlace || null }, true).catch(() => {});
+  }, 1200);
+}
+function renderLinkUI() {
+  const code = state.settings.linkCode;
+  $('#pcCode').hidden = !code; $('#pcCode').textContent = code || '';
+  $('#pcOn').hidden = !!code; $('#pcCopy').hidden = !code; $('#pcOff').hidden = !code;
+  $('#pcState').textContent = code
+    ? 'Activés ✅ Sur le PC, ouvre le lien des widgets et tape ce code, ou copie directement le lien complet pour Lively.'
+    : 'Tes rappels en direct sur le bureau Windows (Lively Wallpaper). Coche un rappel sur le PC, il est coché ici aussi.';
+}
+$('#pcOn').addEventListener('click', async () => {
+  state.settings.linkCode = RPLink.newCode(); state.settings.linkSince = 0;
+  await save(); renderLinkUI(); linkStart();
+  toast('Widgets PC activés', state.settings.linkCode, '🖥️', 5000);
+});
+$('#pcCopy').addEventListener('click', async () => {
+  const url = `${WIDGETS_URL}#${state.settings.linkCode}`;
+  try { await navigator.clipboard.writeText(url); toast('Lien copié', 'Colle-le dans Lively sur le PC', '📋'); }
+  catch (e) { prompt('Copie ce lien :', url); }
+});
+$('#pcOff').addEventListener('click', async () => {
+  state.settings.linkCode = null; await save(); if (link) link.close(); link = null; renderLinkUI();
+});
 
 // ---------- Toasts, son, vibration ----------
 function toast(title, sub, ico = '✨', ms = 2800, actions = '') {
@@ -665,6 +725,7 @@ setInterval(rotatePunch, 8000);
 await setupSW();
 tick();
 setInterval(tick, 30e3);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); render(); } });
+linkStart();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); render(); pushSnap(); } });
 const focusId = new URLSearchParams(location.search).get('r');
 if (focusId) { history.replaceState(null, '', location.pathname); setTimeout(() => highlight(focusId), 400); }
