@@ -1,23 +1,19 @@
-﻿MES WIDGETS DANS RAINMETER - mode d'emploi
-==========================================
+﻿MES WIDGETS DANS RAINMETER - mode d'emploi (sans PowerShell)
+============================================================
 
-Tous les widgets sur le bureau Windows, sans Lively :
-- les 14 widgets du tracker Routine & Performance,
-- les 3 widgets Dan't Procrastiner.
-Rainmeter est l'appli gratuite de référence pour les widgets de bureau.
-Un plugin (WebView2) lui permet d'afficher nos pages de widgets en direct.
+Tous les widgets sur le bureau Windows : les 14 du tracker et les 3 de Dan't.
 
-INSTALLER : Windows + R, collez cette commande, Entrée :
+1. Installez Rainmeter (gratuit) : https://www.rainmeter.net
+   (installeur direct : https://github.com/rainmeter/rainmeter/releases/download/v4.5.28.3936/Rainmeter-4.5.28.exe)
+2. Téléchargez MesWidgets.rmskin :
+   https://pierrernrd04-ai.github.io/Vous-/rainmeter/MesWidgets.rmskin
+   puis double-cliquez dessus > Install. Le plugin WebView2 est inclus.
+3. Dans le bloc qui apparaît, collez le lien de vos widgets du tracker
+   (celui de Lively) et choisissez le thème. Le bloc Dan't s'ouvre à droite ;
+   s'il demande un code : iPhone > Dan't > roue dentée > Widgets sur le PC.
+4. Dans Lively, mettez un fond simple ou quittez Lively.
 
-powershell -NoP -EP Bypass -c "$f=Join-Path $env:TEMP MesWidgets.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/rainmeter/Installer.ps1 -OutFile $f; & $f"
+Ctrl + glisser : déplacer. Ctrl + clic droit : menu (changer le lien, actualiser).
 
-Le script installe Rainmeter s'il manque, ajoute le plugin, puis demande :
-- le lien (ou le code) de vos widgets du tracker, celui collé dans Lively ;
-- le code Dan't (iPhone : Dan't > roue dentée > Widgets sur le PC).
-
-UTILISER
-- Ctrl + glisser : déplacer un bloc de widgets.
-- Ctrl + clic droit : menu Rainmeter.
-- Dans Lively, choisissez un fond simple ou quittez Lively.
-
-RETIRER : même commande en ajoutant -Desinstaller juste après & $f
+Le script Installer.ps1 fait la même chose en ligne de commande, pour les PC
+où PowerShell est autorisé. build.py refabrique MesWidgets.rmskin depuis src/.

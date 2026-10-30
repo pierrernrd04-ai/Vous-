@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tracker</title>
+<style>
+:root{--ink:#0b1633;--muted:#55608a;--pink:#ff2e93;--neon:#39ff88;--sky:#7fd3ff}
+html,body{margin:0;height:100%;background:transparent;font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;color:var(--ink)}
+body{display:grid;place-items:center}
+.box{width:min(440px,calc(100% - 24px));padding:22px;border-radius:24px;background:linear-gradient(160deg,#fff,#eef8ff 60%,#fff0f8);box-shadow:0 20px 60px -20px rgba(11,22,51,.5)}
+h1{margin:0 0 4px;font-size:20px}
+p{margin:0 0 12px;color:var(--muted);font-size:14px;line-height:1.45}
+label{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 6px}
+input,select{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:12px;border:2px solid #d9e4f2;font:600 15px/1.2 inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:none;border-color:var(--pink)}
+button{margin-top:14px;width:100%;padding:12px;border:0;border-radius:12px;font:800 15px/1 inherit;color:#fff;background:linear-gradient(135deg,var(--pink),#ff5fb0);cursor:pointer}
+.err{color:var(--pink);font-weight:700;min-height:1.3em;margin:8px 0 0;font-size:13px}
+</style></head><body>
+<form class="box" id="f" hidden>
+  <h1>Widgets du tracker</h1>
+  <p>Colle le lien de tes widgets (celui de Lively, clic droit sur le fond › Personnaliser) ou juste le code de liaison.</p>
+  <label for="v">Lien ou code</label>
+  <input id="v" autocomplete="off" spellcheck="false" placeholder="https://…/widgets/#XXXX-XXXX-XXXX">
+  <label for="t">Thème</label>
+  <select id="t"><option value="sombre">Sombre</option><option value="clair">Clair</option><option value="auto">Auto (jour / nuit)</option></select>
+  <button type="submit">Afficher mes widgets</button>
+  <p class="err" id="e"></p>
+</form>
+<script>
+// Page locale du skin Rainmeter : garde le code sur ce PC (localStorage) puis ouvre la vraie page de widgets.
+var SITE = 'https://pierrernrd04-ai.github.io/Vous-/';
+var KIND = 'tracker';
+var ALPHA = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+function parse(s) {
+  var c = String(s || '').toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1').replace(/[^0-9A-Z]/g, '');
+  if (c.length !== 12) return null;
+  for (var i = 0; i < 12; i++) if (ALPHA.indexOf(c[i]) < 0) return null;
+  return c.slice(0, 4) + '-' + c.slice(4, 8) + '-' + c.slice(8, 12);
+}
+function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function put(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function url(code, theme) {
+  if (KIND === 'dant') return SITE + 'dant-procrastiner/widgets/#' + code + '&mode=bureau&theme=' + theme;
+  return SITE + 'widgets/#' + code + '&fond=0&cote=centre&theme=' + ({ sombre: 'dark', clair: 'light', auto: 'auto' }[theme] || 'dark');
+}
+var code = get('mw-' + KIND), theme = get('mw-theme') || 'sombre';
+if (code && location.search.indexOf('changer') < 0) location.replace(url(code, theme));
+else {
+  var f = document.getElementById('f');
+  f.hidden = false;
+  document.getElementById('v').value = code || '';
+  document.getElementById('t').value = theme;
+  f.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var raw = document.getElementById('v').value.trim(), hash = raw.split('#')[1], c, d = null;
+    if (hash) { c = parse(hash.split('&')[0]); var m = /(?:^|&)dant=([^&]+)/.exec(hash); if (m) d = parse(decodeURIComponent(m[1])); }
+    else c = parse(raw);
+    if (!c) { document.getElementById('e').textContent = 'Le code fait 12 caractères, comme 7KQ2-M9XF-3HWD.'; return; }
+    var th = document.getElementById('t').value;
+    put('mw-' + KIND, c); put('mw-theme', th);
+    if (d && KIND === 'tracker') put('mw-dant', d);
+    location.replace(url(c, th));
+  });
+}
+</script></body></html>
