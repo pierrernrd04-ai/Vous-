@@ -57,6 +57,11 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 
 /* ---------- grille ---------- */
 .stage{position:fixed;inset:0;z-index:2;display:flex;align-items:center;padding:var(--side-pad,40px)}
+/* sans fond (…&fond=0) : pour Rainmeter, les widgets flottent directement sur le bureau */
+html.nofond,html.nofond body{background:transparent}
+.nofond .sky,.nofond .stars,.nofond .grain{display:none}
+html.nofond{--card:rgba(18,20,34,.84)}
+html.nofond[data-theme=light]{--card:rgba(255,255,255,.88)}
 .stage.right{justify-content:flex-end}.stage.left{justify-content:flex-start}.stage.center{justify-content:center}
 .grid{display:grid;grid-template-columns:repeat(6,var(--u));grid-auto-rows:var(--u);gap:var(--gap);
   grid-template-areas:
@@ -302,6 +307,8 @@ svg{display:block;overflow:visible}
   applyTheme(); setInterval(applyTheme, 60000);
   if (OPT.anim === '0') root.classList.add('still');
   if (OPT.verre === '1') root.classList.add('glass');
+  var NOFOND = OPT.fond === '0';
+  if (NOFOND) root.classList.add('nofond');
   var side = { gauche: 'left', left: 'left', centre: 'center', center: 'center', droite: 'right', right: 'right' }[(OPT.cote || OPT.side || '').toLowerCase()] || 'right';
   document.getElementById('stage').className = 'stage ' + side;
   var SCALE = Math.max(.5, Math.min(1.6, (+OPT.taille || 100) / 100));
@@ -324,7 +331,7 @@ svg{display:block;overflow:visible}
 
   /* ---------- taille : 6 colonnes × 4 rangées, à droite (les icônes du bureau restent à gauche) ---------- */
   function fit() {
-    var vw = innerWidth, vh = innerHeight, pad = Math.max(20, Math.round(vh * .04)), bottom = Math.max(40, Math.round(vh * .06));
+    var vw = innerWidth, vh = innerHeight, pad = NOFOND ? 8 : Math.max(20, Math.round(vh * .04)), bottom = NOFOND ? 34 : Math.max(40, Math.round(vh * .06));
     // avec Dan't, la marge libre s'élargit pour accueillir ses 3 widgets
     var zone = dantF ? Math.max(300, Math.min(560, vw * .28)) : side === 'center' ? 0 : vw * .08;
     var u = Math.min((vw - pad * 2 - zone) / (6 + 5 * .12), (vh - pad * 2 - bottom) / (4 + 3 * .12));

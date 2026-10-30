@@ -221,7 +221,8 @@ const jset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } cat
 
 /* taille : 2 colonnes × 3 rangées, à droite (les icônes du bureau restent à gauche) */
 function fit() {
-  if (BUREAU) { root.style.setProperty('--s', `${Math.max(100, Math.min(400, +OPT.s || 180))}px`); return; }
+  // Dan't Bureau donne la taille (s=) ; sans elle (Rainmeter…), les widgets remplissent la fenêtre
+  if (BUREAU) { root.style.setProperty('--s', `${OPT.s ? Math.max(100, Math.min(400, +OPT.s)) : Math.max(70, Math.floor(Math.min(innerWidth / 2.11, innerHeight / 3.22)))}px`); return; }
   const vw = innerWidth, vh = innerHeight, padPx = Math.max(20, Math.round(vh * .045)), bottom = Math.max(40, Math.round(vh * .05));
   let s = Math.min((vh - padPx * 2 - bottom) / (3 + 2 * .11), (INTEGRE ? vw - padPx * 2 : vw * .42) / (2 + .11));
   s = Math.max(INTEGRE ? 70 : 110, Math.min(300, s)) * SCALE;
