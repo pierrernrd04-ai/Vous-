@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dan't Procrastiner</title>
+  <meta name="description" content="Dan't Procrastiner : tes rappels par thème, relancés toutes les heures tant que ce n'est pas fait.">
+  <meta name="theme-color" content="#eaf7ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Dan't">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Unbounded:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><span class="blob b4"></span>
+    <span class="grain"></span>
+  </div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <main class="app">
+    <header class="top">
+      <div class="brand">
+        <img class="brand-mark" src="icons/icon.svg" alt="" width="44" height="44">
+        <h1 class="brand-name"><span class="w1">Dan<em>’</em>t</span><span class="w2">Procrastiner</span></h1>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="bellBtn" aria-label="Notifications"><span class="bell">🔔</span><i class="dot" hidden></i></button>
+        <button class="icon-btn" id="settingsBtn" aria-label="Réglages">⚙️</button>
+      </div>
+    </header>
+
+    <section class="hero card pop" style="--d:0">
+      <div class="hero-left">
+        <p class="day" id="dayName">—</p>
+        <p class="clock" id="clock"><span id="hhmm">--:--</span><span class="sec" id="sec">--</span></p>
+        <p class="date" id="dateLine">—</p>
+        <p class="saint" id="saint"><span class="saint-ico">🎉</span><span id="saintText">—</span></p>
+      </div>
+      <button class="weather" id="weather" aria-label="Météo, toucher pour actualiser">
+        <span class="w-ico" id="wIco">⛅</span>
+        <span class="w-temp" id="wTemp">--°</span>
+        <span class="w-label" id="wLabel">Météo…</span>
+        <span class="w-city" id="wCity">📍 —</span>
+        <span class="w-minmax" id="wMinMax"></span>
+      </button>
+    </section>
+
+    <section class="punch card pop" style="--d:1">
+      <p class="punch-line" id="punchLine">Pas <em>dans</em> une heure. <strong>Maintenant.</strong></p>
+      <div class="stats">
+        <div class="stat late"><b id="stLate">0</b><span>en retard</span></div>
+        <div class="stat today"><b id="stToday">0</b><span>faits aujourd’hui</span></div>
+        <div class="stat streak"><b id="stStreak">0</b><span>jours de série 🔥</span></div>
+      </div>
+    </section>
+
+    <section class="notif-cta card pop" id="notifCta" style="--d:2" hidden>
+      <div class="nc-ico">🔔</div>
+      <div class="nc-text">
+        <strong id="ncTitle">Active les notifications</strong>
+        <span id="ncSub">Sinon je ne peux pas te relancer toutes les heures. Et tu vas procrastiner. On le sait tous les deux.</span>
+      </div>
+      <button class="btn neon" id="ncBtn">Activer</button>
+    </section>
+
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Thèmes"></nav>
+
+    <section class="list-head">
+      <div>
+        <h2 id="catTitle">Tout</h2>
+        <p id="catSub">Tous tes rappels</p>
+      </div>
+      <div class="ring" id="ring" aria-label="Progression">
+        <svg viewBox="0 0 44 44"><circle class="ring-bg" cx="22" cy="22" r="18"/><circle class="ring-fg" id="ringFg" cx="22" cy="22" r="18"/></svg>
+        <span id="ringPct">0%</span>
+      </div>
+    </section>
+
+    <section id="list" class="list" aria-live="polite"></section>
+  </main>
+
+  <button class="fab" id="fab" aria-label="Nouveau rappel"><span>＋</span></button>
+
+  <!-- Feuille : rappel -->
+  <div class="sheet-wrap" id="editWrap" hidden>
+    <div class="scrim" data-close></div>
+    <form class="sheet" id="editForm" autocomplete="off">
+      <div class="grab"></div>
+      <h3 id="editTitle">Nouveau rappel</h3>
+      <label class="field">
+        <span>Quoi ?</span>
+        <input id="fTitle" required maxlength="80" placeholder="Ex. 30 min de vélo">
+      </label>
+      <div class="ideas" id="ideas"></div>
+      <span class="field-label">Thème</span>
+      <div class="cat-pick" id="catPick"></div>
+      <span class="field-label">Quand ?</span>
+      <div class="quick" id="quickWhen">
+        <button type="button" data-q="now">Maintenant</button>
+        <button type="button" data-q="1h">Dans 1 h</button>
+        <button type="button" data-q="tonight">Ce soir 20 h</button>
+        <button type="button" data-q="tomorrow">Demain 8 h</button>
+      </div>
+      <div class="row2">
+        <label class="field"><span>Date</span><input type="date" id="fDate" required></label>
+        <label class="field"><span>Heure</span><input type="time" id="fTime" required></label>
+      </div>
+      <span class="field-label">Répéter</span>
+      <div class="seg" id="fRepeat">
+        <button type="button" data-v="none">Une fois</button>
+        <button type="button" data-v="daily">Chaque jour</button>
+        <button type="button" data-v="weekly">Chaque semaine</button>
+      </div>
+      <label class="switch-row">
+        <span><strong>Relance toutes les heures</strong><small>tant que ce n’est pas coché</small></span>
+        <input type="checkbox" id="fNag" checked><i class="switch"></i>
+      </label>
+      <label class="field">
+        <span>Note (facultatif)</span>
+        <textarea id="fNote" rows="2" maxlength="240" placeholder="Pourquoi c’est important pour toi ?"></textarea>
+      </label>
+      <div class="sheet-actions">
+        <button type="button" class="btn ghost danger" id="fDelete" hidden>Supprimer</button>
+        <button type="button" class="btn ghost" data-close>Annuler</button>
+        <button type="submit" class="btn pink">C’est noté 💥</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Feuille : réglages -->
+  <div class="sheet-wrap" id="setWrap" hidden>
+    <div class="scrim" data-close></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <h3>Réglages</h3>
+
+      <div class="set-block">
+        <h4>🔔 Notifications</h4>
+        <p class="muted" id="notifState">—</p>
+        <div class="btn-row">
+          <button class="btn neon" id="sEnable">Activer</button>
+          <button class="btn ghost" id="sTest">Tester une notif</button>
+        </div>
+        <label class="switch-row">
+          <span><strong>Heures calmes</strong><small>pas de relance la nuit</small></span>
+          <input type="checkbox" id="sQuiet"><i class="switch"></i>
+        </label>
+        <div class="row2" id="quietHours">
+          <label class="field"><span>De</span><input type="time" id="sQuietStart" step="3600"></label>
+          <label class="field"><span>À</span><input type="time" id="sQuietEnd" step="3600"></label>
+        </div>
+        <label class="switch-row">
+          <span><strong>Son et vibration</strong><small>quand l’appli est ouverte</small></span>
+          <input type="checkbox" id="sSound"><i class="switch"></i>
+        </label>
+      </div>
+
+      <div class="set-block">
+        <h4>📅 Relances garanties, même appli fermée</h4>
+        <p class="muted">Le téléphone peut endormir une appli web. Pour être sûr d’être relancé, ajoute tes rappels à ton agenda : chacun arrive avec une alarme à l’heure prévue puis une toutes les heures (6 relances).</p>
+        <button class="btn sky" id="sIcsAll">Ajouter tous les rappels à l’agenda</button>
+      </div>
+
+      <div class="set-block">
+        <h4>🌤️ Météo</h4>
+        <p class="muted" id="cityState">Position automatique.</p>
+        <div class="row2 city-row">
+          <label class="field"><span>Ville</span><input id="sCity" placeholder="Ex. Lyon"></label>
+          <button class="btn ghost" id="sCityBtn" type="button">OK</button>
+        </div>
+        <button class="btn ghost small" id="sCityAuto" type="button">Utiliser ma position</button>
+      </div>
+
+      <div class="set-block" id="installBlock">
+        <h4>📲 Installer l’appli</h4>
+        <p class="muted" id="installText">Sur iPhone : bouton Partager puis « Sur l’écran d’accueil ». C’est obligatoire pour recevoir les notifications sur iPhone. Sur Android : menu ⋮ puis « Installer l’application ».</p>
+        <button class="btn pink" id="sInstall" hidden>Installer</button>
+      </div>
+
+      <div class="set-block">
+        <h4>💾 Données</h4>
+        <p class="muted">Tout reste sur ton téléphone.</p>
+        <div class="btn-row">
+          <button class="btn ghost" id="sExport">Exporter</button>
+          <label class="btn ghost">Importer<input type="file" id="sImport" accept="application/json" hidden></label>
+        </div>
+      </div>
+      <div class="sheet-actions"><button class="btn pink" data-close>Fermer</button></div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="assertive"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
