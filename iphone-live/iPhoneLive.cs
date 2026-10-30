@@ -63,6 +63,7 @@ namespace IPhoneLive
         [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr hwnd, int msg, IntPtr w, IntPtr l);
         [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hwnd, int msg, IntPtr w, IntPtr l);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int RegisterWindowMessage(string name);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string cls, string title);
         [DllImport("user32.dll")] public static extern bool RegisterHotKey(IntPtr hwnd, int id, uint mods, uint vk);
         [DllImport("user32.dll")] public static extern bool UnregisterHotKey(IntPtr hwnd, int id);
         [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
@@ -602,6 +603,7 @@ namespace IPhoneLive
         readonly object swap = new object();
         DateTime lastStart = DateTime.MinValue;
         int quickFails;
+        bool firstStart = true;
 
         public bool Running { get { try { return proc != null && !proc.HasExited; } catch { return false; } } }
 
@@ -611,12 +613,18 @@ namespace IPhoneLive
             // Évite de relancer en boucle si ffmpeg échoue tout de suite.
             if ((DateTime.Now - lastStart).TotalSeconds < Math.Min(30, 2 << Math.Min(quickFails, 4))) return;
             lastStart = DateTime.Now;
-            Free();
-            Canvas = canvas;
-            front = new byte[canvas * canvas * 4];
-            back = new byte[canvas * canvas * 4];
-            frontPin = GCHandle.Alloc(front, GCHandleType.Pinned);
-            backPin = GCHandle.Alloc(back, GCHandleType.Pinned);
+            // L'ancien fil de lecture doit avoir fini avant de remplacer les tampons.
+            try { if (reader != null) reader.Join(1500); } catch { }
+            if (firstStart) { KillOrphans(); firstStart = false; }
+            lock (swap)
+            {
+                Free();
+                Canvas = canvas;
+                front = new byte[canvas * canvas * 4];
+                back = new byte[canvas * canvas * 4];
+                frontPin = GCHandle.Alloc(front, GCHandleType.Pinned);
+                backPin = GCHandle.Alloc(back, GCHandleType.Pinned);
+            }
             SrcW = SrcH = 0;
 
             string vf = "fps=30,scale=" + canvas + ":" + canvas + ":force_original_aspect_ratio=decrease:flags=bilinear," +
@@ -650,18 +658,23 @@ namespace IPhoneLive
             try
             {
                 Stream s = p.StandardOutput.BaseStream;
-                int size = back.Length;
+                int size;
+                lock (swap) { if (back == null) return; size = back.Length; }
                 while (true)
                 {
                     int got = 0;
+                    byte[] target;
+                    lock (swap) { target = back; }
+                    if (target == null || target.Length != size) return;
                     while (got < size)
                     {
-                        int n = s.Read(back, got, size - got);
+                        int n = s.Read(target, got, size - got);
                         if (n <= 0) return;
                         got += n;
                     }
                     lock (swap)
                     {
+                        if (back != target) return; // une nouvelle session a remplacé les tampons
                         byte[] t = front; front = back; back = t;
                         GCHandle h = frontPin; frontPin = backPin; backPin = h;
                         Frames++;
@@ -708,25 +721,43 @@ namespace IPhoneLive
         {
             lock (swap)
             {
-                if (front == null) return;
+                if (front == null || !frontPin.IsAllocated) return;
                 draw(frontPin.AddrOfPinnedObject(), Canvas);
             }
         }
 
+        // Arrêt complet : le processus est vraiment terminé et le fil de lecture aussi, avant
+        // que quiconque touche aux tampons ou au fichier ffmpeg.exe.
         public void Stop()
         {
-            try { if (Running) proc.Kill(); } catch { }
+            try { if (Running) { proc.Kill(); proc.WaitForExit(3000); } } catch { }
             proc = null;
+            try { if (reader != null) reader.Join(1500); } catch { }
+            try { if (errReader != null) errReader.Join(500); } catch { }
+        }
+
+        // Un ffmpeg resté orphelin (appli tuée, plantage) garderait le port 1935.
+        static void KillOrphans()
+        {
+            foreach (Process p in Process.GetProcessesByName("ffmpeg"))
+            {
+                try
+                {
+                    if (string.Equals(p.MainModule.FileName, Ffmpeg, StringComparison.OrdinalIgnoreCase))
+                    {
+                        p.Kill();
+                        p.WaitForExit(2000);
+                    }
+                }
+                catch { }
+            }
         }
 
         void Free()
         {
-            lock (swap)
-            {
-                if (frontPin.IsAllocated) frontPin.Free();
-                if (backPin.IsAllocated) backPin.Free();
-                front = back = null;
-            }
+            if (frontPin.IsAllocated) frontPin.Free();
+            if (backPin.IsAllocated) backPin.Free();
+            front = back = null;
         }
 
         // Téléchargement unique de ffmpeg (FFmpeg-Builds sur GitHub, environ 200 Mo).
@@ -759,21 +790,36 @@ namespace IPhoneLive
                         }
                     }
                     Status = "Installation du récepteur…";
+                    // Extraction dans un fichier temporaire : ffmpeg.exe n'existe qu'une fois complet.
+                    string tmp = Ffmpeg + ".tmp";
+                    bool found = false;
                     using (ZipArchive za = ZipFile.OpenRead(zip))
                         foreach (ZipArchiveEntry e in za.Entries)
                             if (e.Name.Equals("ffmpeg.exe", StringComparison.OrdinalIgnoreCase))
-                                e.ExtractToFile(Ffmpeg, true);
-                    Status = Installed ? "" : "ffmpeg.exe introuvable dans le téléchargement.";
+                            {
+                                e.ExtractToFile(tmp, true);
+                                found = true;
+                                break;
+                            }
+                    if (!found) throw new Exception("ffmpeg.exe introuvable dans le téléchargement.");
+                    if (File.Exists(Ffmpeg)) File.Delete(Ffmpeg);
+                    File.Move(tmp, Ffmpeg);
+                    Status = "";
                 }
-                catch (Exception ex) { Status = "Échec du téléchargement : " + ex.Message + " Réessayez par clic droit → Réparer le récepteur."; }
+                catch (Exception ex)
+                {
+                    InstallFailed = true;
+                    Status = "Échec du téléchargement : " + ex.Message + " Clic droit → Réparer le récepteur pour réessayer.";
+                }
                 finally { try { File.Delete(zip); } catch { } }
-                done();
+                try { done(); } catch { }
             });
             installer.IsBackground = true;
             installer.Start();
         }
 
         public bool Installing { get { return installer != null && installer.IsAlive; } }
+        public volatile bool InstallFailed;   // pas de nouvel essai automatique avant « Réparer »
 
         // Adresse du PC vue par l'iPhone : celle du partage de connexion (172.20.10.x),
         // que le lien passe par le Wi-Fi de l'iPhone ou par le câble USB.
@@ -812,15 +858,11 @@ namespace IPhoneLive
     {
         const double Phone = 2340.0 / 1080.0;
 
-        public static RectangleF Find(IntPtr px, int c, int srcW, int srcH)
+        public static RectangleF Find(IntPtr px, int c)
         {
+            // Toute l'image est analysée : le fond noir ajouté par ffmpeg est sous le seuil,
+            // et une rotation en cours de diffusion est suivie sans connaître la taille d'origine.
             RectangleF src = new RectangleF(0, 0, c, c);
-            if (srcW > 0 && srcH > 0)
-            {
-                float s = (float)c / Math.Max(srcW, srcH);
-                float w = srcW * s, h = srcH * s;
-                src = new RectangleF((c - w) / 2, (c - h) / 2, w, h);
-            }
             int x0 = int.MaxValue, y0 = int.MaxValue, x1 = -1, y1 = -1;
             int step = Math.Max(2, c / 200);
             for (int y = (int)src.Top; y < (int)src.Bottom; y += step)
@@ -844,7 +886,7 @@ namespace IPhoneLive
             // On ne retient la boîte que si elle a la forme d'un écran d'iPhone : une image
             // simplement sombre sur les bords ne doit pas être recadrée par erreur.
             bool portrait = Math.Abs(ratio - Phone) / Phone < 0.12, landscape = Math.Abs(ratio - 1 / Phone) / (1 / Phone) < 0.12;
-            if (!portrait && !landscape) return src;
+            if (!portrait && !landscape) return box; // forme inattendue : on garde tout ce qui est visible
             double target = portrait ? Phone : 1 / Phone;
             float cx = box.X + box.Width / 2, cy = box.Y + box.Height / 2;
             float bw = box.Width, bh = box.Height;
@@ -858,6 +900,7 @@ namespace IPhoneLive
     // ---------------------------------------------------------------- Le widget
     class PhoneForm : Form
     {
+        public const string WindowTitle = "iPhone Live";
         const int HOTKEY_ID = 0x1313;
         readonly int WM_SHOW_ME = N.RegisterWindowMessage("iPhoneLive_Afficher");
         readonly int WM_QUIT_ME = N.RegisterWindowMessage("iPhoneLive_Quitter");
@@ -886,7 +929,7 @@ namespace IPhoneLive
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            Text = "iPhone Live";
+            Text = WindowTitle;
             TopMost = cfg.TopMost;
 
             BuildMenu();
@@ -1051,7 +1094,7 @@ namespace IPhoneLive
                     // Le cadrage est recalculé toutes les 30 images (rotation, changement de taille).
                     if (rx.Frames - framesAtCrop >= 30 || content.IsEmpty)
                     {
-                        RectangleF found = Framing.Find(px, c, rx.SrcW, rx.SrcH);
+                        RectangleF found = Framing.Find(px, c);
                         if (content.IsEmpty || Math.Abs(found.Width - content.Width) > 2 || Math.Abs(found.Height - content.Height) > 2
                             || Math.Abs(found.X - content.X) > 2 || Math.Abs(found.Y - content.Y) > 2)
                             content = found;
@@ -1119,8 +1162,12 @@ namespace IPhoneLive
         {
             if (!Receiver.Installed)
             {
-                if (!rx.Installing)
-                    rx.Install(delegate { if (IsHandleCreated) BeginInvoke((MethodInvoker)delegate { EnsureReceiver(); waitingKey = ""; Redraw(); }); });
+                if (!rx.Installing && !rx.InstallFailed)
+                    rx.Install(delegate
+                    {
+                        try { if (IsHandleCreated && !IsDisposed) BeginInvoke((MethodInvoker)delegate { EnsureReceiver(); waitingKey = ""; Redraw(); }); }
+                        catch { } // fenêtre fermée pendant le téléchargement
+                    });
                 return;
             }
             rx.Start(CanvasFor());
@@ -1158,16 +1205,19 @@ namespace IPhoneLive
 
         protected override void WndProc(ref Message m)
         {
-            if (m.Msg == 0x0312 && m.WParam.ToInt32() == HOTKEY_ID) { Toggle(); return; }
+            if (m.Msg == 0x0312 && m.WParam.ToInt32() == HOTKEY_ID) { Toggle(false); return; }
             if (m.Msg == WM_SHOW_ME && WM_SHOW_ME != 0) { ShowAll(); return; }
             if (m.Msg == WM_QUIT_ME && WM_QUIT_ME != 0) { Close(); return; }
             if (m.Msg == 0x02E0) return; // WM_DPICHANGED : géré après le déplacement
             base.WndProc(ref m);
         }
 
-        void Toggle()
+        // Raccourci : masque seulement si le téléphone est déjà devant. Menu : bascule simple
+        // (le menu prend le focus, le téléphone n'est donc jamais « actif » à ce moment-là).
+        void Toggle(bool fromMenu)
         {
-            if (Visible && Form.ActiveForm == this) Hide(); else ShowAll();
+            bool hide = fromMenu ? Visible : Visible && Form.ActiveForm == this;
+            if (hide) Hide(); else ShowAll();
         }
 
         void ShowAll()
@@ -1236,6 +1286,8 @@ namespace IPhoneLive
             {
                 rx.Stop();
                 try { File.Delete(Receiver.Ffmpeg); } catch { }
+                rx.InstallFailed = false;
+                rx.Status = "";
                 EnsureReceiver();
             });
             menu.Items.Add(new ToolStripSeparator());
@@ -1271,7 +1323,7 @@ namespace IPhoneLive
             menu.Items.Add(itemStartup);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Ouvrir Lien mobile (messages, appels)", null, delegate { Do("liens"); });
-            menu.Items.Add("Afficher / masquer (Ctrl+Alt+I)", null, delegate { Toggle(); });
+            menu.Items.Add("Afficher / masquer (Ctrl+Alt+I)", null, delegate { Toggle(true); });
             menu.Items.Add("Quitter", null, delegate { Close(); });
 
             menu.Opening += delegate
@@ -1381,7 +1433,9 @@ namespace IPhoneLive
             if (args.Length == 2 && args[0] == "--icone") { Art.WriteIco(args[1]); return; }
             if (args.Length == 1 && args[0] == "--quitter")
             {
-                N.PostMessage(N.HWND_BROADCAST, N.RegisterWindowMessage("iPhoneLive_Quitter"), IntPtr.Zero, IntPtr.Zero);
+                // FindWindow trouve aussi la fenêtre quand elle est masquée (un broadcast, non).
+                IntPtr w = N.FindWindow(null, PhoneForm.WindowTitle);
+                if (w != IntPtr.Zero) N.PostMessage(w, N.RegisterWindowMessage("iPhoneLive_Quitter"), IntPtr.Zero, IntPtr.Zero);
                 return;
             }
             // Pixels physiques : indispensable pour la taille réelle. Windows 10 1703+ puis repli.
@@ -1393,7 +1447,8 @@ namespace IPhoneLive
             {
                 if (!created)
                 {
-                    N.PostMessage(N.HWND_BROADCAST, N.RegisterWindowMessage("iPhoneLive_Afficher"), IntPtr.Zero, IntPtr.Zero);
+                    IntPtr w = N.FindWindow(null, PhoneForm.WindowTitle);
+                    if (w != IntPtr.Zero) N.PostMessage(w, N.RegisterWindowMessage("iPhoneLive_Afficher"), IntPtr.Zero, IntPtr.Zero);
                     return;
                 }
                 Application.EnableVisualStyles();
