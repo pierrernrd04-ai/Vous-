@@ -1,0 +1,28 @@
+﻿IPHONE LIVE - mode d emploi
+===========================
+
+Ton iPhone 13 mini en direct, dans un iPhone à taille réelle posé sur le
+bureau Windows 10 / 11. Sans Wi-Fi de box : par le partage de connexion
+de l iPhone, en Wi-Fi ou avec le câble USB.
+
+INSTALLER (une commande)
+Windows + R, colle cette ligne, Entrée :
+
+powershell -NoP -EP Bypass -c "$f=Join-Path $env:TEMP iPhoneLive.ps1; irm https://raw.githubusercontent.com/pierrernrd04-ai/Vous-/HEAD/iphone-live/Installer.ps1 -OutFile $f; & $f"
+
+CONNECTER
+1. iPhone : appli gratuite PRISM Live Studio (App Store).
+2. iPhone : Réglages > Partage de connexion > Autoriser d autres utilisateurs.
+   PC : connecte-toi au Wi-Fi de l iPhone, OU branche le câble USB.
+3. Le téléphone du bureau affiche l adresse, par exemple :
+      rtmp://172.20.10.3/live      clé : iphone
+4. PRISM : destination RTMP personnalisé, colle l adresse et la clé,
+   puis diffuse l écran. L image arrive dans le téléphone.
+
+L image passe par le lien direct iPhone-PC : elle ne consomme pas le forfait.
+
+UTILISER
+- Glisser le contour : déplacer       - Ctrl + Alt + I : afficher / masquer
+- Clic droit : taille, couleur, pare-feu, démarrage auto, quitter
+
+Fichiers : %LOCALAPPDATA%\iPhoneLive (réglages, erreurs.txt, ffmpeg.exe)
