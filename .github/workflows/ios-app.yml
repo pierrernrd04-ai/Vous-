@@ -1,0 +1,84 @@
+# Appli iPhone d'iPhone Live : compilée sur un Mac de GitHub, sans signature.
+# Le fichier iPhoneLive.ipa est publié dans la release « iphone-live-app », puis installé
+# sur l'iPhone avec Sideloadly (identifiant Apple gratuit).
+name: Appli iPhone Live
+
+on:
+  push:
+    paths:
+      - "ios-app/**"
+      - ".github/workflows/ios-app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer XcodeGen
+        run: brew install xcodegen
+
+      - name: Générer le projet Xcode
+        working-directory: ios-app
+        run: xcodegen generate
+
+      - name: Compiler (iphoneos, sans signature)
+        working-directory: ios-app
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project iPhoneLive.xcodeproj \
+            -scheme iPhoneLive \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tee xcodebuild.log | grep -E "error:|warning: .*deprecated|BUILD (SUCCEEDED|FAILED)" || true
+          test -d build/Build/Products/Release-iphoneos/iPhoneLive.app
+
+      - name: Vérifier que l'extension est embarquée
+        working-directory: ios-app
+        run: |
+          ls build/Build/Products/Release-iphoneos/iPhoneLive.app/PlugIns
+          test -d build/Build/Products/Release-iphoneos/iPhoneLive.app/PlugIns/Broadcast.appex
+
+      - name: Fabriquer l'IPA
+        working-directory: ios-app
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/iPhoneLive.app Payload/
+          zip -qry iPhoneLive.ipa Payload
+          ls -la iPhoneLive.ipa
+
+      - name: Garder le journal de compilation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: ios-app/xcodebuild.log
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iPhoneLive-ipa
+          path: ios-app/iPhoneLive.ipa
+
+      - name: Publier dans la release « iphone-live-app »
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ios-app
+        run: |
+          gh release view iphone-live-app >/dev/null 2>&1 || \
+            gh release create iphone-live-app --title "Appli iPhone Live" \
+              --notes "Appli iPhone d'iPhone Live, sans signature. À installer avec Sideloadly." --target "${GITHUB_SHA}"
+          gh release upload iphone-live-app iPhoneLive.ipa --clobber
