@@ -252,6 +252,8 @@ svg{display:block;overflow:visible}
 .state{position:fixed;z-index:4;right:var(--side-pad,40px);bottom:calc(var(--bottom,48px) * .35);display:flex;gap:10px;align-items:center;font-size:12.5px;font-weight:600;color:var(--ink2);
   padding:6px 12px;border-radius:99px;background:var(--card);box-shadow:0 0 0 1px var(--line) inset;opacity:0;animation:enter .8s 1.4s forwards}
 .stage.left~.state{right:auto;left:var(--side-pad,40px)}
+/* Dan't Procrastiner dans la marge libre (…&dant=CODE) : page transparente posée sur le décor */
+.dant{position:fixed;z-index:3;top:0;left:0;width:0;height:100%;border:0;background:transparent;color-scheme:normal}
 .state .dot{width:7px;height:7px;border-radius:50%;background:var(--ink3)}
 .state.live .dot{background:var(--good);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:ping 2.4s infinite}
 .state.bad .dot{background:var(--bad)}
@@ -308,14 +310,33 @@ svg{display:block;overflow:visible}
   // le code passe après le # : jamais envoyé au serveur, le tracker le retire de l'adresse dès l'ouverture
   var link = function (tab) { return TRACKER + '#' + tab + (CODE ? '&lien=' + CODE : ''); };
 
+  /* ---------- Dan't Procrastiner dans la marge libre : …/widgets/#CODE&dant=CODE_DANT (&dtheme=clair|sombre|auto) ---------- */
+  var DANT = OPT.dant && side !== 'center' ? window.RPLink.parse(OPT.dant) : null, dantF = null;
+  if (DANT) {
+    var dTheme = (OPT.dtheme || (theme === 'light' || theme === 'clair' ? 'clair' : theme === 'auto' ? 'auto' : 'sombre')).toLowerCase();
+    dantF = document.createElement('iframe');
+    dantF.className = 'dant';
+    dantF.title = 'Dan’t Procrastiner';
+    dantF.src = new URL('../dant-procrastiner/widgets/', location.href).href + '#' + DANT + '&integre=1&theme=' + encodeURIComponent(dTheme) +
+      (OPT.anim === '0' ? '&anim=0' : '') + (OPT.dtaille ? '&taille=' + encodeURIComponent(OPT.dtaille) : '');
+    document.body.appendChild(dantF);
+  }
+
   /* ---------- taille : 6 colonnes × 4 rangées, à droite (les icônes du bureau restent à gauche) ---------- */
   function fit() {
     var vw = innerWidth, vh = innerHeight, pad = Math.max(20, Math.round(vh * .04)), bottom = Math.max(40, Math.round(vh * .06));
-    var u = Math.min((vw - pad * 2 - (side === 'center' ? 0 : vw * .08)) / (6 + 5 * .12), (vh - pad * 2 - bottom) / (4 + 3 * .12));
+    // avec Dan't, la marge libre s'élargit pour accueillir ses 3 widgets
+    var zone = dantF ? Math.max(300, Math.min(560, vw * .28)) : side === 'center' ? 0 : vw * .08;
+    var u = Math.min((vw - pad * 2 - zone) / (6 + 5 * .12), (vh - pad * 2 - bottom) / (4 + 3 * .12));
     u = Math.max(90, Math.min(260, u)) * SCALE;
     root.style.setProperty('--u', u.toFixed(1) + 'px');
     root.style.setProperty('--side-pad', pad + 'px');
     root.style.setProperty('--bottom', bottom + 'px');
+    if (dantF) {
+      var gridW = u * (6 + 5 * .12), free = Math.max(0, Math.round(vw - pad - gridW - u * .12));
+      dantF.style.width = free + 'px';
+      dantF.style.left = side === 'left' ? (vw - free) + 'px' : '0';
+    }
   }
   fit(); addEventListener('resize', fit);
   (function stars() {
