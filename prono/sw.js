@@ -1,5 +1,5 @@
 // Service worker : coquille hors ligne + notifications.
-const CACHE = 'prono-v2';
+const CACHE = 'prono-v3';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'api.js', 'model.js', 'rating.js', 'icon.svg', 'icon-192.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
@@ -18,6 +18,20 @@ self.addEventListener('fetch', (e) => {
     }).catch(() => caches.match(e.request, { ignoreSearch: true }))
   );
 });
+// Notification push envoyée par le serveur d'alertes (même app fermée).
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { title: 'Prono', body: e.data?.text() || '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Prono', {
+    body: d.body || '',
+    tag: d.tag,
+    renotify: !!d.tag,
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    data: { matchId: d.matchId, url: d.url },
+  }));
+});
+
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const id = e.notification.data?.matchId;

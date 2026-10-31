@@ -8,6 +8,9 @@ const LS = {
   set(k, v) { try { localStorage.setItem('pf:' + k, JSON.stringify(v)); } catch { /* stockage plein ou bloqué */ } },
 };
 
+// Serveur d'alertes push (Netlify) : envoie buts, cartons, coups d'envoi… même app fermée.
+const PUSH_API = 'https://prono-alertes-foot.netlify.app';
+
 const state = {
   offset: 0,
   matches: [],
@@ -22,6 +25,8 @@ const state = {
   settings: { notif: false, reminders: true, goals: true, kickoff: true, cards: true, prematch: true, sound: true, alertScope: 'suivis', ...LS.get('settings', {}) },
   history: LS.get('history', {}),
   prev: LS.get('prev', {}),
+  push: LS.get('push', { on: false, endpoint: null }),
+  server: null,
   updatedAt: null,
   error: null,
   open: null,
@@ -239,9 +244,10 @@ function chime(kind = 'goal') {
   try { navigator.vibrate?.(kind === 'goal' ? [80, 60, 160] : [120]); } catch { /* rien */ }
 }
 
-async function notify(title, body, tag, { kind = 'info', matchId } = {}) {
+async function notify(title, body, tag, { kind = 'info', matchId, event = false } = {}) {
   toast(title, body, matchId);
   if (kind === 'goal' || kind === 'red') chime(kind === 'goal' ? 'goal' : 'alert');
+  if (event && state.push.on) return; // le serveur envoie déjà la notification système
   if (!state.settings.notif || !('Notification' in window) || Notification.permission !== 'granted') return;
   const opts = { body, tag, icon: 'icon-192.png', badge: 'icon-192.png', renotify: true, data: { matchId } };
   try {
@@ -270,12 +276,12 @@ function detectEvents(matches) {
     if (state.settings.prematch && followed(m) && m.state === 'pre' && !snap.w && m.date - now < 16 * 60e3 && m.date - now > 0) {
       snap.w = true;
       const pr = pred(m);
-      notify(`Dans 15 min · ${m.home.short} – ${m.away.short}`, `Prono ${pr.pick.code} (${pct(pr.pick.p)}, ${pr.reliability.tier.toLowerCase()}) · ${m.leagueLabel}`, 'pre-' + m.id, { matchId: m.id });
+      notify(`Dans 15 min · ${m.home.short} – ${m.away.short}`, `Prono ${pr.pick.code} (${pct(pr.pick.p)}, ${pr.reliability.tier.toLowerCase()}) · ${m.leagueLabel}`, 'pre-' + m.id, { matchId: m.id, event: true });
     }
     if (!p) continue;
     if (p.s === 'pre' && m.state === 'in' && state.settings.kickoff) {
       const pr = pred(m);
-      notify(`Coup d’envoi · ${m.home.short} – ${m.away.short}`, `Prono ${pr.pick.code} · ${pr.pick.label} (${pct(pr.pick.p)})`, 'ko-' + m.id, { matchId: m.id });
+      notify(`Coup d’envoi · ${m.home.short} – ${m.away.short}`, `Prono ${pr.pick.code} · ${pr.pick.label} (${pct(pr.pick.p)})`, 'ko-' + m.id, { matchId: m.id, event: true });
     }
     if (state.settings.goals && (snap.h > p.h || snap.a > p.a)) {
       const team = snap.h > p.h ? m.home : m.away;
@@ -283,22 +289,22 @@ function detectEvents(matches) {
       const who = last ? `${last.player}${last.penalty ? ' (pen.)' : ''}${last.own ? ' (c.s.c.)' : ''} ${last.minute}` : m.clock || '';
       const lp = live(m);
       const lead = lp ? ` · victoire ${m.home.short} ${pct(lp.pH)} / nul ${pct(lp.pD)} / ${m.away.short} ${pct(lp.pA)}` : '';
-      notify(`⚽ BUT ${team.short} · ${vs}`, `${who}${lead}`, 'goal-' + m.id, { kind: 'goal', matchId: m.id });
+      notify(`⚽ BUT ${team.short} · ${vs}`, `${who}${lead}`, 'goal-' + m.id, { kind: 'goal', matchId: m.id, event: true });
     } else if (state.settings.goals && (snap.h < p.h || snap.a < p.a)) {
-      notify(`But annulé · ${vs}`, 'Décision de l’arbitre (VAR)', 'goal-' + m.id, { matchId: m.id });
+      notify(`But annulé · ${vs}`, 'Décision de l’arbitre (VAR)', 'goal-' + m.id, { matchId: m.id, event: true });
     }
     if (state.settings.cards && snap.r > (p.r || 0)) {
       const r = m.reds[m.reds.length - 1];
       const team = r?.teamId === m.home.id ? m.home : m.away;
-      notify(`🟥 Rouge · ${team.short}`, `${r?.player || ''} ${r?.minute || ''} · ${vs}`, 'red-' + m.id, { kind: 'red', matchId: m.id });
+      notify(`🟥 Rouge · ${team.short}`, `${r?.player || ''} ${r?.minute || ''} · ${vs}`, 'red-' + m.id, { kind: 'red', matchId: m.id, event: true });
     }
     if (state.settings.kickoff && p.n !== 'STATUS_HALFTIME' && m.statusName === 'STATUS_HALFTIME') {
-      notify(`Mi-temps · ${vs}`, m.goals.map((g) => `${g.player} ${g.minute}`).join(', ') || 'Pas de but', 'ht-' + m.id, { matchId: m.id });
+      notify(`Mi-temps · ${vs}`, m.goals.map((g) => `${g.player} ${g.minute}`).join(', ') || 'Pas de but', 'ht-' + m.id, { matchId: m.id, event: true });
     }
     if (p.s === 'in' && m.state === 'post' && m.completed) {
       const h = state.history[m.id];
       const verdict = h ? (pickHit(h.pick, snap.h, snap.a) ? `Prono ${h.pick} validé ✓` : `Prono ${h.pick} raté ✕`) : '';
-      notify(`Fin du match · ${vs}`, verdict, 'ft-' + m.id, { matchId: m.id });
+      notify(`Fin du match · ${vs}`, verdict, 'ft-' + m.id, { matchId: m.id, event: true });
     }
   }
   state.prev = next;
@@ -327,7 +333,53 @@ function sendReminder(force = false) {
     return `${hhmm(m.date)} ${m.home.short}–${m.away.short} → ${p.pick.code} ${pct(p.pick.p)}`;
   });
   const more = upcoming.length > 5 ? ` · +${upcoming.length - 5} autres` : '';
-  notify(`${upcoming.length} match${upcoming.length > 1 ? 's' : ''} d’ici 3 h${liveN ? ` · ${liveN} en direct` : ''}`, lines.join('\n') + more, 'reminder');
+  notify(`${upcoming.length} match${upcoming.length > 1 ? 's' : ''} d’ici 3 h${liveN ? ` · ${liveN} en direct` : ''}`, lines.join('\n') + more, 'reminder', { event: !force });
+}
+
+// ───────────────────────── push serveur ─────────────────────────
+const pushSupported = () => PUSH_API && !PUSH_API.includes('__') && 'serviceWorker' in navigator && 'PushManager' in window;
+function b64ToBytes(b64) {
+  const s = atob((b64 + '='.repeat((4 - (b64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(s, (c) => c.charCodeAt(0));
+}
+function pushPrefs() {
+  const s = state.settings;
+  return { scope: s.alertScope, teams: Object.keys(state.teams), matches: [...state.starred], goals: s.goals, cards: s.cards, kickoff: s.kickoff, prematch: s.prematch, reminders: s.reminders };
+}
+async function api(path, body) {
+  const r = await fetch(PUSH_API + '/api/' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {});
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function subscribePush() {
+  if (!pushSupported()) return false;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const { publicKey } = await api('vapid');
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(publicKey) });
+    }
+    await api('subscribe', { subscription: sub.toJSON(), prefs: pushPrefs() });
+    state.push = { on: true, endpoint: sub.endpoint, at: Date.now() };
+    LS.set('push', state.push);
+    return true;
+  } catch (e) {
+    state.push = { on: false, endpoint: null, error: String(e.message || e) };
+    LS.set('push', state.push);
+    return false;
+  }
+}
+let syncTimer = null;
+function syncPush() {
+  if (!state.push.on) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => subscribePush(), 800);
+}
+async function checkServer() {
+  if (!pushSupported()) return;
+  try { state.server = await api('status'); } catch { state.server = { ok: false }; }
+  if (state.view === 'reglages') render();
 }
 
 async function enableNotifications() {
@@ -338,7 +390,11 @@ async function enableNotifications() {
   const perm = await Notification.requestPermission();
   state.settings.notif = perm === 'granted';
   LS.set('settings', state.settings);
-  if (perm === 'granted') notify('Alertes activées', 'Buts, cartons rouges, mi-temps, fins de match et rappel toutes les 30 minutes.', 'welcome');
+  if (perm === 'granted') {
+    const ok = await subscribePush();
+    notify('Alertes activées', ok ? 'Le serveur vous préviendra même app fermée : buts, rouges, mi-temps, fins de match, rappel :00 et :30.' : 'Alertes actives tant que l’app est ouverte (serveur injoignable pour le moment).', 'welcome');
+    checkServer();
+  }
   else toast('Notifications', 'Autorisation refusée dans le navigateur.');
   render();
   return perm === 'granted';
@@ -521,6 +577,7 @@ function renderSettings() {
     <div class="settings">
       <div class="set"><span><b>Notifications de l’app</b><span class="muted small">${perm === 'granted' && s.notif ? 'Activées sur cet appareil' : perm === 'denied' ? 'Bloquées dans les réglages' : perm === 'unsupported' ? 'Installez d’abord l’app sur l’écran d’accueil' : 'Désactivées'}</span></span>
         ${perm === 'granted' && s.notif ? '<button class="btn ghost" data-act="test">Tester</button>' : '<button class="btn" data-act="notif">Activer</button>'}</div>
+      ${pushSupported() || PUSH_API.includes('__') ? `<div class="set"><span><b>Alertes app fermée</b><span class="muted small">${!pushSupported() ? 'Serveur pas encore configuré' : !state.push.on ? 'Activez les notifications pour vous abonner' : state.server == null ? 'Vérification du serveur…' : state.server.ok ? `Serveur actif · vérifié il y a ${Math.max(1, Math.round((Date.now() - state.server.at) / 1000))} s${state.server.fast ? ' · mode direct (toutes les 8 s)' : ''}` : 'Serveur injoignable : alertes de l’app seulement'}</span></span>${state.push.on ? '<button class="btn ghost" data-act="pushtest">Tester</button>' : ''}</div>` : ''}
       ${tog('goals', 'Buts', 'Buteur, minute et nouvelles probabilités. But annulé par la VAR')}
       ${tog('cards', 'Cartons rouges', 'Avec le joueur et la minute')}
       ${tog('kickoff', 'Coup d’envoi, mi-temps, fin', 'Avec le prono puis le verdict')}
@@ -539,7 +596,7 @@ function renderSettings() {
       ${teams.length ? `<div class="chips">${teams.map(([id, n]) => `<button class="chip" data-unteam="${id}">${esc(n)} ✕</button>`).join('')}</div>` : '<p class="muted small">Ouvrez un match et touchez « Suivre » sous une équipe : tous ses matchs seront suivis automatiquement.</p>'}
     </section>
     <section class="panel"><h4>Bon à savoir</h4>
-      <p class="small">Les alertes sont envoyées par l’app elle-même : elles arrivent tant que Prono est ouvert, au premier plan ou en veille récente. Sur iPhone, iOS met en pause les apps web peu après leur fermeture : laissez Prono ouvert pendant les matchs que vous suivez.</p>
+      <p class="small">Deux systèmes se complètent : le serveur d’alertes surveille les matchs toutes les 8 secondes et envoie des notifications push, même téléphone verrouillé et app fermée. Quand Prono est ouvert, l’app vérifie aussi elle-même toutes les 25 secondes. Sur iPhone, les notifications push exigent que Prono soit installé sur l’écran d’accueil (iOS 16.4 ou plus).</p>
     </section>
     <p class="note">Données ESPN, actualisées toutes les 25 s pendant les matchs. Pronostics à titre informatif : pariez de façon responsable, jamais plus que ce que vous pouvez perdre. Joueurs Info Service : 09 74 75 13 13.</p>
   </div>`;
@@ -724,6 +781,7 @@ function toast(title, body, matchId) {
 function toggleStar(id) {
   state.starred.has(id) ? state.starred.delete(id) : state.starred.add(id);
   LS.set('starred', [...state.starred]);
+  syncPush();
   const m = state.matches.find((x) => x.id === id);
   if (m && state.starred.has(id) && !state.details.has(id)) loadDetails(m, true);
   updateBadge();
@@ -738,11 +796,11 @@ document.addEventListener('click', async (e) => {
   if (t.dataset.team) {
     const id = t.dataset.team;
     if (id in state.teams) delete state.teams[id]; else state.teams[id] = t.dataset.tname;
-    LS.set('teams', state.teams); updateBadge(); render(); return;
+    LS.set('teams', state.teams); syncPush(); updateBadge(); render(); return;
   }
-  if (t.dataset.unteam) { delete state.teams[t.dataset.unteam]; LS.set('teams', state.teams); render(); return; }
+  if (t.dataset.unteam) { delete state.teams[t.dataset.unteam]; LS.set('teams', state.teams); syncPush(); render(); return; }
   if (t.dataset.day != null) { state.offset = Number(t.dataset.day); state.updatedAt = null; state.matches = []; render(); refresh(); return; }
-  if (t.dataset.view) { state.view = t.dataset.view; render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.view) { state.view = t.dataset.view; if (state.view === 'reglages') checkServer(); render(); window.scrollTo(0, 0); return; }
   if (t.dataset.filter) { state.filter = t.dataset.filter; LS.set('filter', state.filter); render(); return; }
   if (t.dataset.scope) { state.scope = t.dataset.scope; LS.set('scope', state.scope); state.view = 'matchs'; render(); return; }
   if (t.dataset.id) { openMatch(t.dataset.id); return; }
@@ -751,6 +809,7 @@ document.addEventListener('click', async (e) => {
   if (act === 'notif') enableNotifications();
   if (act === 'test') notify('⚽ BUT PSG · PSG 1-0 Marseille', 'O. Dembélé 23’ · victoire PSG 78 % / nul 15 % / Marseille 7 %', 'test', { kind: 'goal' });
   if (act === 'remind') sendReminder(true);
+  if (act === 'pushtest') { try { const r = await api('test', { endpoint: state.push.endpoint }); toast('Serveur', r.ok ? 'Notification de test envoyée par le serveur.' : 'Échec de l’envoi.'); } catch { toast('Serveur', 'Serveur injoignable.'); } }
   if (t.id === 'bell') { if (!state.settings.notif) enableNotifications(); else { state.view = 'reglages'; render(); } }
   if (t.id === 'refresh') refresh();
 });
@@ -766,6 +825,7 @@ document.addEventListener('change', (e) => {
   if (!k) return;
   state.settings[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
   LS.set('settings', state.settings);
+  syncPush();
 });
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && state.updatedAt && Date.now() - state.updatedAt > 30e3) refresh({ silent: true });
@@ -778,6 +838,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 }
 cleanCache();
 render();
+if (state.push.on) { subscribePush(); checkServer(); setInterval(checkServer, 60e3); }
 refresh();
 scheduleReminder();
 const deep = new URLSearchParams(location.search).get('match');
