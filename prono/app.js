@@ -1,5 +1,5 @@
 import { fetchDay, fetchDetails, fetchLeagueHistory, isTop, leaguePriority, leagueSlug, rememberSlug } from './api.js';
-import { predict, livePredict, pickHit, outcomeOf, reliability, CALIBRATION, goalOdds, scorerProbs } from './model.js';
+import { predict, livePredict, pickHit, outcomeOf, reliability, CALIBRATION } from './model.js';
 import { fitRatings, expectedGoals } from './rating.js';
 
 // ───────────────────────── état ─────────────────────────
@@ -163,7 +163,7 @@ function enrichQueue() {
 const DET_TTL = 3 * 3600e3;
 async function loadDetails(m, background = false) {
   const cached = LS.get('det:' + m.id, null);
-  if (cached && cached.scorers && Date.now() - cached.fetchedAt < DET_TTL && m.state === 'pre') {
+  if (cached && Date.now() - cached.fetchedAt < DET_TTL && m.state === 'pre') {
     state.details.set(m.id, cached);
   } else {
     try {
@@ -442,34 +442,23 @@ function verdict(m) {
   return `<span class="tag ${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✕'}</span>`;
 }
 
-function topScorer(m) {
-  const d = state.details.get(m.id);
-  if (!d?.scorers || m.state === 'post') return null;
-  const p = pred(m), lp = live(m);
-  const gp = (st, g) => st?.gp || g?.length || null;
-  const xi = (t) => (d.lineups?.[t.id]?.length ? new Set(d.lineups[t.id].map((x) => x.name)) : null);
-  const a = scorerProbs(d.scorers[m.home.id], lp ? lp.remH : p.xgH, d.teamGoals?.[m.home.id], gp(d.homeStanding, d.homeGames), xi(m.home))[0];
-  const b = scorerProbs(d.scorers[m.away.id], lp ? lp.remA : p.xgA, d.teamGoals?.[m.away.id], gp(d.awayStanding, d.awayGames), xi(m.away))[0];
-  return [a, b].filter(Boolean).sort((x, y) => y.prob - x.prob)[0] || null;
-}
-
 function row(m) {
   const p = pred(m);
   const lp = live(m);
   const shown = lp || p;
-  const showScore = m.state !== 'pre';
+  const started = m.state !== 'pre';
   const star = followed(m);
+  const fav = [shown.pH, shown.pD, shown.pA].indexOf(Math.max(shown.pH, shown.pD, shown.pA));
+  const wp = (v, i) => (m.state === 'post' ? '' : `<span class="wp ${fav === i ? 'fav' : ''}">${pct(v)}</span>`);
+  const sub = m.state === 'post'
+    ? `${esc(m.leagueLabel)}${verdict(m) ? ` · prono ${esc(state.history[m.id].pick)} ${verdict(m)}` : ''}`
+    : `<span class="${fav === 1 ? 'fav-t' : ''}">Nul ${pct(shown.pD)}</span> · ${lp ? '<span class="live-t">en direct</span>' : esc(m.leagueLabel)}`;
   return `<li class="match ${m.state}" data-id="${m.id}" tabindex="0">
     <div class="t">${timeCell(m)}</div>
     <div class="teams">
-      <div class="team ${m.state === 'post' && m.home.winner ? 'win' : ''}">${logo(m.home)}<span>${esc(m.home.name)}</span>${showScore ? `<b>${m.home.score ?? ''}</b>` : ''}</div>
-      <div class="team ${m.state === 'post' && m.away.winner ? 'win' : ''}">${logo(m.away)}<span>${esc(m.away.name)}</span>${showScore ? `<b>${m.away.score ?? ''}</b>` : ''}</div>
-      ${(() => { const ts = topScorer(m); return ts ? `<div class="ts muted small">⚽ ${esc(ts.name.split(' ').slice(-1)[0])} <b>${pct(ts.prob)}</b></div>` : ''; })()}
-    </div>
-    <div class="pr">
-      <div class="pick">${lp ? (() => { const arr = [lp.pH, lp.pD, lp.pA]; const i = arr.indexOf(Math.max(...arr)); return `<span class="tag livetag">live</span><span class="code">${['1', 'N', '2'][i]}</span><span class="pp">${pct(arr[i])}</span>`; })() : `<span class="code">${p.pick.code}</span><span class="pp">${pct(p.pick.p)}</span>`}${verdict(m)}</div>
-      ${probBar(shown)}
-      <div class="sub">${m.state === 'pre' ? tierChip(p.reliability) : ''}${p.value.length && m.state === 'pre' ? '<span class="tag val">Value</span>' : ''}</div>
+      <div class="team ${m.state === 'post' && m.home.winner ? 'win' : ''}">${logo(m.home)}<span class="nm">${esc(m.home.name)}</span>${started ? `<b class="sc">${m.home.score ?? ''}</b>` : ''}${wp(shown.pH, 0)}</div>
+      <div class="team ${m.state === 'post' && m.away.winner ? 'win' : ''}">${logo(m.away)}<span class="nm">${esc(m.away.name)}</span>${started ? `<b class="sc">${m.away.score ?? ''}</b>` : ''}${wp(shown.pA, 2)}</div>
+      <div class="drawline muted small">${sub}</div>
     </div>
     <button class="star ${star ? 'on' : ''}" data-star="${m.id}" aria-label="${star ? 'Ne plus suivre' : 'Suivre'} ce match">${star ? '★' : '☆'}</button>
   </li>`;
@@ -519,14 +508,15 @@ function renderMatches() {
   if (!state.updatedAt) return `<div class="skeleton">${'<div></div>'.repeat(8)}</div>`;
   const list = visibleMatches();
   if (!list.length) return summary() + `<p class="empty">Aucun match pour ce filtre.${state.scope !== 'all' ? ' <button class="link" data-scope="all">Voir le monde entier</button>' : ''}</p>`;
+  // tri par heure de coup d'envoi, regroupé par créneau
   const groups = new Map();
-  for (const m of list) {
-    if (!groups.has(m.league)) groups.set(m.league, []);
-    groups.get(m.league).push(m);
+  for (const m of [...list].sort((x, y) => x.date - y.date || leaguePriority(x.league) - leaguePriority(y.league))) {
+    const k = hhmm(m.date);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(m);
   }
-  const ordered = [...groups.entries()].sort((a, b) => leaguePriority(a[0]) - leaguePriority(b[0]) || a[1][0].date - b[1][0].date);
-  return summary() + liveStrip() + ordered.map(([, ms]) => `<section class="league">
-      <h3><span>${esc(ms[0].leagueLabel)}</span><span class="muted">${ms.length}</span></h3>
+  return summary() + liveStrip() + `<div class="legend muted small"><span>% = probabilité de victoire</span><span class="wp fav">favori</span></div>` + [...groups.entries()].map(([h, ms]) => `<section class="league">
+      <h3><span>${h}</span><span class="muted">${ms.length} match${ms.length > 1 ? 's' : ''}</span></h3>
       <ul>${ms.map(row).join('')}</ul>
     </section>`).join('');
 }
@@ -638,25 +628,17 @@ function powerBars(m) {
   </section>`;
 }
 
-function whoScores(m, p, lp, d) {
-  if (m.state === 'post') return '';
-  const lh = lp ? lp.remH : p.xgH, la = lp ? lp.remA : p.xgA;
-  const g = goalOdds(lh, la);
-  const gp = (side) => { const st = side === 'home' ? d?.homeStanding : d?.awayStanding; return st?.gp || (side === 'home' ? d?.homeGames : d?.awayGames)?.length || null; };
-  const xi = (t) => (d?.lineups?.[t.id]?.length ? new Set(d.lineups[t.id].map((x) => x.name)) : null);
-  const list = (t, xg, side) => scorerProbs(d?.scorers?.[t.id], xg, d?.teamGoals?.[t.id], gp(side), xi(t)).slice(0, 4);
-  const ph = d ? list(m.home, lh, 'home') : [], pa = d ? list(m.away, la, 'away') : [];
-  const best = [...ph.map((x) => ({ ...x, team: m.home })), ...pa.map((x) => ({ ...x, team: m.away }))].sort((a, b) => b.prob - a.prob)[0];
-  const teamLine = (t, v, first) => `<div class="ws-team"><span class="ws-name">${logo(t, 22)}<b>${esc(t.short)}</b> marque${lp ? ' encore' : ''}</span><b class="ws-pct">${pct(v)}</b><div class="ws-bar"><span style="width:${(v * 100).toFixed(1)}%"></span></div><span class="muted small">Ouvre le score : ${pct(first)}</span></div>`;
-  const players = (arr) => arr.length ? `<ul class="ws-players">${arr.map((x) => `<li><span class="ws-p">${esc(x.name)}${x.starter === true ? ' <span class="muted small">titulaire</span>' : x.starter === false ? ' <span class="muted small">remplaçant</span>' : ''}<span class="muted small">${x.goals} but${x.goals > 1 ? 's' : ''}${x.matches ? ` en ${x.matches} matchs` : ''}${x.shots ? ` · ${x.shots} tirs` : ''}</span></span><b>${pct(x.prob)}</b><div class="ws-bar sm"><span style="width:${Math.min(100, x.prob * 160).toFixed(1)}%"></span></div></li>`).join('')}</ul>` : '<p class="muted small">Buteurs pas encore disponibles.</p>';
-  return `<section class="ws">
-    <h4>Qui va marquer ?${lp ? ' <span class="muted small">d’ici la fin du match</span>' : ''}</h4>
-    ${best ? `<div class="ws-hero"><span class="muted small">Buteur le plus probable</span><b>${esc(best.name)}</b><span><b class="accent">${pct(best.prob)}</b> <span class="muted">· ${esc(best.team.short)}</span></span></div>` : ''}
-    ${teamLine(m.home, g.home, g.firstHome)}
-    ${teamLine(m.away, g.away, g.firstAway)}
-    <div class="ws-mini"><div><span class="muted small">Les deux marquent</span><b>${pct(g.both)}</b></div><div><span class="muted small">${lp ? 'Plus aucun but' : 'Aucun but (0-0)'}</span><b>${pct(g.none)}</b></div></div>
-    ${d ? `<div class="two ws-two"><div><span class="muted small ws-h">${esc(m.home.short)}</span>${players(ph)}</div><div><span class="muted small ws-h">${esc(m.away.short)}</span>${players(pa)}</div></div>` : '<p class="muted small">Chargement des buteurs…</p>'}
-    <p class="muted small">« Marque » = au moins un but. Buteur : probabilité de marquer au moins une fois, d’après sa part des buts et des tirs de son équipe cette saison et son temps de jeu attendu. Les buts contre son camp ne comptent pas.</p>
+function winBox(m, p, lp) {
+  const w = lp || p;
+  const arr = [w.pH, w.pD, w.pA];
+  const fav = arr.indexOf(Math.max(...arr));
+  const favName = [m.home.name, 'Match nul', m.away.name][fav];
+  const cell = (i, label, t) => `<div class="wb ${fav === i ? 'fav' : ''}">${t ? logo(t, 30) : '<span class="wb-x">=</span>'}<span class="wb-l">${label}</span><b>${pct(arr[i])}</b></div>`;
+  return `<section class="win">
+    <h4>Qui va gagner ?${lp ? ' <span class="live-t small">en direct</span>' : ''}</h4>
+    <div class="win-row">${cell(0, esc(m.home.short), m.home)}${cell(1, 'Nul')}${cell(2, esc(m.away.short), m.away)}</div>
+    ${probBar(w, 'thick')}
+    <p class="small win-txt">${fav === 1 ? `Le <b>match nul</b> est l’issue la plus probable (${pct(arr[1])}).` : `<b>${esc(favName)}</b> a ${pct(arr[fav])} de chances de gagner.`}${lp ? ` <span class="muted">Avant le match : ${esc(m.home.short)} ${pct(p.pH)} · nul ${pct(p.pD)} · ${esc(m.away.short)} ${pct(p.pA)}.</span>` : ''}</p>
   </section>`;
 }
 
@@ -690,6 +672,7 @@ function renderDetail(m) {
       ${lp ? `<div class="livep"><span class="muted small">Probabilités en direct</span><div class="probs sm"><div><b>${pct(lp.pH)}</b><span class="muted small">${esc(m.home.short)}</span></div><div><b>${pct(lp.pD)}</b><span class="muted small">Nul</span></div><div><b>${pct(lp.pA)}</b><span class="muted small">${esc(m.away.short)}</span></div></div>${probBar(lp)}</div>` : ''}
     </div>
     <div class="sheet-body">
+      ${m.state === 'post' ? '' : winBox(m, p, lp)}
       <section class="verdict ${finalHit == null ? '' : finalHit ? 'won' : 'lost'}">
         <div class="v-main">
           <span class="muted small">${m.state === 'pre' ? 'Notre pronostic' : 'Pronostic d’avant-match'}${finalHit == null ? '' : finalHit ? ' · validé ✓' : ' · raté ✕'}</span>
@@ -702,15 +685,8 @@ function renderDetail(m) {
         </div>
         ${p.pick.alt ? `<div class="v-alt"><span class="muted small">Plus prudent</span><b>${p.pick.alt.code}</b><span class="small">${esc(p.pick.alt.label)} · ${pct(p.pick.alt.p)}</span><span class="muted small">double chance : ${pct(rel.dc)} de réussite mesurée</span></div>` : ''}
       </section>
-      ${whoScores(m, p, lp, d)}
       <section>
-        <div class="probs">
-          <div><span class="muted small">1 · ${esc(m.home.short)}</span><b>${pct(p.pH)}</b></div>
-          <div><span class="muted small">N · Nul</span><b>${pct(p.pD)}</b></div>
-          <div><span class="muted small">2 · ${esc(m.away.short)}</span><b>${pct(p.pA)}</b></div>
-        </div>
-        ${probBar(p, 'thick')}
-        <div class="grid3">
+        <div class="grid3 first">
           <div><span class="muted small">Buts attendus</span><b>${p.xgH.toFixed(2)} – ${p.xgA.toFixed(2)}</b></div>
           <div><span class="muted small">+ de 2,5 buts</span><b>${pct(p.over25)}</b></div>
           <div><span class="muted small">Les deux marquent</span><b>${pct(p.btts)}</b></div>

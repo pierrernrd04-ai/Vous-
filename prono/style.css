@@ -320,29 +320,29 @@ h4.mt { margin-top: 16px; }
   .big { font-size: 34px; }
 }
 
-/* ── qui va marquer ── */
-.ws-hero { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; margin-bottom: 12px; border-radius: 12px; background: var(--accent-soft); }
-.ws-hero > b { font-size: 18px; letter-spacing: -0.02em; }
-.ws-hero .accent { color: var(--accent); font-size: 20px; }
-.ws-team { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--line); }
-.ws-team:first-of-type { border-top: 0; }
-.ws-name { display: flex; align-items: center; gap: 8px; }
-.ws-name b { font-size: 15px; }
-.ws-pct { font-size: 24px; letter-spacing: -0.03em; }
-.ws-bar { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; }
-.ws-bar span { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s ease; }
-.ws-bar.sm { height: 5px; }
-.ws-team .muted.small { grid-column: 1 / -1; }
-.ws-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 14px; }
-.ws-mini > div { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: var(--soft); }
-.ws-mini b { font-size: 18px; }
-.ws-h { display: block; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 4px; }
-.ws-players { list-style: none; margin: 0 0 6px; padding: 0; }
-.ws-players li { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
-.ws-players li:first-child { border-top: 0; }
-.ws-p { display: flex; flex-direction: column; font-weight: 500; }
-.ws-players b { font-size: 16px; }
-.ws-players .ws-bar { grid-column: 1 / -1; }
-.ts { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 30px; }
-@media (max-width: 640px) { .ts { padding-left: 0; } }
-.ts b { color: var(--text); }
+/* ── qui va gagner ── */
+.match { grid-template-columns: 54px minmax(0, 1fr) 30px; }
+.team .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.team .sc { min-width: 18px; text-align: right; font-weight: 700; font-size: 15px; }
+.wp { min-width: 50px; text-align: right; font-weight: 600; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wp.fav { color: var(--accent); font-weight: 700; }
+.legend .wp { min-width: 0; font-size: 12px; }
+.fav-t { color: var(--accent); font-weight: 700; }
+.drawline { padding-left: 30px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend { display: flex; justify-content: space-between; margin: 0 4px 8px; }
+.win-row { display: grid; grid-template-columns: 1fr 0.8fr 1fr; gap: 8px; margin-bottom: 12px; }
+.wb { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; border-radius: 12px; background: var(--soft); text-align: center; }
+.wb b { font-size: 28px; letter-spacing: -0.03em; line-height: 1.1; }
+.wb .logo { width: 30px; height: 30px; }
+.wb-x { width: 30px; height: 30px; display: grid; place-items: center; font-weight: 700; color: var(--muted); font-size: 20px; }
+.wb-l { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.wb.fav { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.wb.fav b { color: var(--accent); }
+.win-txt { margin: 10px 0 0; }
+.grid3.first { margin-top: 0; }
+@media (max-width: 640px) {
+  .match { grid-template-columns: 44px minmax(0, 1fr) 26px; }
+  .drawline { padding-left: 0; }
+  .wp { min-width: 44px; }
+  .wb b { font-size: 24px; }
+}
