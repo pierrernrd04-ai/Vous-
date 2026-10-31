@@ -22,10 +22,11 @@ const state = {
   view: 'matchs',
   starred: new Set(LS.get('starred', [])),
   teams: LS.get('teams', {}), // id → nom
-  settings: { notif: false, reminders: true, goals: true, kickoff: true, cards: true, prematch: true, sound: true, alertScope: 'suivis', ...LS.get('settings', {}) },
+  settings: { notif: false, reminders: true, goals: true, kickoff: true, cards: true, prematch: true, sound: true, odds: true, alertScope: 'suivis', ...LS.get('settings', {}) },
   history: LS.get('history', {}),
   prev: LS.get('prev', {}),
   push: LS.get('push', { on: false, endpoint: null }),
+  odds: LS.get('odds', {}), // id → { cur, moves: [{ t, h, d, a }], at, dir }
   server: null,
   updatedAt: null,
   error: null,
@@ -116,6 +117,7 @@ async function refresh({ silent = false } = {}) {
     state.error = null;
     predCache.clear();
     if (state.offset === 0) detectEvents(matches);
+    trackOdds(matches);
     recordHistory();
     render();
     enrichQueue();
@@ -137,7 +139,9 @@ function schedule() {
   const now = Date.now();
   const liveNow = state.matches.some((m) => m.state === 'in');
   const soon = state.matches.some((m) => m.state === 'pre' && m.date - now < 15 * 60e3 && m.date - now > -60 * 60e3);
-  const delay = state.offset !== 0 ? 10 * 60e3 : liveNow ? 25e3 : soon ? 60e3 : 5 * 60e3;
+  // cotes : suivi toutes les 60 s quand des matchs suivis commencent dans les 3 h
+  const oddsWatch = state.matches.some((m) => m.state === 'pre' && m.market && m.date - now < 3 * 3600e3 && inScope(m));
+  const delay = state.offset !== 0 ? 10 * 60e3 : liveNow ? 25e3 : soon || oddsWatch ? 60e3 : 5 * 60e3;
   pollTimer = setTimeout(() => refresh({ silent: true }), delay);
 }
 
@@ -217,6 +221,52 @@ function cleanCache() {
       }
     }
   } catch { /* rien */ }
+}
+
+// ───────────────────────── cotes en temps réel ─────────────────────────
+const r2 = (x) => Math.round(x * 100) / 100;
+function trackOdds(matches) {
+  const now = Date.now();
+  let changed = false;
+  for (const m of matches) {
+    if (!m.market || m.state === 'post') continue;
+    const cur = { h: r2(m.market.home), d: r2(m.market.draw), a: r2(m.market.away) };
+    const e = state.odds[m.id];
+    if (!e) { state.odds[m.id] = { cur, moves: [{ t: now, ...cur }], at: null, dir: {}, seen: now }; changed = true; continue; }
+    e.seen = now;
+    if (e.cur.h !== cur.h || e.cur.d !== cur.d || e.cur.a !== cur.a) {
+      e.dir = { h: Math.sign(cur.h - e.cur.h), d: Math.sign(cur.d - e.cur.d), a: Math.sign(cur.a - e.cur.a) };
+      const before = e.cur;
+      e.cur = cur; e.at = now;
+      e.moves.push({ t: now, ...cur });
+      if (e.moves.length > 30) e.moves.splice(1, e.moves.length - 30);
+      changed = true;
+      // alerte si une cote d'un match suivi bouge d'au moins 8 %
+      if (state.settings.odds && followed(m) && state.offset === 0) {
+        const big = [['h', m.home.short], ['d', 'Nul'], ['a', m.away.short]].filter(([k]) => Math.abs(cur[k] / before[k] - 1) >= 0.08);
+        if (big.length) notify(`Cotes en mouvement · ${m.home.short} – ${m.away.short}`, big.map(([k, n]) => `${n} ${before[k].toFixed(2)} → ${cur[k].toFixed(2)} ${cur[k] < before[k] ? '▼' : '▲'}`).join(' · '), 'odds-' + m.id, { matchId: m.id });
+      }
+    }
+  }
+  if (changed) {
+    for (const [id, e] of Object.entries(state.odds)) if (now - (e.seen || 0) > 3 * 864e5) delete state.odds[id];
+    LS.set('odds', state.odds);
+  }
+}
+// tendance d'une cote : dernier mouvement récent (30 min), sinon par rapport à l'ouverture
+function oddsTrend(m, k) {
+  const e = state.odds[m.id];
+  if (e?.at && Date.now() - e.at < 30 * 60e3 && e.dir[k]) return e.dir[k];
+  const open = m.opening?.[{ h: 'home', d: 'draw', a: 'away' }[k]], cur = m.market?.[{ h: 'home', d: 'draw', a: 'away' }[k]];
+  if (!open || !cur || Math.abs(cur - open) < 0.005) return 0;
+  return Math.sign(cur - open);
+}
+const flashing = (m) => { const e = state.odds[m.id]; return e?.at && Date.now() - e.at < 90e3; };
+function oddCell(m, k, cls = 'od') {
+  const v = m.market?.[{ h: 'home', d: 'draw', a: 'away' }[k]];
+  if (!v) return '';
+  const t = oddsTrend(m, k);
+  return `<span class="${cls} ${t < 0 ? 'down' : t > 0 ? 'up' : ''} ${flashing(m) && state.odds[m.id]?.dir?.[k] ? 'flash' : ''}">${v.toFixed(2)}${t ? `<i>${t < 0 ? '▼' : '▲'}</i>` : ''}</span>`;
 }
 
 // ───────────────────────── notifications ─────────────────────────
@@ -452,12 +502,12 @@ function row(m) {
   const wp = (v, i) => (m.state === 'post' ? '' : `<span class="wp ${fav === i ? 'fav' : ''}">${pct(v)}</span>`);
   const sub = m.state === 'post'
     ? `${esc(m.leagueLabel)}${verdict(m) ? ` · prono ${esc(state.history[m.id].pick)} ${verdict(m)}` : ''}`
-    : `<span class="${fav === 1 ? 'fav-t' : ''}">Nul ${pct(shown.pD)}</span> · ${lp ? '<span class="live-t">en direct</span>' : esc(m.leagueLabel)}`;
+    : `<span class="${fav === 1 ? 'fav-t' : ''}">Nul ${pct(shown.pD)}</span>${m.state === 'pre' && m.market ? ` <span class="dl-od">cote ${oddCell(m, 'd', 'od inl')}</span>` : ''} · ${lp ? '<span class="live-t">en direct</span>' : esc(m.leagueLabel)}`;
   return `<li class="match ${m.state}" data-id="${m.id}" tabindex="0">
     <div class="t">${timeCell(m)}</div>
     <div class="teams">
-      <div class="team ${m.state === 'post' && m.home.winner ? 'win' : ''}">${logo(m.home)}<span class="nm">${esc(m.home.name)}</span>${started ? `<b class="sc">${m.home.score ?? ''}</b>` : ''}${wp(shown.pH, 0)}</div>
-      <div class="team ${m.state === 'post' && m.away.winner ? 'win' : ''}">${logo(m.away)}<span class="nm">${esc(m.away.name)}</span>${started ? `<b class="sc">${m.away.score ?? ''}</b>` : ''}${wp(shown.pA, 2)}</div>
+      <div class="team ${m.state === 'post' && m.home.winner ? 'win' : ''}">${logo(m.home)}<span class="nm"><span class="full">${esc(m.home.name)}</span><span class="shortn">${esc(m.home.short)}</span></span>${started ? `<b class="sc">${m.home.score ?? ''}</b>` : ''}${wp(shown.pH, 0)}${m.state === 'pre' ? oddCell(m, 'h') : ''}</div>
+      <div class="team ${m.state === 'post' && m.away.winner ? 'win' : ''}">${logo(m.away)}<span class="nm"><span class="full">${esc(m.away.name)}</span><span class="shortn">${esc(m.away.short)}</span></span>${started ? `<b class="sc">${m.away.score ?? ''}</b>` : ''}${wp(shown.pA, 2)}${m.state === 'pre' ? oddCell(m, 'a') : ''}</div>
       <div class="drawline muted small">${sub}</div>
     </div>
     <button class="star ${star ? 'on' : ''}" data-star="${m.id}" aria-label="${star ? 'Ne plus suivre' : 'Suivre'} ce match">${star ? '★' : '☆'}</button>
@@ -585,6 +635,7 @@ function renderSettings() {
       ${tog('kickoff', 'Coup d’envoi, mi-temps, fin', 'Avec le prono puis le verdict')}
       ${tog('prematch', '15 min avant mes matchs', 'Matchs ★ et équipes suivies')}
       ${tog('reminders', 'Rappel toutes les 30 min', 'À l’heure pile et à la demie : les matchs des 3 prochaines heures')}
+      ${tog('odds', 'Mouvements de cotes', 'Quand une cote d’un match suivi bouge d’au moins 8 %')}
       ${tog('sound', 'Son et vibration', 'Quand l’app est ouverte')}
       <div class="set"><span><b>Matchs concernés</b><span class="muted small">Pour toutes les alertes</span></span>
         <select data-set="alertScope">
@@ -625,6 +676,25 @@ function powerBars(m) {
     ${line('Attaque', ah, aa, ah > aa ? 'h' : 'a')}
     ${line('Défense (bas = mieux)', dh, da, dh < da ? 'h' : 'a')}
     <p class="muted small">Rang attaque : ${rank(fit.att, m.home.id)}e contre ${rank(fit.att, m.away.id)}e · rang défense : ${rank(fit.def, m.home.id, true)}e contre ${rank(fit.def, m.away.id, true)}e sur ${all.length} équipes.</p>
+  </section>`;
+}
+
+function oddsBox(m, p) {
+  if (!m.market) return m.state === 'pre' ? '<section><h4>Cotes</h4><p class="muted small">Pas de cotes disponibles pour ce match.</p></section>' : '';
+  const e = state.odds[m.id];
+  const keys = [['h', 'home', `1 · ${esc(m.home.short)}`, p.pH], ['d', 'draw', 'N · Nul', p.pD], ['a', 'away', `2 · ${esc(m.away.short)}`, p.pA]];
+  const rows = keys.map(([k, kk, label, prob]) => {
+    const cur = m.market[kk], open = m.opening?.[kk];
+    const varPct = open ? (cur / open - 1) * 100 : null;
+    return `<div class="ot-row"><span class="small">${label}</span>${oddCell(m, k, 'od big')}<span class="muted small">${open ? open.toFixed(2) : '–'}</span><span class="small ${varPct == null || Math.abs(varPct) < 0.5 ? 'muted' : varPct < 0 ? 'dn-t' : 'up-t'}">${varPct == null ? '–' : `${varPct > 0 ? '+' : ''}${varPct.toFixed(1)} %`}</span><span class="small">${(1 / prob).toFixed(2)}</span></div>`;
+  }).join('');
+  const moves = (e?.moves || []).slice(1).reverse().slice(0, 6);
+  return `<section class="oddsbox">
+    <h4>Cotes <span class="muted small">${esc(m.provider || 'bookmaker')} · ${m.state === 'pre' ? 'suivies en direct' : 'avant-match'}</span></h4>
+    <div class="ot-row head"><span></span><span>Actuelle</span><span>Ouverture</span><span>Variation</span><span>Cote juste</span></div>
+    ${rows}
+    ${moves.length ? `<div class="moves"><span class="muted small">Derniers mouvements</span>${moves.map((x) => `<div class="mv"><span class="muted small">${new Date(x.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span><span class="small">${x.h.toFixed(2)} · ${x.d.toFixed(2)} · ${x.a.toFixed(2)}</span></div>`).join('')}</div>` : `<p class="muted small">${e ? `Suivi depuis ${new Date(e.moves[0].t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} : pas de mouvement pour l’instant.` : ''}</p>`}
+    <p class="muted small">▼ la cote baisse (les parieurs misent dessus), ▲ elle monte. « Cote juste » = 1 / probabilité de notre synthèse : une cote Betclic au-dessus est plus avantageuse. Ce ne sont pas les cotes Betclic : Betclic bloque l’accès automatique à ses cotes ; elles sont en général un peu plus basses.</p>
   </section>`;
 }
 
@@ -673,6 +743,7 @@ function renderDetail(m) {
     </div>
     <div class="sheet-body">
       ${m.state === 'post' ? '' : winBox(m, p, lp)}
+      ${oddsBox(m, p)}
       <section class="verdict ${finalHit == null ? '' : finalHit ? 'won' : 'lost'}">
         <div class="v-main">
           <span class="muted small">${m.state === 'pre' ? 'Notre pronostic' : 'Pronostic d’avant-match'}${finalHit == null ? '' : finalHit ? ' · validé ✓' : ' · raté ✕'}</span>

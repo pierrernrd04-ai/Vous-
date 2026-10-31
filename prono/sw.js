@@ -1,5 +1,5 @@
 // Service worker : coquille hors ligne + notifications.
-const CACHE = 'prono-v6';
+const CACHE = 'prono-v8';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'api.js', 'model.js', 'rating.js', 'icon.svg', 'icon-192.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
