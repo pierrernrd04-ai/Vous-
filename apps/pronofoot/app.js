@@ -1,5 +1,5 @@
 import { fetchDay, fetchDetails, fetchLeagueHistory, isTop, leaguePriority, leagueSlug, rememberSlug } from './api.js';
-import { predict, livePredict, pickHit, outcomeOf, reliability, CALIBRATION } from './model.js';
+import { predict, livePredict, pickHit, outcomeOf, reliability, CALIBRATION, goalOdds, scorerProbs } from './model.js';
 import { fitRatings, expectedGoals } from './rating.js';
 
 // ───────────────────────── état ─────────────────────────
@@ -163,7 +163,7 @@ function enrichQueue() {
 const DET_TTL = 3 * 3600e3;
 async function loadDetails(m, background = false) {
   const cached = LS.get('det:' + m.id, null);
-  if (cached && Date.now() - cached.fetchedAt < DET_TTL && m.state === 'pre') {
+  if (cached && cached.scorers && Date.now() - cached.fetchedAt < DET_TTL && m.state === 'pre') {
     state.details.set(m.id, cached);
   } else {
     try {
@@ -442,6 +442,17 @@ function verdict(m) {
   return `<span class="tag ${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✕'}</span>`;
 }
 
+function topScorer(m) {
+  const d = state.details.get(m.id);
+  if (!d?.scorers || m.state === 'post') return null;
+  const p = pred(m), lp = live(m);
+  const gp = (st, g) => st?.gp || g?.length || null;
+  const xi = (t) => (d.lineups?.[t.id]?.length ? new Set(d.lineups[t.id].map((x) => x.name)) : null);
+  const a = scorerProbs(d.scorers[m.home.id], lp ? lp.remH : p.xgH, d.teamGoals?.[m.home.id], gp(d.homeStanding, d.homeGames), xi(m.home))[0];
+  const b = scorerProbs(d.scorers[m.away.id], lp ? lp.remA : p.xgA, d.teamGoals?.[m.away.id], gp(d.awayStanding, d.awayGames), xi(m.away))[0];
+  return [a, b].filter(Boolean).sort((x, y) => y.prob - x.prob)[0] || null;
+}
+
 function row(m) {
   const p = pred(m);
   const lp = live(m);
@@ -453,6 +464,7 @@ function row(m) {
     <div class="teams">
       <div class="team ${m.state === 'post' && m.home.winner ? 'win' : ''}">${logo(m.home)}<span>${esc(m.home.name)}</span>${showScore ? `<b>${m.home.score ?? ''}</b>` : ''}</div>
       <div class="team ${m.state === 'post' && m.away.winner ? 'win' : ''}">${logo(m.away)}<span>${esc(m.away.name)}</span>${showScore ? `<b>${m.away.score ?? ''}</b>` : ''}</div>
+      ${(() => { const ts = topScorer(m); return ts ? `<div class="ts muted small">⚽ ${esc(ts.name.split(' ').slice(-1)[0])} <b>${pct(ts.prob)}</b></div>` : ''; })()}
     </div>
     <div class="pr">
       <div class="pick">${lp ? (() => { const arr = [lp.pH, lp.pD, lp.pA]; const i = arr.indexOf(Math.max(...arr)); return `<span class="tag livetag">live</span><span class="code">${['1', 'N', '2'][i]}</span><span class="pp">${pct(arr[i])}</span>`; })() : `<span class="code">${p.pick.code}</span><span class="pp">${pct(p.pick.p)}</span>`}${verdict(m)}</div>
@@ -626,6 +638,28 @@ function powerBars(m) {
   </section>`;
 }
 
+function whoScores(m, p, lp, d) {
+  if (m.state === 'post') return '';
+  const lh = lp ? lp.remH : p.xgH, la = lp ? lp.remA : p.xgA;
+  const g = goalOdds(lh, la);
+  const gp = (side) => { const st = side === 'home' ? d?.homeStanding : d?.awayStanding; return st?.gp || (side === 'home' ? d?.homeGames : d?.awayGames)?.length || null; };
+  const xi = (t) => (d?.lineups?.[t.id]?.length ? new Set(d.lineups[t.id].map((x) => x.name)) : null);
+  const list = (t, xg, side) => scorerProbs(d?.scorers?.[t.id], xg, d?.teamGoals?.[t.id], gp(side), xi(t)).slice(0, 4);
+  const ph = d ? list(m.home, lh, 'home') : [], pa = d ? list(m.away, la, 'away') : [];
+  const best = [...ph.map((x) => ({ ...x, team: m.home })), ...pa.map((x) => ({ ...x, team: m.away }))].sort((a, b) => b.prob - a.prob)[0];
+  const teamLine = (t, v, first) => `<div class="ws-team"><span class="ws-name">${logo(t, 22)}<b>${esc(t.short)}</b> marque${lp ? ' encore' : ''}</span><b class="ws-pct">${pct(v)}</b><div class="ws-bar"><span style="width:${(v * 100).toFixed(1)}%"></span></div><span class="muted small">Ouvre le score : ${pct(first)}</span></div>`;
+  const players = (arr) => arr.length ? `<ul class="ws-players">${arr.map((x) => `<li><span class="ws-p">${esc(x.name)}${x.starter === true ? ' <span class="muted small">titulaire</span>' : x.starter === false ? ' <span class="muted small">remplaçant</span>' : ''}<span class="muted small">${x.goals} but${x.goals > 1 ? 's' : ''}${x.matches ? ` en ${x.matches} matchs` : ''}${x.shots ? ` · ${x.shots} tirs` : ''}</span></span><b>${pct(x.prob)}</b><div class="ws-bar sm"><span style="width:${Math.min(100, x.prob * 160).toFixed(1)}%"></span></div></li>`).join('')}</ul>` : '<p class="muted small">Buteurs pas encore disponibles.</p>';
+  return `<section class="ws">
+    <h4>Qui va marquer ?${lp ? ' <span class="muted small">d’ici la fin du match</span>' : ''}</h4>
+    ${best ? `<div class="ws-hero"><span class="muted small">Buteur le plus probable</span><b>${esc(best.name)}</b><span><b class="accent">${pct(best.prob)}</b> <span class="muted">· ${esc(best.team.short)}</span></span></div>` : ''}
+    ${teamLine(m.home, g.home, g.firstHome)}
+    ${teamLine(m.away, g.away, g.firstAway)}
+    <div class="ws-mini"><div><span class="muted small">Les deux marquent</span><b>${pct(g.both)}</b></div><div><span class="muted small">${lp ? 'Plus aucun but' : 'Aucun but (0-0)'}</span><b>${pct(g.none)}</b></div></div>
+    ${d ? `<div class="two ws-two"><div><span class="muted small ws-h">${esc(m.home.short)}</span>${players(ph)}</div><div><span class="muted small ws-h">${esc(m.away.short)}</span>${players(pa)}</div></div>` : '<p class="muted small">Chargement des buteurs…</p>'}
+    <p class="muted small">« Marque » = au moins un but. Buteur : probabilité de marquer au moins une fois, d’après sa part des buts et des tirs de son équipe cette saison et son temps de jeu attendu. Les buts contre son camp ne comptent pas.</p>
+  </section>`;
+}
+
 function renderDetail(m) {
   const d = state.details.get(m.id);
   const p = pred(m);
@@ -668,6 +702,7 @@ function renderDetail(m) {
         </div>
         ${p.pick.alt ? `<div class="v-alt"><span class="muted small">Plus prudent</span><b>${p.pick.alt.code}</b><span class="small">${esc(p.pick.alt.label)} · ${pct(p.pick.alt.p)}</span><span class="muted small">double chance : ${pct(rel.dc)} de réussite mesurée</span></div>` : ''}
       </section>
+      ${whoScores(m, p, lp, d)}
       <section>
         <div class="probs">
           <div><span class="muted small">1 · ${esc(m.home.short)}</span><b>${pct(p.pH)}</b></div>
