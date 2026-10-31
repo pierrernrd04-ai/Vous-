@@ -1,0 +1,14 @@
+{
+  "name": "prono-alertes",
+  "private": true,
+  "type": "module",
+  "description": "Prono : app PWA + service d'alertes push (Netlify Functions)",
+  "scripts": {
+    "build": "node server/build.mjs",
+    "test": "node --test server/test/*.test.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.0.0",
+    "web-push": "^3.6.7"
+  }
+}

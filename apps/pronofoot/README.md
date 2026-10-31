@@ -62,3 +62,13 @@ API publique ESPN (`site.api.espn.com`, sans clé, CORS ouvert). Les cotes affic
 ## Limites
 
 Les alertes partent tant que l'app est ouverte : iOS met en pause les apps web peu après leur fermeture. Pour recevoir des alertes avec l'app complètement fermée, il faut un serveur d'envoi Web Push (Worker Cloudflare ou fonction planifiée Netlify). GitHub Actions ne convient pas : ses conditions d'utilisation interdisent de s'en servir comme serveur permanent.
+
+## Alertes push (serveur Netlify)
+
+Le dossier est aussi un site Netlify (`netlify.toml`, base directory `apps/pronofoot`) :
+- `server/functions/watch.mjs` : fonction planifiée chaque minute. Pendant les matchs suivis, elle relit les scores toutes les 8 s (4 fois par minute) et envoie des notifications Web Push : buts (buteur, minute, probabilités en direct), but annulé, carton rouge, coup d'envoi, mi-temps, fin avec verdict, 15 min avant les matchs suivis, rappel à :00 et :30 (heure de Paris).
+- `server/functions/api.mjs` : `/api/vapid`, `/api/subscribe`, `/api/unsubscribe`, `/api/test`, `/api/status`.
+- Abonnements et état dans Netlify Blobs. Les clés VAPID sont générées par le serveur au premier appel et ne quittent jamais Netlify.
+- Tests : `npm test` (détection des événements, filtres par abonné, absence de doublons, rappel, chiffrement Web Push).
+
+Sur iPhone, le push exige que l'app soit installée sur l'écran d'accueil (iOS 16.4 ou plus). Délai : en général 5 à 40 s après la mise à jour d'ESPN, qui a elle-même quelques dizaines de secondes de retard sur la télé.

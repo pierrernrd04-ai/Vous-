@@ -1,0 +1,9 @@
+# Prono sur Netlify : l'app (dist/) + le service d'alertes push (server/functions).
+# Base directory du site Netlify : apps/pronofoot
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "server/functions"
+  node_bundler = "esbuild"
