@@ -207,7 +207,49 @@ export function livePredict(xgH, xgA, minute, hs, as, redsH = 0, redsA = 0) {
   const kh = Math.pow(0.7, redsH) * Math.pow(1.15, redsA);
   const ka = Math.pow(0.7, redsA) * Math.pow(1.15, redsH);
   const m = scoreMatrix(Math.max(xgH * left * kh, 0.01), Math.max(xgA * left * ka, 0.01), [hs, as], false);
-  return { pH: m.home, pD: m.draw, pA: m.away, scores: m.scores.slice(0, 3) };
+  return { pH: m.home, pD: m.draw, pA: m.away, scores: m.scores.slice(0, 3), remH: Math.max(xgH * left * kh, 0.01), remA: Math.max(xgA * left * ka, 0.01) };
+}
+
+/**
+ * Qui va marquer : probabilités par équipe (au moins un but, premier but, aucun but).
+ * lh / la : buts attendus (avant-match, ou sur le temps restant en direct).
+ */
+export function goalOdds(lh, la) {
+  const none = Math.exp(-lh - la);
+  return {
+    home: 1 - Math.exp(-lh),
+    away: 1 - Math.exp(-la),
+    both: (1 - Math.exp(-lh)) * (1 - Math.exp(-la)),
+    none,
+    firstHome: (lh / (lh + la)) * (1 - none),
+    firstAway: (la / (lh + la)) * (1 - none),
+  };
+}
+
+/**
+ * Buteur à tout moment : probabilité que chaque joueur marque au moins un but.
+ * players : [{ name, goals, matches, shots }] (meilleurs buteurs et tireurs de la saison)
+ * teamXg : buts attendus de l'équipe pour ce match ; teamGoals / teamGP : buts et matchs de la saison
+ * starters : noms du onze de départ quand il est publié (sinon null)
+ */
+export function scorerProbs(players, teamXg, teamGoals, teamGP, starters = null) {
+  if (!players?.length || !(teamXg > 0)) return [];
+  const gp = teamGP || Math.max(...players.map((p) => p.matches || 0), 1);
+  const goalsTot = teamGoals || Math.max(players.reduce((a, p) => a + (p.goals || 0), 0) * 1.6, gp * 1.3);
+  return players.map((p) => {
+    const m = Math.min(p.matches || gp, gp);
+    // part des buts de l'équipe quand il joue
+    const perApp = (gp / Math.max(m, 1));
+    const sGoals = ((p.goals || 0) / goalsTot) * perApp;
+    const sShots = p.shots != null ? ((p.shots * 0.11) / goalsTot) * perApp : null; // ~11 % des tirs finissent au fond
+    let share = sShots == null ? sGoals : p.goals > 0 ? 0.7 * sGoals + 0.3 * sShots : 0.75 * sShots;
+    share = (share * m + 0.06) / (m + 1); // prudence sur les petits échantillons
+    share = clamp(share, 0.02, 0.55);
+    // temps de jeu attendu : titulaire ≈ 90 %, remplaçant ≈ 25 %, inconnu selon ses matchs joués
+    const onPitch = starters ? (starters.has(p.name) ? 0.92 : 0.25) : 0.85 * clamp(m / gp, 0.8, 1);
+    const prob = 1 - Math.exp(-teamXg * share * onPitch);
+    return { name: p.name, prob, goals: p.goals || 0, matches: p.matches, shots: p.shots, starter: starters ? starters.has(p.name) : null };
+  }).sort((a, b) => b.prob - a.prob);
 }
 
 export function pick(pH, pD, pA) {
