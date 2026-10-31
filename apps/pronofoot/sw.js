@@ -1,5 +1,5 @@
 // Service worker : coquille hors ligne + notifications.
-const CACHE = 'prono-v8';
+const CACHE = 'prono-v9';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'api.js', 'model.js', 'rating.js', 'icon.svg', 'icon-192.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
@@ -11,8 +11,10 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== location.origin || e.request.method !== 'GET') return; // données live : toujours le réseau
+  // réseau d'abord, en revalidant toujours le cache HTTP : les mises à jour arrivent tout de suite
+  const init = e.request.mode === 'navigate' ? { cache: 'no-cache', credentials: 'same-origin' } : { cache: 'no-cache' };
   e.respondWith(
-    fetch(e.request).then((r) => {
+    fetch(e.request.url, init).then((r) => {
       if (r.ok) { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
       return r;
     }).catch(() => caches.match(e.request, { ignoreSearch: true }))

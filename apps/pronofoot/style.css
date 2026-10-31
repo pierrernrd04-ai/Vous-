@@ -386,3 +386,24 @@ main.enter .bar span { animation: grow 0.7s cubic-bezier(.2,.8,.2,1) both; anima
   .match.pre { grid-template-columns: minmax(0, 1fr) 26px; }
   .match.pre .t { display: none; }
 }
+
+/* ── animations (suite) ── */
+.skeleton div { background: linear-gradient(90deg, var(--soft) 0%, #fafbfc 50%, var(--soft) 100%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.match.goalflash { animation: goalflash 2.4s ease; }
+@keyframes goalflash { 0%, 100% { background: transparent; } 15%, 45% { background: #fff3c4; } 30% { background: #ffe79a; } }
+.match.goalflash .sc { animation: pop 0.5s ease 2; color: var(--live); }
+.wp.bump { animation: bump 0.9s ease; }
+@keyframes bump { 0% { transform: scale(1); } 30% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.star.pop, .btn.pop { animation: pop 0.4s ease; }
+.days button.on { animation: pop 0.35s ease; }
+.seg button.on { animation: segin 0.25s ease; }
+@keyframes segin { from { transform: scale(0.94); opacity: 0.6; } }
+.live i { box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 60%, transparent); animation: pulse 1.4s infinite, ring 1.4s infinite; }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 55%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }
+.brand img { transition: transform 0.6s cubic-bezier(.2,.8,.2,1); }
+.brand:active img { transform: rotate(-20deg) scale(0.92); }
+main.enter .legend { animation: rise-in 0.4s ease both; animation-delay: 0.1s; }
+.toast.show { animation: toastin 0.45s cubic-bezier(.2,1.3,.4,1); }
+@keyframes toastin { from { transform: translate(-50%, -30px) scale(0.96); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

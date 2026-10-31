@@ -793,6 +793,35 @@ function renderDetail(m) {
 }
 
 let lastSig = '';
+// compteurs qui défilent jusqu'à leur valeur
+function countUp(root) {
+  root.querySelectorAll('.summary b, .kpi b').forEach((el) => {
+    const m = /^(\d+)(.*)$/.exec(el.textContent.trim());
+    if (!m || +m[1] === 0) return;
+    const target = +m[1], rest = m[2], t0 = performance.now();
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / 600);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3))) + rest;
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+// but marqué ou probabilité qui bouge : animation sur la ligne concernée
+const seenScore = new Map(), seenWp = new Map();
+function markChanges(root) {
+  root.querySelectorAll('li.match').forEach((li) => {
+    const id = li.dataset.id;
+    const m = state.matches.find((x) => x.id === id);
+    if (!m) return;
+    const sc = `${m.home.score}-${m.away.score}`;
+    if (seenScore.has(id) && seenScore.get(id) !== sc && m.state === 'in') li.classList.add('goalflash');
+    seenScore.set(id, sc);
+    const wps = [...li.querySelectorAll('.wp')].map((x) => x.textContent).join('|');
+    if (seenWp.has(id) && seenWp.get(id) !== wps) li.querySelectorAll('.wp').forEach((x) => x.classList.add('bump'));
+    seenWp.set(id, wps);
+  });
+}
 function render() {
   const liveN = state.matches.filter((m) => m.state === 'in' && (state.scope === 'all' || (state.scope === 'top' ? isTop(m.league) || followed(m) : followed(m)))).length;
   $('#days').innerHTML = [-1, 0, 1].map((o) => {
@@ -817,7 +846,7 @@ function render() {
   const main = $('#main');
   main.innerHTML = state.view === 'matchs' ? renderMatches() : state.view === 'surs' ? renderSafe() : state.view === 'bilan' ? renderBilan() : renderSettings();
   // animation d'entrée seulement quand on change d'onglet, de jour ou au premier chargement des matchs
-  const sig = `${state.view}|${state.offset}|${state.updatedAt ? 1 : 0}`;
+  const sig = `${state.view}|${state.offset}|${state.updatedAt ? 1 : 0}|${state.filter}|${state.scope}`;
   if (sig !== lastSig) {
     const order = ['matchs', 'surs', 'bilan', 'reglages'];
     const dir = lastSig && order.indexOf(state.view) < order.indexOf(lastSig.split('|')[0]) ? 'from-left' : 'from-right';
@@ -825,7 +854,9 @@ function render() {
     void main.offsetWidth;
     main.classList.add('enter', dir);
     lastSig = sig;
+    countUp(main);
   }
+  markChanges(main);
   setStatus(state.error ? state.error : state.updatedAt ? `${state.matches.length} matchs dans le monde · mis à jour à ${hhmm(state.updatedAt)}${state.matches.some((m) => m.state === 'in') ? ' · direct toutes les 25 s' : ''}` : 'Chargement…');
   if (state.open) {
     const m = state.matches.find((x) => x.id === state.open);
@@ -885,7 +916,7 @@ document.addEventListener('click', async (e) => {
   if (e.target.closest('#toast')) { const id = $('#toast').dataset.id; if (id) openMatch(id); return; }
   const t = e.target.closest('button, li.match, a');
   if (!t) { if (e.target.id === 'sheet') closeMatch(); return; }
-  if (t.dataset.star) { e.stopPropagation(); toggleStar(t.dataset.star); return; }
+  if (t.dataset.star) { e.stopPropagation(); const id = t.dataset.star; toggleStar(id); document.querySelectorAll(`[data-star="${id}"]`).forEach((b) => b.classList.add('pop')); return; }
   if (t.dataset.team) {
     const id = t.dataset.team;
     if (id in state.teams) delete state.teams[id]; else state.teams[id] = t.dataset.tname;
@@ -927,7 +958,18 @@ navigator.serviceWorker?.addEventListener('message', (e) => { if (e.data?.open) 
 
 // ───────────────────────── démarrage ─────────────────────────
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { scope: './', updateViaCache: 'none' }).then((reg) => {
+    // nouvelle version publiée : on vérifie à chaque retour dans l'app
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+    setInterval(() => reg.update().catch(() => {}), 30 * 60e3);
+  }).catch(() => {});
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
 }
 cleanCache();
 render();
