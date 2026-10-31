@@ -49,14 +49,16 @@ function parseOdds(c) {
   const ml = o.moneyline;
   const home = americanToDecimal(ml?.home?.close?.odds ?? ml?.home?.open?.odds ?? o.homeTeamOdds?.moneyLine);
   const away = americanToDecimal(ml?.away?.close?.odds ?? ml?.away?.open?.odds ?? o.awayTeamOdds?.moneyLine);
-  const draw = americanToDecimal(o.drawOdds?.moneyLine);
+  const draw = americanToDecimal(ml?.draw?.close?.odds ?? o.drawOdds?.moneyLine);
   const market = home && away && draw ? { home, draw, away } : null;
+  const oh = americanToDecimal(ml?.home?.open?.odds), od = americanToDecimal(ml?.draw?.open?.odds), oa = americanToDecimal(ml?.away?.open?.odds);
+  const opening = oh && od && oa ? { home: oh, draw: od, away: oa } : null;
   let total = null;
   const line = parseFloat(String(o.total?.over?.close?.line ?? '').replace(/[ou]/, '')) || o.overUnder;
   const over = americanToDecimal(o.total?.over?.close?.odds ?? o.overOdds);
   const under = americanToDecimal(o.total?.under?.close?.odds ?? o.underOdds);
   if (line && over && under) total = { line, over, under };
-  return { market, total, provider: o.provider?.displayName || o.provider?.name };
+  return { market, opening, total, provider: o.provider?.displayName || o.provider?.name };
 }
 
 function normalizeEvent(e) {
