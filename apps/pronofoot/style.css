@@ -1,11 +1,11 @@
 :root {
-  --bg: #f5f5f3;
+  --bg: #ffffff;
   --surface: #ffffff;
   --raised: #ffffff;
-  --line: #e7e7e3;
+  --line: #e9eaed;
   --text: #111316;
   --muted: #7b7e84;
-  --soft: #efefec;
+  --soft: #f2f3f5;
   --accent: #0a8f4f;
   --accent-soft: #e1f3e9;
   --live: #e5383b;
@@ -20,23 +20,6 @@
   --shadow: 0 1px 2px rgb(16 18 22 / 4%), 0 4px 16px rgb(16 18 22 / 4%);
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0a0b0d; --surface: #121417; --raised: #181b1f; --line: #23272d; --text: #eef0f2; --muted: #8b919a; --soft: #1b1e23;
-    --accent: #3ddc84; --accent-soft: #12321f; --live: #ff5a5f; --live-soft: #3a1416; --b1: #eef0f2; --bn: #464c55; --b2: #8b919a;
-    --ok: #3ddc84; --ko: #ff6b6f; --t5: #3ddc84; --t4: #7bd88f; --t3: #e5c04a; --t2: #e19a54; --t1: #8b919a;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0a0b0d; --surface: #121417; --raised: #181b1f; --line: #23272d; --text: #eef0f2; --muted: #8b919a; --soft: #1b1e23;
-  --accent: #3ddc84; --accent-soft: #12321f; --live: #ff5a5f; --live-soft: #3a1416; --b1: #eef0f2; --bn: #464c55; --b2: #8b919a;
-  --ok: #3ddc84; --ko: #ff6b6f; --t5: #3ddc84; --t4: #7bd88f; --t3: #e5c04a; --t2: #e19a54; --t1: #8b919a;
-  --shadow: 0 1px 2px rgb(0 0 0 / 30%);
-  color-scheme: dark;
-}
-
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
 body {
@@ -345,4 +328,35 @@ h4.mt { margin-top: 16px; }
   .drawline { padding-left: 0; }
   .wp { min-width: 44px; }
   .wb b { font-size: 24px; }
+}
+
+/* ── animations ── */
+@keyframes in-right { from { opacity: 0; transform: translateX(22px); } }
+@keyframes in-left { from { opacity: 0; transform: translateX(-22px); } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+main.enter.from-right { animation: in-right 0.32s cubic-bezier(.2,.8,.2,1); }
+main.enter.from-left { animation: in-left 0.32s cubic-bezier(.2,.8,.2,1); }
+main.enter .summary > *, main.enter .kpi, main.enter .hl, main.enter .panel, main.enter .settings, main.enter .lv { animation: rise-in 0.45s cubic-bezier(.2,.8,.2,1) both; }
+main.enter .summary > *:nth-child(2), main.enter .kpi:nth-child(2), main.enter .hl:nth-child(2) { animation-delay: 0.04s; }
+main.enter .summary > *:nth-child(3), main.enter .kpi:nth-child(3), main.enter .hl:nth-child(3) { animation-delay: 0.08s; }
+main.enter .summary > *:nth-child(4), main.enter .kpi:nth-child(4), main.enter .hl:nth-child(4) { animation-delay: 0.12s; }
+main.enter .hl:nth-child(n+5) { animation-delay: 0.16s; }
+main.enter .league { animation: rise-in 0.5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(0.06s + var(--i, 0) * 0.05s); }
+main.enter .bar span { animation: grow 0.7s cubic-bezier(.2,.8,.2,1) both; animation-delay: 0.15s; }
+@keyframes grow { from { flex-grow: 0; } }
+.bottom button.on svg, #tabs button.on svg { animation: pop 0.35s ease; }
+.bottom button { position: relative; transition: color 0.2s; }
+.bottom button::before { content: ""; position: absolute; top: -6px; left: 50%; width: 0; height: 3px; border-radius: 2px; background: var(--accent); transform: translateX(-50%); transition: width 0.25s cubic-bezier(.2,.8,.2,1); }
+.bottom button.on::before { width: 26px; }
+#tabs button, .seg button, .days button { transition: background 0.2s, color 0.2s, box-shadow 0.2s; }
+.match, .hl, .lv, .summary button, .btn { transition: transform 0.15s ease, background 0.2s; }
+.match:active, .hl:active, .lv:active, .summary button:active, .btn:active { transform: scale(0.98); }
+.wb.fav { animation: pop 0.5s ease 0.2s; }
+.sheet-body > section { animation: rise-in 0.4s cubic-bezier(.2,.8,.2,1) both; }
+.sheet-body > section:nth-child(2) { animation-delay: 0.05s; }
+.sheet-body > section:nth-child(3) { animation-delay: 0.1s; }
+.sheet-body > section:nth-child(n+4) { animation-delay: 0.14s; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }

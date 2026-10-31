@@ -515,7 +515,7 @@ function renderMatches() {
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push(m);
   }
-  return summary() + liveStrip() + `<div class="legend muted small"><span>% = probabilité de victoire</span><span class="wp fav">favori</span></div>` + [...groups.entries()].map(([h, ms]) => `<section class="league">
+  return summary() + liveStrip() + `<div class="legend muted small"><span>% = probabilité de victoire</span><span class="wp fav">favori</span></div>` + [...groups.entries()].map(([h, ms], gi) => `<section class="league" style="--i:${Math.min(gi, 10)}">
       <h3><span>${h}</span><span class="muted">${ms.length} match${ms.length > 1 ? 's' : ''}</span></h3>
       <ul>${ms.map(row).join('')}</ul>
     </section>`).join('');
@@ -721,6 +721,7 @@ function renderDetail(m) {
     </div>`;
 }
 
+let lastSig = '';
 function render() {
   const liveN = state.matches.filter((m) => m.state === 'in' && (state.scope === 'all' || (state.scope === 'top' ? isTop(m.league) || followed(m) : followed(m)))).length;
   $('#days').innerHTML = [-1, 0, 1].map((o) => {
@@ -744,6 +745,16 @@ function render() {
   }
   const main = $('#main');
   main.innerHTML = state.view === 'matchs' ? renderMatches() : state.view === 'surs' ? renderSafe() : state.view === 'bilan' ? renderBilan() : renderSettings();
+  // animation d'entrée seulement quand on change d'onglet, de jour ou au premier chargement des matchs
+  const sig = `${state.view}|${state.offset}|${state.updatedAt ? 1 : 0}`;
+  if (sig !== lastSig) {
+    const order = ['matchs', 'surs', 'bilan', 'reglages'];
+    const dir = lastSig && order.indexOf(state.view) < order.indexOf(lastSig.split('|')[0]) ? 'from-left' : 'from-right';
+    main.classList.remove('enter', 'from-left', 'from-right');
+    void main.offsetWidth;
+    main.classList.add('enter', dir);
+    lastSig = sig;
+  }
   setStatus(state.error ? state.error : state.updatedAt ? `${state.matches.length} matchs dans le monde · mis à jour à ${hhmm(state.updatedAt)}${state.matches.some((m) => m.state === 'in') ? ' · direct toutes les 25 s' : ''}` : 'Chargement…');
   if (state.open) {
     const m = state.matches.find((x) => x.id === state.open);
