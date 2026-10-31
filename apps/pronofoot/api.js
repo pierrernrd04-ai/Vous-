@@ -170,29 +170,6 @@ export async function fetchDetails(match, opts) {
       players: (cat.leaders || []).slice(0, 3).map((x) => ({ name: x.athlete?.displayName, value: x.displayValue })),
     }));
   }
-  // Buteurs potentiels : meilleurs buteurs + plus gros tireurs, avec matchs joués
-  const scorers = {}, teamGoals = {};
-  for (const L of s.leaders || []) {
-    const tid = L.team?.id;
-    const byName = new Map();
-    const cat = (n) => (L.leaders || []).find((c) => c.name === n)?.leaders || [];
-    for (const x of cat('goalsLeaders')) {
-      const name = x.athlete?.displayName; if (!name) continue;
-      const mm = /Matches:\s*(\d+)/.exec(x.displayValue || ''), gg = /Goals:\s*(\d+)/.exec(x.displayValue || '');
-      byName.set(name, { name, matches: mm ? +mm[1] : null, goals: gg ? +gg[1] : 0, shots: null });
-    }
-    for (const x of cat('totalShots')) {
-      const name = x.athlete?.displayName; if (!name) continue;
-      const p = byName.get(name) || { name, matches: null, goals: 0, shots: null };
-      p.shots = Number(x.displayValue) || 0;
-      byName.set(name, p);
-    }
-    scorers[tid] = [...byName.values()];
-  }
-  for (const t of s.boxscore?.teams || []) {
-    const v = (t.statistics || []).find((x) => x.name === 'totalGoals')?.displayValue;
-    if (v != null) teamGoals[t.team?.id] = Number(v);
-  }
   const lineups = {};
   for (const r of s.rosters || []) {
     const tid = r.team?.id;
@@ -218,8 +195,6 @@ export async function fetchDetails(match, opts) {
     table: table.slice(0, 40),
     h2h: h2h.slice(0, 6),
     leaders,
-    scorers,
-    teamGoals,
     lineups,
     market,
     total,
