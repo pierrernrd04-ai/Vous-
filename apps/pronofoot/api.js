@@ -198,6 +198,61 @@ export async function fetchDetails(match, opts) {
     lineups,
     market,
     total,
+    leagueSlug: s.header?.league?.slug || null,
     fetchedAt: Date.now(),
   };
+}
+
+// ───────────── historique des championnats (pour la notation des équipes) ─────────────
+export const LEAGUE_SLUG = {
+  'Ligue 1': 'fra.1', 'Ligue 2': 'fra.2', 'English Premier League': 'eng.1', 'EFL Championship': 'eng.2',
+  'EFL League One': 'eng.3', LALIGA: 'esp.1', 'LALIGA 2': 'esp.2', 'Serie A': 'ita.1', 'Italian Serie B': 'ita.2',
+  Bundesliga: 'ger.1', '2. Bundesliga': 'ger.2', 'Liga Portugal': 'por.1', Eredivisie: 'ned.1',
+  'Belgian Pro League': 'bel.1', 'SPFL Premiership': 'sco.1', 'Turkish Super Lig': 'tur.1',
+  'Saudi Pro League': 'ksa.1', MLS: 'usa.1', 'Brazil Serie A': 'bra.1', 'Argentine LPF': 'arg.1',
+  'Liga MX': 'mex.1', 'Austrian Bundesliga': 'aut.1', 'Greek Super League': 'gre.1', 'Russian Premier': 'rus.1',
+  'Japanese J1 League': 'jpn.1', 'Norwegian Eliteserien': 'nor.1', 'Swiss Super League': 'sui.1',
+  'Danish Superliga': 'den.1', 'Swedish Allsvenskan': 'swe.1',
+};
+const slugCache = (() => { try { return JSON.parse(localStorage.getItem('pf:slugs') || '{}'); } catch { return {}; } })();
+export function leagueSlug(league) { return LEAGUE_SLUG[league] || slugCache[league] || null; }
+export function rememberSlug(league, slug) {
+  if (!slug || LEAGUE_SLUG[league] || slugCache[league] === slug) return;
+  slugCache[league] = slug;
+  try { localStorage.setItem('pf:slugs', JSON.stringify(slugCache)); } catch { /* rien */ }
+}
+
+const ym = (d) => `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+function compact(e) {
+  const c = e.competitions?.[0];
+  if (!c?.status?.type?.completed) return null;
+  const h = c.competitors.find((x) => x.homeAway === 'home'), a = c.competitors.find((x) => x.homeAway === 'away');
+  if (!h || !a) return null;
+  const st = (t, n) => { const v = (t.statistics || []).find((s) => s.name === n)?.displayValue; return v != null && v !== '' ? Number(v) : null; };
+  return [new Date(c.date).getTime(), h.team.id, a.team.id, Number(h.score), Number(a.score), st(h, 'shotsOnTarget'), st(a, 'shotsOnTarget')];
+}
+const mem = new Map();
+/** Matchs terminés des 14 derniers mois d'un championnat, mois par mois, avec cache local. */
+export async function fetchLeagueHistory(slug, { signal } = {}) {
+  const now = new Date();
+  const months = [];
+  for (let i = 0; i < 14; i++) { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)); months.push(ym(d)); }
+  const cur = ym(now);
+  const rows = [];
+  await Promise.all(months.map(async (m) => {
+    const key = `pf:lh:${slug}:${m}`;
+    let data = mem.get(key);
+    if (!data) { try { data = JSON.parse(localStorage.getItem(key) || 'null'); } catch { data = null; } }
+    const fresh = data && (m !== cur || Date.now() - data.at < 3 * 3600e3) && (m !== months[1] || data.closed || Date.now() - data.at < 12 * 3600e3);
+    if (!fresh) {
+      try {
+        const j = await getJSON(`${BASE.replace('/all', '/' + slug)}/scoreboard?dates=${m}&limit=500`, { signal });
+        data = { at: Date.now(), closed: m !== cur && m !== months[1], rows: (j.events || []).map(compact).filter(Boolean) };
+        try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* stockage plein */ }
+      } catch { data = data || { at: 0, rows: [] }; }
+    }
+    mem.set(key, data);
+    rows.push(...data.rows);
+  }));
+  return rows.map(([t, h, a, hg, ag, hst, ast]) => ({ t, h, a, hg, ag, hst, ast }));
 }

@@ -1,25 +1,27 @@
-// Moteur de pronostic : modèle de Poisson bivarié (correction Dixon-Coles)
-// alimenté par la forme récente, le classement et les confrontations directes,
-// puis combiné avec les probabilités implicites du marché quand des cotes existent.
-// Module pur : aucune dépendance au DOM, testable sous Node.
+// Moteur de pronostic v2.
+// 1. Buts attendus : notation des équipes du championnat (rating.js : buts + tirs cadrés,
+//    décroissance temporelle) ; à défaut, heuristique forme récente + classement.
+// 2. Loi de Poisson avec correction Dixon-Coles : grille complète des scores.
+// 3. Mise en commun logarithmique avec les probabilités du marché (poids 0,85),
+//    le meilleur réglage mesuré sur 1 971 matchs des 5 grands championnats.
+// 4. Fiabilité : taux de réussite réellement observé à chaque niveau de probabilité.
+// Module pur, sans DOM : utilisé par l'app, le backtest et le service d'alertes.
 
-const HOME_BASE = 1.45; // buts attendus moyens à domicile (moyenne des grands championnats)
-const AWAY_BASE = 1.15; // buts attendus moyens à l'extérieur
+const HOME_BASE = 1.45;
+const AWAY_BASE = 1.15;
 const TEAM_MEAN = (HOME_BASE + AWAY_BASE) / 2;
-const RHO = -0.08; // corrélation Dixon-Coles des scores faibles
+const RHO = -0.08;
 const MAX_GOALS = 10;
-const MARKET_WEIGHT = 0.6; // le marché agrège énormément d'information : il pèse plus lourd
+export const MARKET_WEIGHT = 0.85;
 
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
-/** Cote américaine (+150 / -120) vers cote décimale. */
 export function americanToDecimal(ml) {
   const n = typeof ml === 'string' ? parseFloat(ml.replace(/[^\d.+-]/g, '')) : ml;
   if (!Number.isFinite(n) || n === 0) return null;
   return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n);
 }
 
-/** Probabilités implicites sans marge du bookmaker. */
 export function devig(decimals) {
   if (decimals.some((d) => !d || d <= 1)) return null;
   const inv = decimals.map((d) => 1 / d);
@@ -27,12 +29,9 @@ export function devig(decimals) {
   return inv.map((x) => x / s);
 }
 
-function factorial(n) {
-  let f = 1;
-  for (let i = 2; i <= n; i++) f *= i;
-  return f;
-}
-export const poisson = (k, l) => (Math.exp(-l) * l ** k) / factorial(k);
+const FACT = [1];
+for (let i = 1; i <= 20; i++) FACT[i] = FACT[i - 1] * i;
+export const poisson = (k, l) => (Math.exp(-l) * l ** k) / FACT[k];
 
 function tau(h, a, lh, la) {
   if (h === 0 && a === 0) return 1 - lh * la * RHO;
@@ -42,34 +41,28 @@ function tau(h, a, lh, la) {
   return 1;
 }
 
-/** Matrice des scores et marchés dérivés. */
-export function scoreMatrix(lh, la) {
-  const m = [];
+/** Grille des scores (en partant de base = score actuel) et marchés dérivés. */
+export function scoreMatrix(lh, la, base = [0, 0], dc = true) {
+  const cells = [];
   let total = 0;
   for (let h = 0; h <= MAX_GOALS; h++) {
-    m[h] = [];
     for (let a = 0; a <= MAX_GOALS; a++) {
-      const p = poisson(h, lh) * poisson(a, la) * tau(h, a, lh, la);
-      m[h][a] = Math.max(p, 0);
-      total += m[h][a];
+      const p = Math.max(poisson(h, lh) * poisson(a, la) * (dc ? tau(h, a, lh, la) : 1), 0);
+      cells.push({ h: h + base[0], a: a + base[1], p });
+      total += p;
     }
   }
   let home = 0, draw = 0, away = 0, over25 = 0, btts = 0;
-  const scores = [];
-  for (let h = 0; h <= MAX_GOALS; h++) {
-    for (let a = 0; a <= MAX_GOALS; a++) {
-      const p = m[h][a] / total;
-      if (h > a) home += p; else if (h === a) draw += p; else away += p;
-      if (h + a > 2.5) over25 += p;
-      if (h > 0 && a > 0) btts += p;
-      scores.push({ h, a, p });
-    }
+  for (const c of cells) {
+    c.p /= total;
+    if (c.h > c.a) home += c.p; else if (c.h === c.a) draw += c.p; else away += c.p;
+    if (c.h + c.a > 2.5) over25 += c.p;
+    if (c.h > 0 && c.a > 0) btts += c.p;
   }
-  scores.sort((x, y) => y.p - x.p);
-  return { home, draw, away, over25, btts, scores: scores.slice(0, 5) };
+  cells.sort((x, y) => y.p - x.p);
+  return { home, draw, away, over25, btts, scores: cells.slice(0, 6) };
 }
 
-/** Total de buts attendu correspondant à la ligne over/under du marché. */
 export function totalFromMarket(line, pOver) {
   if (!Number.isFinite(line) || !Number.isFinite(pOver)) return null;
   let lo = 0.3, hi = 7;
@@ -82,18 +75,13 @@ export function totalFromMarket(line, pOver) {
   return (lo + hi) / 2;
 }
 
-/** Forme « WDLWW » (ou « VNDVV ») vers points par match. */
 export function formToPpg(form) {
   if (!form) return null;
-  const pts = { W: 3, V: 3, D: 1, N: 1, L: 0 };
-  const chars = [...form.toUpperCase()].filter((c) => c in pts);
-  if (!chars.length) return null;
-  // ESPN : W = victoire, D = nul, L = défaite
-  const val = chars.map((c) => (c === 'D' ? 1 : pts[c]));
-  return val.reduce((a, b) => a + b, 0) / val.length;
+  const pts = { W: 3, D: 1, L: 0 };
+  const val = [...form.toUpperCase()].filter((c) => c in pts).map((c) => pts[c]);
+  return val.length ? val.reduce((a, b) => a + b, 0) / val.length : null;
 }
 
-/** Bilan « V-N-D » vers points par match. */
 export function recordToPpg(summary) {
   const m = /^(\d+)-(\d+)-(\d+)$/.exec(summary || '');
   if (!m) return null;
@@ -102,161 +90,139 @@ export function recordToPpg(summary) {
   return n ? (3 * w + d) / n : null;
 }
 
-/**
- * Agrège les derniers matchs d'une équipe.
- * games : [{ gf, ga, home: bool, result: 'W'|'D'|'L' }] du plus récent au plus ancien.
- */
 export function teamFormStats(games) {
   if (!games || !games.length) return null;
   let wsum = 0, gf = 0, ga = 0, pts = 0;
   games.forEach((g, i) => {
-    const w = Math.pow(0.85, i); // les matchs récents comptent plus
-    wsum += w;
-    gf += w * g.gf;
-    ga += w * g.ga;
+    const w = Math.pow(0.85, i);
+    wsum += w; gf += w * g.gf; ga += w * g.ga;
     pts += w * (g.gf > g.ga ? 3 : g.gf === g.ga ? 1 : 0);
   });
   return { n: games.length, gf: gf / wsum, ga: ga / wsum, ppg: pts / wsum };
 }
 
 /**
- * Calcule le pronostic.
+ * Fiabilité mesurée : part des pronos justes dans le backtest pour cette probabilité
+ * (1 971 matchs, 5 grands championnats, saisons 2025-26 et 2026-27, avec cotes).
+ */
+export const CALIBRATION = [
+  { min: 0.75, tier: 'Très sûr', key: 't5', hit: 0.875, dc: 0.977, n: 88 },
+  { min: 0.65, tier: 'Sûr', key: 't4', hit: 0.756, dc: 0.917, n: 193 },
+  { min: 0.55, tier: 'Solide', key: 't3', hit: 0.611, dc: 0.845, n: 380 },
+  { min: 0.45, tier: 'Serré', key: 't2', hit: 0.505, dc: 0.785, n: 576 },
+  { min: 0, tier: 'Incertain', key: 't1', hit: 0.418, dc: 0.717, n: 734 },
+];
+export const reliability = (p) => CALIBRATION.find((c) => p >= c.min);
+
+/**
  * input = {
- *   home: { form?, record?, games?, standing?: { gp, gd, pts, rank } },
- *   away: { ... },
- *   h2h?: [{ homeGoals, awayGoals }] du point de vue de l'équipe à domicile du match,
- *   market?: { home, draw, away } cotes décimales,
- *   total?: { line, over, under } cotes décimales,
- *   neutral?: bool
+ *   home/away: { form?, record?, games?, standing? },
+ *   rating?: { lh, la, gh, ga } buts attendus issus de la notation du championnat,
+ *   power?: { home: {att, def}, away: {att, def} },
+ *   h2h?, market?: {home, draw, away} décimales, total?: {line, over, under}, neutral?
  * }
  */
 export function predict(input) {
-  const { home = {}, away = {}, h2h = [], market, total, neutral } = input;
+  const { home = {}, away = {}, h2h = [], market, total, neutral, rating } = input;
   const signals = [];
   let lh = neutral ? TEAM_MEAN : HOME_BASE;
   let la = neutral ? TEAM_MEAN : AWAY_BASE;
-  let dataPoints = 0;
-
-  // 1. Attaque / défense sur les derniers matchs (avec rétrécissement vers la moyenne)
+  let source = 'heuristique';
   const fh = teamFormStats(home.games);
   const fa = teamFormStats(away.games);
-  const shrink = (x, n) => (x * n + TEAM_MEAN * 3) / (n + 3) / TEAM_MEAN;
-  if (fh && fa) {
-    lh *= shrink(fh.gf, fh.n) * shrink(fa.ga, fa.n);
-    la *= shrink(fa.gf, fa.n) * shrink(fh.ga, fh.n);
-    dataPoints += 2;
-    signals.push(`Forme pondérée : ${fh.gf.toFixed(1)} buts marqués / ${fh.ga.toFixed(1)} encaissés contre ${fa.gf.toFixed(1)} / ${fa.ga.toFixed(1)}`);
-  }
-
-  // 2. Niveau de saison : différence de buts par match et points par match
   const sh = home.standing, sa = away.standing;
-  if (sh?.gp > 0 && sa?.gp > 0) {
-    const gdDiff = sh.gd / sh.gp - sa.gd / sa.gp;
-    const ppgDiff = sh.pts / sh.gp - sa.pts / sa.gp;
-    const k = Math.exp(clamp(0.12 * gdDiff + 0.1 * ppgDiff, -0.6, 0.6));
-    lh *= k;
-    la /= k;
-    dataPoints += 2;
-    signals.push(`Classement : ${sh.rank ? sh.rank + 'e' : '?'} (${sh.pts} pts) contre ${sa.rank ? sa.rank + 'e' : '?'} (${sa.pts} pts)`);
+
+  if (rating && rating.gh >= 4 && rating.ga >= 4) {
+    lh = rating.lh; la = rating.la; source = 'notation';
+    signals.push(`Notation du championnat (buts et tirs cadrés, saison en cours + précédente) : ${lh.toFixed(2)} buts attendus contre ${la.toFixed(2)}`);
   } else {
-    const ph = formToPpg(home.form) ?? recordToPpg(home.record);
-    const pa = formToPpg(away.form) ?? recordToPpg(away.record);
-    if (ph != null && pa != null) {
-      const k = Math.exp(clamp(0.12 * (ph - pa), -0.35, 0.35));
-      lh *= k;
-      la /= k;
-      dataPoints += 1;
+    const shrink = (x, n) => (x * n + TEAM_MEAN * 3) / (n + 3) / TEAM_MEAN;
+    if (fh && fa) {
+      lh *= shrink(fh.gf, fh.n) * shrink(fa.ga, fa.n);
+      la *= shrink(fa.gf, fa.n) * shrink(fh.ga, fh.n);
+      source = 'forme';
+    }
+    if (sh?.gp > 0 && sa?.gp > 0) {
+      const k = Math.exp(clamp(0.12 * (sh.gd / sh.gp - sa.gd / sa.gp) + 0.1 * (sh.pts / sh.gp - sa.pts / sa.gp), -0.6, 0.6));
+      lh *= k; la /= k;
+    } else {
+      const ph = formToPpg(home.form) ?? recordToPpg(home.record);
+      const pa = formToPpg(away.form) ?? recordToPpg(away.record);
+      if (ph != null && pa != null) { const k = Math.exp(clamp(0.12 * (ph - pa), -0.35, 0.35)); lh *= k; la /= k; }
     }
   }
-
-  // 3. Confrontations directes (effet faible, très bruité)
+  if (fh && fa) signals.push(`Forme (5 derniers, pondérée) : ${fh.gf.toFixed(1)} marqués / ${fh.ga.toFixed(1)} encaissés contre ${fa.gf.toFixed(1)} / ${fa.ga.toFixed(1)} · ${fh.ppg.toFixed(1)} pts/match contre ${fa.ppg.toFixed(1)}`);
+  if (sh?.gp > 0 && sa?.gp > 0) signals.push(`Classement : ${sh.rank}e (${sh.pts} pts, ${sh.gd > 0 ? '+' : ''}${sh.gd}) contre ${sa.rank}e (${sa.pts} pts, ${sa.gd > 0 ? '+' : ''}${sa.gd})`);
   if (h2h.length) {
-    const diff = h2h.reduce((s, g) => s + Math.sign(g.homeGoals - g.awayGoals), 0) / h2h.length;
-    const k = Math.exp(clamp(0.08 * diff, -0.08, 0.08));
-    lh *= k;
-    la /= k;
-    dataPoints += 1;
     const w = h2h.filter((g) => g.homeGoals > g.awayGoals).length;
     const d = h2h.filter((g) => g.homeGoals === g.awayGoals).length;
-    signals.push(`Face-à-face : ${w}V ${d}N ${h2h.length - w - d}D sur les ${h2h.length} derniers`);
+    signals.push(`Face-à-face : ${w}V ${d}N ${h2h.length - w - d}D sur les ${h2h.length} derniers (effet faible, peu prédictif)`);
   }
 
-  // 4. Calage du volume de buts sur la ligne over/under du marché
+  // Volume de buts calé sur la ligne plus/moins du marché
+  let totalSource = null;
   if (total?.line && total.over && total.under) {
     const p = devig([total.over, total.under]);
     const t = p && totalFromMarket(total.line, p[0]);
-    if (t) {
-      const r = t / (lh + la);
-      lh *= r;
-      la *= r;
-      dataPoints += 1;
-    }
+    if (t) { const r = t / (lh + la); lh *= r; la *= r; totalSource = t; }
   }
-
   lh = clamp(lh, 0.15, 5);
   la = clamp(la, 0.15, 5);
   const model = scoreMatrix(lh, la);
 
-  // 5. Mélange avec le marché
   const marketP = market ? devig([market.home, market.draw, market.away]) : null;
   let p = [model.home, model.draw, model.away];
   if (marketP) {
-    p = p.map((x, i) => MARKET_WEIGHT * marketP[i] + (1 - MARKET_WEIGHT) * x);
-    dataPoints += 3;
+    const q = p.map((x, i) => Math.exp(MARKET_WEIGHT * Math.log(marketP[i]) + (1 - MARKET_WEIGHT) * Math.log(Math.max(x, 1e-6))));
+    const s = q.reduce((a, b) => a + b, 0);
+    p = q.map((x) => x / s);
+    signals.push(`Cotes du marché intégrées (elles pèsent 85 % : sur 2 saisons testées, elles sont le meilleur prédicteur)`);
   }
+  if (totalSource) signals.push(`Volume de buts calé sur le marché : ${totalSource.toFixed(2)} buts attendus au total`);
 
   const [pH, pD, pA] = p;
   const best = pick(pH, pD, pA);
-  const coverage = clamp(dataPoints / 10, 0, 1);
-  const confidence = Math.round(100 * clamp(best.p * (0.55 + 0.45 * coverage), 0, 0.99));
+  const rel = reliability(best.p);
+  // sans cotes, le modèle seul est moins fiable : on dégrade d'un cran l'affichage
+  const quality = marketP ? (source === 'notation' ? 'complète' : 'bonne') : source === 'notation' ? 'moyenne' : 'faible';
 
+  // Pas de « value bets » : testés sur 2 saisons, ils perdaient environ 20 % des mises.
   const value = [];
-  // Value : seulement si le modèle dispose de vraies données (forme détaillée + classement)
-  if (marketP && fh && fa && sh?.gp > 0 && sa?.gp > 0) {
-    const names = ['1', 'N', '2'];
-    const modelP = [model.home, model.draw, model.away];
-    modelP.forEach((mp, i) => {
-      const edge = mp - marketP[i];
-      const dec = [market.home, market.draw, market.away][i];
-      if (edge > 0.07 && mp * dec > 1.08) value.push({ outcome: names[i], edge, odds: dec });
-    });
-  }
 
   return {
     pH, pD, pA,
     model: { pH: model.home, pD: model.draw, pA: model.away },
     market: marketP ? { pH: marketP[0], pD: marketP[1], pA: marketP[2] } : null,
     xgH: lh, xgA: la,
-    over25: model.over25, btts: model.btts,
-    scores: model.scores,
-    pick: best,
-    confidence,
-    coverage,
-    value,
-    signals,
+    over25: model.over25, btts: model.btts, scores: model.scores,
+    pick: best, reliability: rel, quality, source, value, signals,
   };
 }
 
-/** Choix du pronostic : simple si net, double chance sinon. */
+/** Probabilités en cours de match à partir du score et de la minute. */
+export function livePredict(xgH, xgA, minute, hs, as, redsH = 0, redsA = 0) {
+  const played = clamp(minute, 0, 95);
+  const left = Math.max(90 + (played > 45 ? 4 : 2) - played, 1) / 90;
+  // un carton rouge coûte environ 30 % d'attaque et donne 15 % à l'adversaire
+  const kh = Math.pow(0.7, redsH) * Math.pow(1.15, redsA);
+  const ka = Math.pow(0.7, redsA) * Math.pow(1.15, redsH);
+  const m = scoreMatrix(Math.max(xgH * left * kh, 0.01), Math.max(xgA * left * ka, 0.01), [hs, as], false);
+  return { pH: m.home, pD: m.draw, pA: m.away, scores: m.scores.slice(0, 3) };
+}
+
 export function pick(pH, pD, pA) {
   const simple = [
     { code: '1', label: 'Victoire domicile', p: pH },
     { code: 'N', label: 'Match nul', p: pD },
     { code: '2', label: 'Victoire extérieur', p: pA },
   ].sort((a, b) => b.p - a.p);
-  if (simple[0].p >= 0.5 || (simple[0].code === 'N' && simple[0].p >= 0.34)) return { ...simple[0], kind: 'simple' };
   const doubles = [
     { code: '1N', label: 'Domicile ou nul', p: pH + pD },
     { code: 'N2', label: 'Extérieur ou nul', p: pA + pD },
     { code: '12', label: 'Pas de nul', p: pH + pA },
   ].sort((a, b) => b.p - a.p);
-  return { ...simple[0], kind: 'simple', alt: doubles[0] };
+  return { ...simple[0], kind: 'simple', alt: simple[0].p < 0.55 ? doubles[0] : null };
 }
 
-/** Le pronostic était-il juste ? */
-export function outcomeOf(hs, as) {
-  return hs > as ? '1' : hs === as ? 'N' : '2';
-}
-export function pickHit(code, hs, as) {
-  return code.includes(outcomeOf(hs, as));
-}
+export const outcomeOf = (hs, as) => (hs > as ? '1' : hs === as ? 'N' : '2');
+export const pickHit = (code, hs, as) => code.includes(outcomeOf(hs, as));
