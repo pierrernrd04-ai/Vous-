@@ -1,7 +1,7 @@
 // Accès aux données football (API publique ESPN, CORS ouvert, sans clé).
 // Normalise les matchs et extrait les variables utiles au modèle.
 
-import { americanToDecimal } from './model.js';
+import { americanToDecimal } from './model.js?v=1793445311';
 
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/all';
 
