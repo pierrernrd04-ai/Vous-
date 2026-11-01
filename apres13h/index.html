@@ -672,22 +672,22 @@ const DEFIS=[
 const CATS={bouger:"Bouger",faire:"Faire",lien:"Voir du monde",calme:"Souffler"};
 const GAMES=[
 {id:"enigmes",s:"tete",g:"?!",t:"Énigmes",d:RIDDLES.length+" devinettes, charades et pièges de logique.",dur:"10–40 min"},
-{id:"mystere",s:"tete",g:"…?",t:"Histoires mystère",d:"Situations bizarres, casse-têtes et combles. Trouve l'explication.",dur:"10–30 min",n:1},
-{id:"code",s:"tete",g:"####",t:"Code secret",d:"Devine le code à 4 chiffres grâce aux indices.",dur:"5–10 min",n:1},
+{id:"mystere",s:"tete",g:"…?",t:"Histoires mystère",d:"Situations bizarres, casse-têtes et combles. Trouve l'explication.",dur:"10–30 min"},
+{id:"code",s:"tete",g:"####",t:"Code secret",d:"Devine le code à 4 chiffres grâce aux indices.",dur:"5–10 min"},
 {id:"suites",s:"tete",g:"2·4·8",t:"Suites logiques",d:"Trouve le nombre qui vient après.",dur:"5–15 min"},
 {id:"sudoku",s:"tete",g:"9",t:"Sudoku",d:"Trois niveaux, ta partie est sauvegardée.",dur:"20–60 min"},
-{id:"demineur",s:"tete",g:"✹",t:"Déminage",d:"Ouvre toutes les cases sans tomber sur une mine.",dur:"5–20 min",n:1},
-{id:"lights",s:"tete",g:"◉",t:"Interrupteurs",d:"Éteins toutes les lampes. Chaque touche bascule une croix.",dur:"5–15 min",n:1},
+{id:"demineur",s:"tete",g:"✹",t:"Déminage",d:"Ouvre toutes les cases sans tomber sur une mine.",dur:"5–20 min"},
+{id:"lights",s:"tete",g:"◉",t:"Interrupteurs",d:"Éteins toutes les lampes. Chaque touche bascule une croix.",dur:"5–15 min"},
 {id:"taquin",s:"tete",g:"15",t:"Taquin",d:"Remets les tuiles de 1 à 15 dans l'ordre.",dur:"10–30 min"},
-{id:"vraifaux",s:"mots",g:"V/F",t:"Vrai ou faux",d:"Des faits étonnants. Démêle le vrai du faux.",dur:"5 min",n:1},
+{id:"vraifaux",s:"mots",g:"V/F",t:"Vrai ou faux",d:"Des faits étonnants. Démêle le vrai du faux.",dur:"5 min"},
 {id:"quiz",s:"mots",g:"Q",t:"Quiz culture",d:"10 questions, 4 réponses possibles.",dur:"5 min"},
-{id:"pendu",s:"mots",g:"A_C",t:"Mot caché",d:"Trouve le mot lettre par lettre, 7 erreurs permises.",dur:"3–15 min",n:1},
+{id:"pendu",s:"mots",g:"A_C",t:"Mot caché",d:"Trouve le mot lettre par lettre, 7 erreurs permises.",dur:"3–15 min"},
 {id:"anagrammes",s:"mots",g:"AZ",t:"Mot mystère",d:"Remets les lettres dans l'ordre.",dur:"5–20 min"},
 {id:"calcul",s:"vite",g:"×÷",t:"Calcul éclair",d:"Un maximum de calculs en 60 secondes.",dur:"1 min / partie"},
-{id:"bulles",s:"vite",g:"○○",t:"Bulles",d:"Éclate un maximum de bulles en 30 secondes.",dur:"30 s / partie",n:1},
-{id:"couleurs",s:"vite",g:"▚",t:"Séquence",d:"Mémorise la suite de couleurs qui s'allonge.",dur:"3–10 min",n:1},
+{id:"bulles",s:"vite",g:"○○",t:"Bulles",d:"Éclate un maximum de bulles en 30 secondes.",dur:"30 s / partie"},
+{id:"couleurs",s:"vite",g:"▚",t:"Séquence",d:"Mémorise la suite de couleurs qui s'allonge.",dur:"3–10 min"},
 {id:"memory",s:"vite",g:"◐◑",t:"Paires",d:"Retrouve les 8 paires de symboles.",dur:"3–5 min"},
-{id:"c4",s:"vite",g:"●●●●",t:"4 alignés",d:"Aligne 4 jetons avant l'ordinateur.",dur:"5 min / partie",n:1}
+{id:"c4",s:"vite",g:"●●●●",t:"4 alignés",d:"Aligne 4 jetons avant l'ordinateur.",dur:"5 min / partie"}
 ];
 const GSEC={tete:"Se creuser la tête",mots:"Mots et culture",vite:"Rapide et réflexes"};
 const GOAL=150;
@@ -772,16 +772,17 @@ function program(){
   const k=dkey(),seed=Number(k.replace(/-/g,""));const r=seeded(seed);
   const pick=a=>a[Math.floor(r()*a.length)];
   const by=c=>DEFIS.filter(x=>x.c===c);
-  const slots=["vague","bouger","jeu","faire","esprit","lien","jeu","calme"];
+  const slots=["vague","bouger","esprit",pick(["faire","creer","apprendre"]),"jeu",pick(["lien","soin"]),"esprit","calme"];
+  const ESP=GAMES.filter(g=>["tete","culture","langues","calc"].includes(g.s)).map(g=>g.id),JEU=GAMES.filter(g=>["arcade","reflexe","zen","vite"].includes(g.s)).map(g=>g.id);
   const used=new Set();const out=[];
   for(let i=0;i<n;i++){
     const s=slots[i%slots.length],t=st+i*30;let b;
     if(s==="vague")b={id:"vague"+i,kind:"vague",tag:"Démarrage",t:"Surfe la première vague",d:"3 minutes de respiration guidée, un grand verre d'eau fraîche et un vrai repas. La faim amplifie l'envie."};
     else if(s==="jeu"||s==="esprit"){
-      const pool=s==="esprit"?["enigmes","mystere","quiz","vraifaux","anagrammes","suites","code","pendu"]:["sudoku","memory","taquin","calcul","demineur","lights","c4","couleurs","bulles"];
+      const pool=s==="esprit"?ESP:JEU;
       let g,tries=0;do{g=pick(pool);tries++}while(used.has(g)&&tries<30);used.add(g);
       const G=GAMES.find(x=>x.id===g);b={id:"g:"+g,kind:"game",game:g,tag:s==="esprit"?"Cerveau":"Jeu",t:G.t,d:G.d};
-    }else{let x,tries=0;const pool=by(s);do{x=pick(pool);tries++}while(used.has(x.id)&&tries<30);used.add(x.id);b={id:"d:"+x.id,kind:"defi",defi:x,tag:CATS[s],t:x.t,d:x.d}}
+    }else{let x,tries=0;const pool=by(s).length?by(s):DEFIS;do{x=pick(pool);tries++}while(used.has(x.id)&&tries<30);used.add(x.id);b={id:"d:"+x.id,kind:"defi",defi:x,tag:CATS[s],t:x.t,d:x.d}}
     b.time=t;out.push(b);
   }
   return out;
@@ -823,6 +824,7 @@ function renderHome(){
   </div>
   <button class="sos" data-act="vague"><div><strong>J'ai envie de boire</strong><span>3 minutes pour laisser passer la vague</span></div><span class="arrow"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
   ${reason?`<div class="stack"><div class="eyebrow">Pourquoi je tiens</div><p class="reason">${esc(reason)}</p></div>`:""}
+  ${window.TIPS&&TIPS.length?`<div class="card stack"><div class="eyebrow">Astuce de l'heure</div><p>${esc(TIPS[(Number(dkey().replace(/-/g,""))+new Date().getHours())%TIPS.length])}</p></div>`:""}
   <div class="stats">
     <div class="stat"><div class="v" data-count="${s.streak}">${s.streak}</div><div class="l">jour${s.streak>1?"s":""} d'affilée</div></div>
     <div class="stat"><div class="v" data-count="${s.sober}">${s.sober}</div><div class="l">jours sans boire</div></div>
@@ -839,18 +841,21 @@ function renderHome(){
   </div>`;
 }
 
+let jeuxSec="all";
 function renderJeux(){
-  const d=today();
+  const d=today();const secs=Object.entries(GSEC).filter(([k])=>GAMES.some(g=>g.s===k));
   $("#v-jeux").innerHTML=`<div class="top"><div><div class="eyebrow">Occuper la tête</div><h1>Jeux</h1></div><span class="pts-pill">${d.pts} pts</span></div>
-  <p class="muted">${GAMES.length} jeux. Chaque partie rapporte des points pour ton objectif du jour. Enchaîne-les quand l'envie traîne.</p>
-  ${Object.entries(GSEC).map(([k,v])=>`<div class="gsec"><div class="eyebrow">${v}</div><div class="games">${GAMES.filter(g=>g.s===k).map(g=>`<button class="game" data-game="${g.id}"><span class="g">${g.g}</span>${g.n?`<span class="new">Nouveau</span>`:""}<h3>${g.t}</h3><p>${g.d}</p><span class="dur">${g.dur}</span></button>`).join("")}</div></div>`).join("")}`;
+  <p class="muted">${GAMES.length} jeux et modules. Chaque partie rapporte des points pour ton objectif du jour. La plupart changent à chaque partie.</p>
+  <button class="btn spark block" data-act="randgame">Lance-moi un jeu au hasard</button>
+  <div class="chips gfilter" role="group" aria-label="Catégories de jeux"><button class="chip" data-gsec="all" aria-pressed="${jeuxSec==="all"}">Tous</button>${secs.map(([k,v])=>`<button class="chip" data-gsec="${k}" aria-pressed="${jeuxSec===k}">${v}</button>`).join("")}</div>
+  ${secs.filter(([k])=>jeuxSec==="all"||jeuxSec===k).map(([k,v])=>`<div class="gsec"><div class="eyebrow">${v} · ${GAMES.filter(g=>g.s===k).length}</div><div class="games">${GAMES.filter(g=>g.s===k).map(g=>`<button class="game" data-game="${g.id}"><span class="g">${g.g}</span>${g.n?`<span class="new">Nouveau</span>`:""}<h3>${g.t}</h3><p>${g.d}</p><span class="dur">${g.dur}</span></button>`).join("")}</div></div>`).join("")}`;
 }
 
 let defiCat="all";
 function renderDefis(){
   const d=today();const list=DEFIS.filter(x=>defiCat==="all"||x.c===defiCat);
   $("#v-defis").innerHTML=`<div class="top"><div><div class="eyebrow">Dans la vraie vie</div><h1>Défis</h1></div><span class="pts-pill">${d.pts} pts</span></div>
-  <p class="muted">Les jeux tiennent un moment. Ce qui tient vraiment un après-midi, c'est de sortir et d'occuper ses mains.</p>
+  <p class="muted">${DEFIS.length} défis. Les jeux tiennent un moment, mais ce qui tient vraiment un après-midi, c'est de sortir et d'occuper ses mains.</p>
   <button class="btn spark block" data-act="randdefi">Tire un défi au hasard</button>
   <div id="randout"></div>
   <div class="chips" role="group" aria-label="Catégories"><button class="chip" data-cat="all" aria-pressed="${defiCat==="all"}">Tous</button>${Object.entries(CATS).map(([k,v])=>`<button class="chip" data-cat="${k}" aria-pressed="${defiCat===k}">${v}</button>`).join("")}</div>
@@ -874,6 +879,9 @@ function renderMoi(){
   ${weekStrip()}</div>
   <div class="card stack"><h2>Mes envies</h2><p class="small muted">Chaque fois que tu utilises « J'ai envie de boire », l'intensité avant et après est notée ici.</p>
   <div class="list">${cr.map(c=>`<div class="it"><span class="small">${new Date(c.t).toLocaleString("fr-FR",{weekday:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</span><span class="mono small"><b>${c.b}</b> → <b>${c.a??"?"}</b> /10</span></div>`).join("")||`<p class="muted small">Rien encore. La prochaine envie, appuie sur le bouton rouge.</p>`}</div></div>
+  <div class="card stack"><h2>Mon journal</h2><p class="small muted">Ce que tu écris dans le module « Journal » (onglet Jeux).</p>
+  <div class="list">${(S.journal||[]).slice(-6).reverse().map(j=>`<div class="it"><span class="small"><b>${new Date(j.t).toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})}</b> · <span class="muted">${esc(j.q)}</span><br>${esc(j.txt)}</span></div>`).join("")||`<p class="muted small">Rien encore.</p>`}</div>
+  <div><button class="btn sm soft" data-game="journal">Écrire maintenant</button></div></div>
   <div class="card stack" id="aide"><h2>Aide</h2>
   <p class="small"><b>Alcool Info Service</b>, gratuit et anonyme, tous les jours de 8 h à 2 h :</p>
   <div class="row"><span class="phone">0 980 980 930</span><button class="btn sm ghost" data-copy="1">Copier</button></div>
@@ -912,7 +920,7 @@ function openVague(blk){curBlk=blk||null;const el=openSheet("Laisser passer la v
   const step1=()=>{el.innerHTML=`<p class="eyebrow">Étape 1 sur 3</p><h2>À combien est ton envie, là, maintenant ?</h2><p class="muted">1 = à peine, 10 = irrésistible.</p>${scale()}`;
     el.querySelectorAll(".scale button").forEach(b=>b.onclick=()=>{before=+b.dataset.n;step2()})};
   const step2=()=>{const CYCLE=[["Inspire",4000,1],["Bloque",4000,1],["Expire",6000,.45]];const TOTAL=180000;let t0=Date.now(),i=0,timer,tick;
-    const tips=["Une envie, c'est une vague : elle monte, atteint un pic, puis redescend. En général en 15 à 30 minutes.","Tu n'as rien à faire d'autre que la regarder passer. Pas besoin de la combattre.","Remarque où tu la sens dans ton corps : la gorge, le ventre, les mains ?","Chaque envie que tu laisses passer rend la suivante un peu plus faible.","Pense à ce que tu feras à 17 h, l'esprit clair."];
+    const tips=["Une envie, c'est une vague : elle monte, atteint un pic, puis redescend. En général en 15 à 30 minutes.","Tu n'as rien à faire d'autre que la regarder passer. Pas besoin de la combattre.","Remarque où tu la sens dans ton corps : la gorge, le ventre, les mains ?","Chaque envie que tu laisses passer rend la suivante un peu plus faible.","Pense à ce que tu feras à 17 h, l'esprit clair.",...(window.TIPS?shuffle(TIPS).slice(0,4):[])];
     el.innerHTML=`<p class="eyebrow">Étape 2 sur 3 · respiration</p><div class="breath"><div class="ring"></div><div class="rip"></div><div class="rip"></div><div class="orb" id="orb"></div><div class="lbl" id="blbl">Prêt</div></div><p class="mono" style="text-align:center" id="brem">3:00</p><p class="muted" id="btip" style="text-align:center;min-height:4.5em">${tips[0]}</p><button class="btn ghost block" id="bend">J'ai fini plus tôt</button>`;
     const orb=$("#orb"),lbl=$("#blbl");
     const next=()=>{const [name,ms,sc]=CYCLE[i%3];lbl.textContent=name;orb.style.transitionDuration=ms+"ms";orb.style.transform="scale("+sc+")";i++;timer=later(next,ms)};
@@ -1224,6 +1232,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.game){openGame(b.dataset.game,b.dataset.blk);return}
   if(b.dataset.blkdefi){doDefi(b.dataset.blkdefi,b.dataset.blk,b);return}
   if(b.dataset.defi){doDefi(b.dataset.defi,null,b);return}
+  if(b.dataset.gsec){jeuxSec=b.dataset.gsec;render(true);return}
   if(b.dataset.cat){defiCat=b.dataset.cat;renderDefis();const l=$("#defilist");if(l&&!RM){[...l.children].forEach((c,i)=>{c.style.animation="rise .4s var(--ease) both";c.style.animationDelay=i*40+"ms"})}return}
   if(b.dataset.delreason!=null){S.reasons.splice(+b.dataset.delreason,1);save();renderMoi();return}
   if(b.dataset.copy){const txt="0 980 980 930";try{navigator.clipboard.writeText(txt).then(()=>toast("Numéro copié"),()=>toast("Sélectionne le numéro pour le copier"))}catch(err){toast("Sélectionne le numéro pour le copier")}return}
@@ -1234,6 +1243,7 @@ document.addEventListener("click",e=>{
   else if(a==="sober"){d.status="sober";save();renderHome();confetti(180);{const k=stats().streak;toast("Journée sans alcool. "+k+" jour"+(k>1?"s":"")+" d'affilée.")}}
   else if(a==="drank"){d.status="drank";save();renderHome()}
   else if(a==="unset"){d.status=null;save();renderHome()}
+  else if(a==="randgame"){const g=GAMES[rnd(GAMES.length)];openGame(g.id)}
   else if(a==="randdefi"){const pool=DEFIS.filter(x=>!d.done.includes("x:"+x.id));const x=pool.length?pool[rnd(pool.length)]:DEFIS[rnd(DEFIS.length)];const o=$("#randout");o.innerHTML=defiCard(x,d);o.firstElementChild.classList.add("pop")}
   else if(a==="reset"){confirmReset=true;renderMoi()}
   else if(a==="noreset"){confirmReset=false;renderMoi()}
@@ -1247,8 +1257,14 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden
 let lastMin=nowMin();setInterval(()=>{const m=nowMin();if(m!==lastMin){lastMin=m;if(tab==="home"&&$("#sheet").hidden)renderHome()}},15000);
 
 function start(){render(true);setTimeout(initRemote,0)}
-if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start();
+function boot(){if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start()}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 </script>
+<script src="c-geo.js"></script>
+<script src="c-quiz.js"></script>
+<script src="c-text.js"></script>
+<script src="c-words.js"></script>
+<script src="g-more.js"></script>
 
 <script>
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
