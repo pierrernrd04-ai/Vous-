@@ -1,0 +1,1258 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Tenir de 13h à 17h sans boire : programme de l'après-midi, bouton d'urgence, 17 jeux, énigmes et défis.">
+<meta name="theme-color" content="#E9F1EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B191D" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Après 13h">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Après 13h</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: phone-first single column; home is built around a "tide gauge" of the 13h→17h window; fixed bottom tab bar with a sliding indicator; games open in a sheet that slides up. */
+:root{
+  --bg:#E9F1EF; --surface:#FFFFFF; --surface2:#F3F8F6; --ink:#0F262C; --muted:#536E76; --line:#D0DFDB;
+  --accent:#0A7570; --accent-ink:#FFFFFF; --accent-soft:#D2EBE6;
+  --spark:#C9472F; --spark-ink:#FFFFFF; --spark-soft:#FADFD8;
+  --ok:#24804A; --ok-soft:#D9F0E1; --bad:#B23A3A; --bad-soft:#F7DCDC;
+  --p1:#0A7570; --p2:#C9472F; --p3:#D19A1E; --p4:#5B5BC9;
+  --shadow:0 1px 2px rgba(15,38,44,.06),0 6px 20px rgba(15,38,44,.06);
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r:16px; --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B191D; --surface:#12272C; --surface2:#0F2226; --ink:#E2EEEB; --muted:#8EA8AE; --line:#21403F;
+  --accent:#3BBDB1; --accent-ink:#06211F; --accent-soft:#163C3A;
+  --spark:#EE7660; --spark-ink:#2A0B05; --spark-soft:#3D1F1A;
+  --ok:#5BC784; --ok-soft:#173826; --bad:#EE8080; --bad-soft:#3B1D1D;
+  --p1:#3BBDB1; --p2:#EE7660; --p3:#E8B84A; --p4:#8C8CF0;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0B191D; --surface:#12272C; --surface2:#0F2226; --ink:#E2EEEB; --muted:#8EA8AE; --line:#21403F;
+  --accent:#3BBDB1; --accent-ink:#06211F; --accent-soft:#163C3A;
+  --spark:#EE7660; --spark-ink:#2A0B05; --spark-soft:#3D1F1A;
+  --ok:#5BC784; --ok-soft:#173826; --bad:#EE8080; --bad-soft:#3B1D1D;
+  --p1:#3BBDB1; --p2:#EE7660; --p3:#E8B84A; --p4:#8C8CF0;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark;}
+
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+h1,h2,h3{font-family:var(--f-display);line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:2rem;font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.35rem;font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;touch-action:manipulation}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input{font:inherit;color:var(--ink)}
+.app{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px calc(96px + env(safe-area-inset-bottom,0px))}
+.view{display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 16px;border-radius:999px;font-weight:700;background:var(--accent);color:var(--accent-ink);transition:transform .15s var(--spring),filter .15s}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:scale(.94)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.soft{background:var(--accent-soft);color:var(--ink)}
+.btn.spark{background:var(--spark);color:var(--spark-ink)}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:.9rem}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.45;cursor:default}
+
+/* ---- motion ---- */
+@keyframes rise{from{opacity:.001;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.6);opacity:.001}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+@keyframes bump{0%,100%{transform:scale(1)}40%{transform:scale(1.25)}}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@keyframes glow{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--spark) 55%,transparent)}70%{box-shadow:0 0 0 16px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes drift{to{background-position:44px 0}}
+@keyframes ripple{from{transform:scale(.45);opacity:.6}to{transform:scale(1.25);opacity:0}}
+@keyframes blink{50%{opacity:.35}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.anim > *{animation:rise .5s var(--ease) both;animation-delay:calc(var(--i,0) * 55ms)}
+.pop{animation:pop .45s var(--spring) both}
+.shake{animation:shake .4s}
+.bump{animation:bump .45s var(--spring)}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.brand{font-family:var(--f-display);font-weight:800;font-size:1.7rem;letter-spacing:-.03em}
+.brand b{color:var(--accent);display:inline-block;animation:float 4s ease-in-out infinite}
+.pts-pill{display:inline-block;font-family:var(--f-mono);font-size:.85rem;padding:6px 10px;border-radius:999px;background:var(--accent-soft);white-space:nowrap}
+
+/* gauge */
+.window{padding:18px 16px 16px;display:flex;flex-direction:column;gap:14px}
+.window .big{font-family:var(--f-display);font-weight:800;font-size:2.4rem;letter-spacing:-.03em;line-height:1}
+.gauge{position:relative;height:56px;margin-top:4px}
+.gauge .track{position:absolute;left:0;right:0;top:18px;height:14px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.gauge .fill{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 60%,var(--ok)));border-radius:999px;transition:width 1.2s var(--ease)}
+.gauge .wave{position:absolute;inset:0;opacity:.35;background:repeating-linear-gradient(115deg,transparent 0 8px,rgba(255,255,255,.55) 8px 11px);animation:drift 2.4s linear infinite}
+.gauge .ticks{position:absolute;left:0;right:0;top:38px;display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.gauge .now{position:absolute;top:8px;width:2px;height:34px;background:var(--ink);transform:translateX(-1px);transition:left 1.2s var(--ease)}
+.gauge .now::before{content:"";position:absolute;left:50%;top:10px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--spark);animation:blink 1.6s ease-in-out infinite}
+.gauge .now::after{content:attr(data-t);position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:var(--f-mono);font-size:.7rem;font-weight:700;background:var(--ink);color:var(--bg);padding:1px 5px;border-radius:4px;white-space:nowrap}
+.goal{display:flex;flex-direction:column;gap:6px}
+.goal .bar{height:8px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.goal .bar i{display:block;height:100%;background:var(--spark);width:0;transition:width 1s var(--ease);border-radius:999px}
+
+/* SOS */
+.sos{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:18px;border-radius:var(--r);background:var(--spark);color:var(--spark-ink);box-shadow:var(--shadow);animation:glow 2.6s ease-out infinite;transition:transform .2s var(--spring)}
+.sos:active{transform:scale(.97)}
+.sos strong{font-family:var(--f-display);font-size:1.35rem;display:block;line-height:1.1}
+.sos span{font-size:.9rem;opacity:.92}
+.sos .arrow{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.18);transition:transform .3s var(--spring)}
+.sos:hover .arrow{transform:translateX(4px)}
+
+.reason{border-left:3px solid var(--accent);padding:4px 0 4px 12px;font-family:var(--f-display);font-size:1.15rem;font-weight:500}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat .v{font-family:var(--f-display);font-weight:800;font-size:1.6rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .l{font-size:.8rem;color:var(--muted)}
+@media (min-width:520px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* program */
+.prog{display:flex;flex-direction:column}
+.blk{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.blk:first-child{border-top:0}
+.blk .t{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);padding-top:2px}
+.blk.now .t{color:var(--spark);font-weight:700}
+.blk .tag{display:inline-block;font-family:var(--f-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--surface2);color:var(--muted);margin-bottom:4px}
+.blk.now .tag{background:var(--spark-soft);color:var(--spark);animation:blink 2s ease-in-out infinite}
+.blk.done h3{text-decoration:line-through;text-decoration-thickness:2px;color:var(--muted)}
+.blk p{font-size:.9rem;color:var(--muted);margin:2px 0 8px}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:700;color:var(--ok)}
+
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.nav .in{position:relative;max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.nav .ind{position:absolute;top:2px;bottom:2px;left:0;width:25%;padding:0 10px;transition:transform .45s var(--spring)}
+.nav .ind::before{content:"";display:block;height:100%;border-radius:12px;background:var(--accent-soft)}
+.nav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:.74rem;color:var(--muted);font-weight:700;border-radius:10px;transition:color .3s}
+.nav button svg{width:24px;height:24px;transition:transform .35s var(--spring)}
+.nav button[aria-current="true"]{color:var(--accent)}
+.nav button[aria-current="true"] svg{transform:translateY(-2px) scale(1.1)}
+
+/* games grid */
+.gsec{display:flex;flex-direction:column;gap:10px}
+.games{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.game{display:flex;flex-direction:column;gap:6px;text-align:left;padding:14px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);min-height:140px;transition:transform .25s var(--spring),box-shadow .25s}
+.game:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(15,38,44,.12)}
+.game:active{transform:scale(.96)}
+.game .g{font-family:var(--f-mono);font-weight:700;font-size:1.15rem;width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);letter-spacing:-.04em;transition:transform .35s var(--spring)}
+.game:hover .g{transform:rotate(-8deg) scale(1.08)}
+.game h3{margin-top:4px}
+.game p{font-size:.82rem;color:var(--muted)}
+.game .dur{margin-top:auto;font-family:var(--f-mono);font-size:.7rem;color:var(--muted)}
+.game .new{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--spark);font-weight:700}
+
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chip{flex:none;padding:7px 14px;border-radius:999px;border:1.5px solid var(--line);font-weight:700;font-size:.88rem;transition:background .25s,color .25s,border-color .25s}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.defi{display:flex;flex-direction:column;gap:8px}
+.defi .hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.defi .pts{font-family:var(--f-mono);font-size:.8rem;font-weight:700;color:var(--accent);white-space:nowrap}
+.defi p{font-size:.92rem;color:var(--muted)}
+.defi.done{opacity:.65}
+
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:40;background:var(--bg);overflow-y:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);transform:translateY(100%);transition:transform .42s var(--ease)}
+.sheet.open{transform:none}
+.sheet .bar{position:sticky;top:0;z-index:2;background:var(--bg);display:flex;align-items:center;gap:10px;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.sheet .bar h2{flex:1;min-width:0}
+.iconbtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line);flex:none;transition:transform .2s var(--spring)}
+.iconbtn:active{transform:scale(.9)}
+.sheet .body{max-width:560px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
+.kind{align-self:flex-start;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700}
+.riddle{font-family:var(--f-display);font-size:1.45rem;font-weight:500;line-height:1.3}
+.field{width:100%;min-height:48px;padding:10px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-size:1.05rem;transition:border-color .2s}
+.field:focus{border-color:var(--accent);outline:none}
+.fb{padding:10px 14px;border-radius:12px;font-weight:700;animation:pop .35s var(--spring) both}
+.fb.ok{background:var(--ok-soft);color:var(--ok)}
+.fb.bad{background:var(--bad-soft);color:var(--bad)}
+.fb.info{background:var(--surface2);color:var(--ink);font-weight:400;border:1px solid var(--line)}
+.hud{display:flex;justify-content:space-between;gap:10px;font-family:var(--f-mono);font-size:.9rem;color:var(--muted)}
+.hud b{color:var(--ink)}
+.calc-q{font-family:var(--f-mono);font-weight:700;font-size:2.8rem;text-align:center;padding:18px 0;letter-spacing:-.02em}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.tile{width:46px;height:52px;border-radius:10px;font-family:var(--f-mono);font-weight:700;font-size:1.35rem;background:var(--surface);border:1.5px solid var(--line);box-shadow:var(--shadow);animation:pop .4s var(--spring) both;transition:transform .15s}
+.tile:active{transform:scale(.9)}
+.tile.used{visibility:hidden}
+.slots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:56px}
+.slot{width:40px;height:50px;border-bottom:3px solid var(--line);display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:1.35rem;transition:border-color .2s}
+.slot.f{border-color:var(--accent)}
+.slot.f span{animation:pop .3s var(--spring) both}
+.seq{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font-family:var(--f-mono);font-weight:700;font-size:1.5rem}
+.seq span{padding:8px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);animation:pop .4s var(--spring) both}
+.seq span.q{background:var(--accent-soft);color:var(--accent)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;padding:14px 16px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line);font-weight:700;animation:rise .4s var(--ease) both;transition:background .25s,border-color .25s,transform .15s}
+.opt:active{transform:scale(.98)}
+.opt.right{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);animation:shake .4s}
+.vf{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vf button{min-height:64px;border-radius:14px;font-family:var(--f-display);font-weight:800;font-size:1.3rem;border:1.5px solid var(--line);background:var(--surface);transition:transform .15s,background .25s}
+.vf button:active{transform:scale(.95)}
+.vf button.right{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.vf button.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.lives{display:flex;gap:6px}
+.lives i{width:12px;height:12px;border-radius:50%;background:var(--spark);transition:transform .3s var(--spring),background .3s}
+.lives i.off{background:var(--line);transform:scale(.6)}
+.kbd{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.kbd button{min-height:44px;border-radius:10px;background:var(--surface);border:1.5px solid var(--line);font-family:var(--f-mono);font-weight:700;font-size:1.05rem;transition:transform .12s,background .2s}
+.kbd button:active{transform:scale(.9)}
+.kbd button.hit{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.kbd button.miss{background:var(--surface2);color:var(--line)}
+.win{display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;padding:20px 8px}
+.win .medal{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-family:var(--f-display);font-weight:800;font-size:1.6rem;animation:pop .6s var(--spring) both;box-shadow:0 0 0 8px var(--accent-soft)}
+.win h2{animation:rise .5s .15s var(--ease) both}
+.win p{animation:rise .5s .25s var(--ease) both}
+.win .btn{animation:rise .5s .35s var(--ease) both}
+.story{font-family:var(--f-display);font-size:1.3rem;font-weight:500;line-height:1.35}
+.answer{background:var(--accent-soft);border-radius:14px;padding:14px 16px;animation:pop .4s var(--spring) both}
+.hist{display:flex;flex-direction:column;gap:6px}
+.hist div{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-family:var(--f-mono);animation:rise .35s var(--ease) both}
+.pegs{display:flex;gap:4px}
+.pegs i{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink)}
+.pegs i.b{background:var(--ink)}
+.pegs i.e{border-color:var(--line)}
+
+/* sudoku */
+.sdk{display:grid;grid-template-columns:repeat(9,1fr);width:100%;max-width:440px;margin:0 auto;aspect-ratio:1;border:2.5px solid var(--ink);border-radius:6px;overflow:hidden;background:var(--surface)}
+.sdk button{border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:clamp(1rem,4.6vw,1.4rem);font-weight:500;color:var(--accent);padding:0;aspect-ratio:1;transition:background .15s}
+.sdk button.given{color:var(--ink);font-weight:700}
+.sdk button.c3{border-right:2.5px solid var(--ink)}
+.sdk button.r3{border-bottom:2.5px solid var(--ink)}
+.sdk button.hl{background:var(--surface2)}
+.sdk button.same{background:var(--accent-soft)}
+.sdk button.sel{background:color-mix(in srgb,var(--accent) 30%,var(--surface))}
+.sdk button.err{color:var(--bad);background:var(--bad-soft)}
+.sdk button.just{animation:pop .3s var(--spring)}
+.pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:440px;margin:0 auto;width:100%}
+.pad button{min-height:50px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line);font-family:var(--f-mono);font-weight:700;font-size:1.25rem;transition:transform .12s}
+.pad button:active{transform:scale(.9)}
+
+/* minesweeper */
+.mn{display:grid;gap:3px;width:100%;max-width:420px;margin:0 auto;user-select:none;-webkit-user-select:none}
+.mn button{aspect-ratio:1;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-family:var(--f-mono);font-weight:700;font-size:clamp(.85rem,4vw,1.15rem);padding:0;transition:background .2s,transform .12s;-webkit-touch-callout:none}
+.mn button:active{transform:scale(.9)}
+.mn button.r{background:var(--surface);color:var(--ink);border:1px solid var(--line);animation:pop .25s var(--spring) both}
+.mn button.f{background:var(--spark);color:var(--spark-ink)}
+.mn button.x{background:var(--bad);color:var(--surface)}
+.mn button.n1{color:var(--p1)}.mn button.n2{color:var(--ok)}.mn button.n3{color:var(--p2)}.mn button.n4{color:var(--p4)}.mn button.n5,.mn button.n6,.mn button.n7,.mn button.n8{color:var(--bad)}
+.toggle{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:3px}
+.toggle button{padding:6px 14px;border-radius:999px;font-weight:700;font-size:.9rem;transition:background .25s,color .25s}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* memory, taquin, lights, c4, simon, bubbles */
+.mem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:400px;margin:0 auto;width:100%;perspective:800px}
+.mem button{aspect-ratio:1;border-radius:12px;font-size:1.9rem;background:var(--accent);color:var(--accent-ink);transition:transform .4s var(--ease),background .3s;transform-style:preserve-3d}
+.mem button.up{background:var(--surface);color:var(--ink);border:1.5px solid var(--line);transform:rotateY(180deg)}
+.mem button.up span{display:inline-block;transform:rotateY(180deg)}
+.mem button.ok{background:var(--ok-soft);color:var(--ok);border:1.5px solid var(--ok);animation:bump .5s var(--spring)}
+.mem button span{visibility:hidden}
+.mem button.up span,.mem button.ok span{visibility:visible}
+.tq{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:380px;margin:0 auto;width:100%;padding:6px;border-radius:14px;background:var(--surface2);border:1px solid var(--line)}
+.tq button{aspect-ratio:1;border-radius:10px;background:var(--surface);border:1.5px solid var(--line);font-family:var(--f-display);font-weight:800;font-size:1.6rem;box-shadow:var(--shadow);transition:transform .12s}
+.tq button:active{transform:scale(.92)}
+.tq button.ok{color:var(--accent)}
+.tq button.empty{visibility:hidden}
+.tq button.moved{animation:pop .25s var(--spring)}
+.lo{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:360px;margin:0 auto;width:100%}
+.lo button{aspect-ratio:1;border-radius:12px;background:var(--surface2);border:1.5px solid var(--line);transition:background .3s,box-shadow .3s,transform .15s}
+.lo button:active{transform:scale(.9)}
+.lo button.on{background:var(--p3);border-color:var(--p3);box-shadow:0 0 18px color-mix(in srgb,var(--p3) 60%,transparent)}
+.c4{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:420px;width:100%;margin:0 auto;padding:8px;border-radius:16px;background:var(--accent)}
+.c4 button{aspect-ratio:1;border-radius:50%;background:var(--bg);padding:0;position:relative;overflow:hidden}
+.c4 button i{position:absolute;inset:8%;border-radius:50%}
+.c4 button i.p1{background:var(--p2)}
+.c4 button i.p2{background:var(--p3)}
+.c4 button i.drop{animation:dropin .45s cubic-bezier(.5,0,.75,0) both,bump .3s .45s var(--spring)}
+.c4 button i.w{box-shadow:0 0 0 4px var(--surface) inset;animation:blink 1s infinite}
+@keyframes dropin{from{transform:translateY(calc(var(--d,1) * -112%))}to{transform:none}}
+.simon{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:340px;width:100%;margin:0 auto}
+.simon button{aspect-ratio:1;border-radius:22px;opacity:.38;transition:opacity .15s,transform .15s}
+.simon button.lit{opacity:1;transform:scale(1.05);box-shadow:0 0 30px currentColor}
+.simon button:nth-child(1){background:var(--p1);color:var(--p1)}.simon button:nth-child(2){background:var(--p2);color:var(--p2)}.simon button:nth-child(3){background:var(--p3);color:var(--p3)}.simon button:nth-child(4){background:var(--p4);color:var(--p4)}
+.arena{position:relative;width:100%;height:min(62vh,520px);border-radius:18px;background:var(--surface2);border:1px solid var(--line);overflow:hidden;touch-action:manipulation}
+.bub{position:absolute;border-radius:50%;background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.75),transparent 40%),var(--c,var(--accent));animation:bubin .3s var(--spring) both,bubout var(--life,1.6s) linear forwards}
+.bub.gone{animation:burst .25s ease-out forwards;pointer-events:none}
+@keyframes bubin{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes bubout{0%,75%{opacity:1}100%{opacity:0;transform:scale(.7)}}
+@keyframes burst{to{transform:scale(1.6);opacity:0}}
+
+/* vague */
+.breath{position:relative;width:240px;height:240px;margin:8px auto;display:grid;place-items:center}
+.breath .ring{position:absolute;inset:0;border-radius:50%;border:2px dashed var(--line);animation:spin 40s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.breath .rip{position:absolute;inset:0;border-radius:50%;border:2px solid var(--accent);animation:ripple 4s ease-out infinite}
+.breath .rip:nth-child(3){animation-delay:2s}
+.breath .orb{width:240px;height:240px;border-radius:50%;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--accent) 45%,var(--surface)),var(--accent));transform:scale(.45);transition-property:transform;transition-timing-function:ease-in-out;box-shadow:0 10px 40px color-mix(in srgb,var(--accent) 35%,transparent)}
+.breath .lbl{position:absolute;text-align:center;color:var(--accent-ink);font-family:var(--f-display);font-weight:700;font-size:1.3rem}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.scale button{min-height:52px;border-radius:12px;font-family:var(--f-mono);font-weight:700;font-size:1.15rem;border:1.5px solid var(--line);background:var(--surface);animation:pop .35s var(--spring) both;transition:transform .15s}
+.scale button:active{transform:scale(.88)}
+.scale button:nth-child(n+6){border-color:color-mix(in srgb,var(--spark) 45%,var(--line))}
+.scale button:nth-child(n+9){background:var(--spark-soft)}
+
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(30px) scale(.9);z-index:60;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:700;font-size:.92rem;opacity:0;pointer-events:none;transition:transform .4s var(--spring),opacity .25s;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:70}
+.banner{background:var(--spark-soft);border:1px solid color-mix(in srgb,var(--spark) 35%,transparent);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.banner h3{color:var(--spark)}
+.list{display:flex;flex-direction:column}
+.list .it{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.list .it:first-child{border-top:0}
+.list .it span{min-width:0;overflow-wrap:anywhere}
+.set{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:10px;align-items:center}
+.set input{min-height:42px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);width:100%;font-family:var(--f-mono)}
+.phone{font-family:var(--f-mono);font-weight:700;font-size:1.3rem;user-select:all}
+.cal{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:4px}
+.cal div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.cal i{width:100%;aspect-ratio:1;border-radius:6px;border:1px solid var(--line);background:var(--surface2);animation:pop .4s var(--spring) both}
+.cal i.s{background:var(--accent);border-color:var(--accent)}
+.cal i.d{background:var(--spark-soft)}
+.cal span{font-family:var(--f-mono);font-size:.62rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="app" id="app">
+  <section class="view" id="v-home" aria-label="Aujourd'hui"></section>
+  <section class="view" id="v-jeux" aria-label="Jeux" hidden></section>
+  <section class="view" id="v-defis" aria-label="Défis" hidden></section>
+  <section class="view" id="v-moi" aria-label="Moi" hidden></section>
+</div>
+
+<nav class="nav" aria-label="Navigation">
+  <div class="in">
+    <span class="ind" id="ind" aria-hidden="true"></span>
+    <button data-tab="home" aria-current="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Aujourd'hui</button>
+    <button data-tab="jeux"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Jeux</button>
+    <button data-tab="defis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l5-9 4 6 3-4 4 7z"/><circle cx="16" cy="6" r="2"/></svg>Défis</button>
+    <button data-tab="moi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Moi</button>
+  </div>
+</nav>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="bar">
+    <button class="iconbtn" id="sheet-close" aria-label="Fermer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <h2 id="sheet-title">Jeu</h2>
+    <span class="pts-pill" id="sheet-pts">0 pts</span>
+  </div>
+  <div class="body" id="sheet-body"></div>
+</div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ================= CONTENU ================= */
+const R_DEV=[
+["Plus j'ai de gardiens, moins je suis gardé. Qui suis-je ?",["secret"]],
+["Je commence la nuit et je termine le matin. Qui suis-je ?",["n","lettre n"]],
+["Qu'est-ce qui a des dents mais ne mord jamais ?",["peigne","scie"]],
+["Plus on en enlève, plus il devient grand. Qu'est-ce que c'est ?",["trou"]],
+["Qu'est-ce qui monte et descend sans jamais bouger ?",["escalier","escaliers"]],
+["J'ai des villes sans maisons, des forêts sans arbres et des rivières sans eau. Qui suis-je ?",["carte","plan"]],
+["Je suis plein de trous, pourtant je retiens l'eau. Qui suis-je ?",["eponge"]],
+["Qu'est-ce qui peut faire le tour du monde en restant dans un coin ?",["timbre"]],
+["Je suis toujours devant toi, mais tu ne peux jamais me voir. Qui suis-je ?",["avenir","futur","demain"]],
+["Qu'est-ce qui t'appartient, mais que les autres utilisent bien plus que toi ?",["prenom","nom"]],
+["Qu'est-ce qui se mouille en séchant ?",["serviette"]],
+["Je parle sans bouche et j'entends sans oreilles. Qui suis-je ?",["echo"]],
+["Si tu prononces mon nom, je disparais. Qui suis-je ?",["silence"]],
+["Je cours mais ne marche jamais, j'ai un lit mais ne dors jamais. Qui suis-je ?",["riviere","fleuve"]],
+["Je suis léger comme une plume, mais personne ne peut me retenir plus de quelques minutes. Qui suis-je ?",["souffle","respiration","air"]],
+["Qu'est-ce qui a un cou mais pas de tête ?",["bouteille"]],
+["Qu'est-ce qui a des aiguilles mais ne coud jamais ?",["horloge","montre","pendule","sapin"]],
+["Qu'est-ce qui a des feuilles mais n'est pas un arbre ?",["livre","cahier"]],
+["Noir quand on l'achète, rouge quand on l'utilise, gris quand on le jette. Qu'est-ce que c'est ?",["charbon"]],
+["Qu'est-ce qui se trouve au milieu de Paris ?",["r","lettre r"]],
+["Quatre pattes le matin, deux le midi, trois le soir. Qui suis-je ?",["homme","humain","etre humain"]],
+["Qu'est-ce que tu peux donner tout en le gardant ?",["parole","promesse"]],
+["Qu'est-ce qu'on peut attraper, mais jamais lancer ?",["rhume"]],
+["Qu'est-ce qui remplit une pièce sans prendre de place ?",["lumiere"]],
+["On me jette quand on a besoin de moi, on me remonte quand on n'en a plus besoin. Qui suis-je ?",["ancre"]],
+["Quel est le mois le plus court ?",["mai"]],
+["Je suis grande quand je suis jeune et petite quand je suis vieille. Qui suis-je ?",["bougie"]],
+["Qu'est-ce qui a un œil mais ne voit rien ?",["aiguille","cyclone","ouragan"]],
+["Que fait une fraise sur un cheval ?",["tagada"]],
+["Qu'est-ce qui est plein le jour et vide la nuit ?",["chaussure","chaussures"]],
+["Qu'est-ce qui a quatre pattes mais n'avance jamais ?",["table","chaise"]],
+["Plus il y en a, moins on voit. Qu'est-ce que c'est ?",["obscurite","noir","brouillard","nuit"]],
+["Qu'est-ce qui a une tête, une queue, mais pas de corps ?",["piece","piece de monnaie"]],
+["Quel mot est toujours mal écrit dans le dictionnaire ?",["mal"]],
+["Qu'est-ce qui monte quand la pluie descend ?",["parapluie"]],
+["Qu'est-ce qui voyage partout mais ne quitte jamais sa maison ?",["escargot","tortue"]],
+["Qu'est-ce qui a beaucoup de touches mais n'ouvre aucune serrure ?",["piano","clavier"]],
+["Qu'est-ce qui est blanc quand il est sale ?",["tableau","tableau noir","ardoise"]],
+["Qu'est-ce qu'il faut casser avant de pouvoir l'utiliser ?",["oeuf","œuf"]],
+["J'ai une tête et des pieds, mais pas de corps. On passe la nuit avec moi. Qui suis-je ?",["lit"]],
+["J'ai des bras mais je ne porte rien, j'ai un dos mais je ne me couche jamais. Qui suis-je ?",["fauteuil","chaise","canape"]],
+["Qu'est-ce qui a cinq doigts mais n'est pas vivant ?",["gant"]],
+["Je n'ai pas de voix et pourtant je te dis tout, je n'ai pas de pieds et pourtant je voyage. Qui suis-je ?",["lettre","courrier","carte postale"]],
+["J'ai des ailes, je tourne avec le vent, mais je ne vole jamais. Qui suis-je ?",["moulin","eolienne"]],
+["Je commence par E, je finis par E, et je ne contiens qu'une seule lettre. Qui suis-je ?",["enveloppe"]],
+["Qu'est-ce qu'on pose sur la table, qu'on coupe, mais qu'on ne mange jamais ?",["cartes","jeu de cartes"]],
+["J'ai des branches mais ni feuilles ni tronc, et je me pose sur ton nez. Qui suis-je ?",["lunettes"]],
+["Qu'est-ce qui a des yeux mais ne voit rien, et pousse sous la terre ?",["pomme de terre","patate"]],
+["Qu'est-ce qui a un pied mais pas de jambe, et pousse en forêt ?",["champignon"]],
+["On me trouve une fois dans une minute, deux fois dans un moment, et jamais dans cent ans. Qui suis-je ?",["m","lettre m"]],
+["Qu'est-ce qui se trouve au bout du monde ?",["e","lettre e"]],
+["Qu'est-ce qui fait le tour de la maison sans jamais bouger ?",["mur","murs","cloture","haie"]],
+["Je te suis partout au soleil, mais je disparais dans le noir. Qui suis-je ?",["ombre"]],
+["Quelle est la seule chose que tu peux casser sans même la toucher ?",["promesse","parole","silence"]],
+["Qu'est-ce qui arrive toujours, mais n'est jamais là ?",["demain"]],
+["Qu'est-ce que tout le monde fait en même temps, sans jamais pouvoir s'arrêter ?",["vieillir","grandir","respirer"]],
+["Je suis plein d'yeux, mais je ne vois rien. Je suis un fromage. Qui suis-je ?",["gruyere","emmental"]],
+["Si tu me nourris, je grandis. Si tu me donnes à boire, je meurs. Qui suis-je ?",["feu"]],
+["Qu'est-ce qui disparaît dès que tu te lèves ?",["genoux","tes genoux","cuisses"]],
+["Quelle ville de France rugit ?",["lyon"]],
+["Qu'est-ce qui va de Paris à Marseille sans jamais bouger ?",["route","autoroute"]],
+["Qu'est-ce qui court le plus vite : le chaud ou le froid ?",["chaud"]],
+["Je vais d'un bout à l'autre de la Terre en un instant, sans jamais bouger. Qui suis-je ?",["pensee","imagination","esprit"]],
+["Je n'ai pas de poumons mais j'ai besoin d'air. Je n'ai pas de bouche mais je dévore tout. Qui suis-je ?",["feu"]],
+["Qu'est-ce qui a des racines que personne ne voit, est plus haut que les arbres, et pourtant ne pousse jamais ?",["montagne"]]
+];
+const R_CHA=[
+["Mon premier est un métal précieux, mon second est un habitant du ciel. Mon tout est un fruit.",["orange"]],
+["Mon premier miaule, mon second contient la confiture. Mon tout se porte sur la tête.",["chapeau"]],
+["Mon premier n'est pas froid, mon second n'a pas d'angles. Mon tout sert aux sorcières.",["chaudron"]],
+["Mon premier n'est pas dur, mon second est un adjectif possessif. Mon tout fait « bêê ».",["mouton"]],
+["Mon premier n'est pas tard, mon second n'est pas brillant. Mon tout est rouge dans la salade.",["tomate"]],
+["Mon premier est blanc et se boit, mon second est un verbe qui fait mourir. Mon tout est une salade.",["laitue"]],
+["Mon premier se mange avec des baguettes, mon second coule du robinet. Mon tout se tire devant la fenêtre.",["rideau"]],
+["Mon premier est une note de musique, mon second est un arbre toujours vert. Mon tout a de grandes oreilles.",["lapin"]],
+["Mon premier est une note de musique, mon second porte une couronne. Mon tout te montre ton reflet.",["miroir"]],
+["Mon premier est une note de musique, mon second est une grosse peur. Mon tout devient un carrosse.",["citrouille"]],
+["Mon premier est un rongeur, mon second se boit chaud en Angleterre. Mon tout se dit quand on a manqué son coup.",["rate"]],
+["Mon premier est le contraire de « haut », mon second est le contraire de « tard ». Mon tout navigue.",["bateau"]],
+["Mon premier miaule, mon second est la 20e lettre de l'alphabet, mon troisième coule du robinet. Mon tout a des tours et un pont-levis.",["chateau"]],
+["Mon premier est un oiseau bavard, mon second est la première lettre de l'alphabet, mon troisième veut dire « non » en anglais. Mon tout a 88 touches.",["piano"]]
+];
+const R_LOG=[
+["Le père de Toto a trois fils : Riri, Fifi et… ?",["toto"]],
+["Combien de mois ont 28 jours ?",["12","douze","tous"]],
+["Un avion s'écrase pile sur la frontière franco-espagnole. Où enterre-t-on les survivants ?",["nulle part","nul part","pas","aucun","personne"]],
+["Un fermier a 17 moutons. Tous meurent sauf 9. Combien en reste-t-il ?",["9","neuf"]],
+["5 machines fabriquent 5 objets en 5 minutes. Combien de minutes faut-il à 100 machines pour 100 objets ?",["5","cinq"]],
+["Une batte et une balle coûtent 1,10 € ensemble. La batte coûte 1 € de plus que la balle. Combien coûte la balle (en centimes) ?",["5","cinq","0,05","0.05"]],
+["Pendant une course, tu doubles le deuxième. À quelle place es-tu ?",["deuxieme","2","2e","second","seconde"]],
+["Un nénuphar double de taille chaque jour et couvre tout le lac en 48 jours. Quel jour couvre-t-il la moitié du lac ?",["47","47e","quarante-sept","quarante sept"]],
+["Il y a 3 pommes et tu en prends 2. Combien en as-tu ?",["2","deux"]],
+["Combien de fois peut-on soustraire 10 de 100 ?",["1","une","une fois","une seule fois"]],
+["Un homme regarde un portrait et dit : « Je n'ai ni frère ni sœur, mais le père de cet homme est le fils de mon père. » Qui est sur le portrait ?",["fils","son fils"]],
+["Un escargot est au fond d'un puits de 10 m. Il monte de 3 m le jour et glisse de 2 m la nuit. En combien de jours sort-il ?",["8","huit"]],
+["3 chats attrapent 3 souris en 3 minutes. Combien de chats faut-il pour attraper 100 souris en 100 minutes ?",["3","trois"]],
+["Combien de fois écrit-on le chiffre 9 en comptant de 1 à 100 ?",["20","vingt"]],
+["Multiplie-moi par n'importe quel nombre, le résultat sera toujours moi. Qui suis-je ?",["0","zero"]],
+["Combien d'animaux de chaque espèce Moïse a-t-il fait monter dans l'arche ?",["aucun","0","zero","noe","personne"]],
+["Un père et son fils ont un accident. Le fils est opéré, et le chirurgien s'écrie : « C'est mon fils ! » Qui est le chirurgien ?",["mere","sa mere","maman"]],
+["Tu entres dans une pièce sombre avec une seule allumette. Il y a une bougie, une lampe à pétrole et un poêle. Qu'allumes-tu en premier ?",["allumette"]],
+["Un train électrique roule vers le nord, le vent souffle vers l'ouest. De quel côté part la fumée ?",["aucun","aucune","pas","nulle part","electrique"]],
+["Un coq pond un œuf pile sur le sommet d'un toit. De quel côté tombe l'œuf ?",["aucun","aucune","nulle part","pas","pond pas"]],
+["De quelle couleur était le cheval blanc d'Henri IV ?",["blanc"]],
+["Avant la découverte du mont Everest, quelle était la plus haute montagne du monde ?",["everest","mont everest"]],
+["Qu'est-ce qui est le plus lourd : un kilo de plumes ou un kilo de plomb ?",["pareil","meme","aucun","les deux","egal","identique","aucune"]],
+["Pierre a 3 sœurs. Chaque sœur a un seul frère. Combien d'enfants y a-t-il dans la famille ?",["4","quatre"]],
+["Dans une course, tu dépasses le dernier. À quelle place es-tu ?",["impossible","aucune","pas","personne"]],
+["Divise 30 par un demi, puis ajoute 10. Combien obtiens-tu ?",["70","soixante-dix","soixante dix"]],
+["Combien font 2 + 2 × 2 ?",["6","six"]],
+["10 oiseaux sont sur une branche. Un chasseur en tire un. Combien en reste-t-il sur la branche ?",["0","zero","aucun"]],
+["Une mère a 4 filles. Chaque fille a un frère. Combien a-t-elle d'enfants ?",["5","cinq"]],
+["Une horloge sonne 6 coups en 5 secondes. Combien de secondes lui faut-il pour sonner 12 coups ?",["11","onze"]],
+["3 peintres peignent 3 murs en 3 heures. Combien de murs peignent 6 peintres en 6 heures ?",["12","douze"]],
+["Quel nombre vient ensuite : 1, 11, 21, 1211, 111221, … ?",["312211"]],
+["Si demain est le lendemain de lundi, quel jour était avant-hier ?",["samedi"]],
+["Combien de bougies faut-il en tout pour fêter chaque anniversaire de 1 à 10 ans ?",["55","cinquante-cinq","cinquante cinq"]],
+["Un médecin te donne 3 pilules, une à prendre toutes les demi-heures. En combien de minutes les auras-tu toutes prises ?",["60","soixante","1 heure","une heure"]],
+["J'ai deux pièces qui font 30 centimes. L'une des deux n'est pas une pièce de 10 centimes. Quelles sont-elles ?",["20 et 10","10 et 20","20 10","10 20"]],
+["Dans une ferme, il y a des poules et des lapins : 10 têtes et 28 pattes. Combien de lapins ?",["4","quatre"]],
+["Combien de carrés de toutes tailles y a-t-il sur un échiquier ?",["204"]],
+["Une bouteille pleine pèse 1 kg. À moitié vide, elle pèse 600 g. Combien pèse la bouteille vide (en grammes) ?",["200","deux cents"]],
+["Si tu écris tous les nombres de 1 à 50, combien de fois écris-tu le chiffre 5 ?",["6","six"]]
+];
+const RIDDLES=[...R_DEV.map(r=>[r[0],r[1],"Devinette"]),...R_CHA.map(r=>[r[0],r[1],"Charade"]),...R_LOG.map(r=>[r[0],r[1],"Logique"])];
+
+const MYST=[
+["Histoire","Un homme pousse sa voiture jusqu'à un hôtel. En arrivant, il comprend qu'il est ruiné. Que se passe-t-il ?","Il joue au Monopoly : il a posé son pion sur une case avec un hôtel."],
+["Histoire","Un homme habite au 10e étage. Le matin, il prend l'ascenseur jusqu'en bas. Le soir, il le prend jusqu'au 7e et finit à pied. Sauf les jours de pluie, où il monte directement au 10e. Pourquoi ?","Il est de petite taille : il n'atteint que le bouton du 7e. Les jours de pluie, il appuie sur le 10 avec son parapluie."],
+["Histoire","Une femme tire sur son mari, le plonge sous l'eau pendant 5 minutes, puis le suspend. Le soir, ils dînent ensemble, heureux. Comment ?","Elle l'a pris en photo, a développé le cliché dans un bain, puis l'a suspendu pour qu'il sèche."],
+["Histoire","Roméo et Juliette sont retrouvés morts sur le sol, au milieu d'une flaque d'eau et de morceaux de verre. Un chat est assis à côté. Que s'est-il passé ?","Roméo et Juliette sont deux poissons rouges. Le chat a fait tomber leur bocal."],
+["Histoire","Un homme entre dans une boulangerie et demande un verre d'eau. La boulangère hurle et lui fait une énorme peur. Il la remercie et repart, satisfait. Pourquoi ?","Il avait le hoquet. La peur l'a fait passer, il n'avait plus besoin de l'eau."],
+["Histoire","On retrouve un homme au milieu d'un champ, mort, avec un sac fermé sur le dos. Aucune trace de pas autour de lui. Que s'est-il passé ?","Il a sauté d'un avion et son parachute (le sac) ne s'est pas ouvert."],
+["Histoire","Une femme a deux fils nés le même jour, la même année, à la même heure. Pourtant, ce ne sont pas des jumeaux. Comment ?","Ce sont des triplés : il y a un troisième enfant."],
+["Histoire","Un homme se rase vingt fois par jour, et pourtant il garde une longue barbe. Comment ?","C'est un barbier : il rase ses clients, pas lui-même."],
+["Histoire","Un cow-boy arrive en ville un vendredi. Il reste trois jours, et repart le vendredi. Comment est-ce possible ?","Son cheval s'appelle Vendredi."],
+["Histoire","Une fille tombe d'une échelle de 6 mètres et ne se fait absolument aucun mal. Comment ?","Elle était sur le premier barreau."],
+["Histoire","Un camion est coincé sous un pont : il dépasse de 2 cm. Les pompiers hésitent à découper le pont. Un enfant donne la solution. Laquelle ?","Dégonfler un peu les pneus pour faire baisser le camion."],
+["Histoire","Deux pères et deux fils vont à la pêche. Ils attrapent 3 poissons, et chacun en rapporte un. Comment ?","Ils ne sont que trois : un grand-père, son fils et son petit-fils."],
+["Histoire","Comment peux-tu lâcher un œuf cru sur un sol en béton sans fissurer le sol ?","Le béton est bien trop dur : l'œuf ne risque pas de fissurer le sol."],
+["Histoire","Une femme achète un perroquet garanti « capable de répéter tout ce qu'il entend ». Il ne dit jamais un mot. Pourtant, le vendeur n'a pas menti. Pourquoi ?","Le perroquet est sourd : il n'entend rien, donc il ne répète rien."],
+["Histoire","Un homme marche une heure sous une pluie battante, sans parapluie ni chapeau. Il est trempé, mais pas un seul de ses cheveux n'est mouillé. Comment ?","Il est chauve."],
+["Histoire","Plus fort que Dieu, pire que le diable. Les pauvres l'ont, les riches en ont besoin. Si tu en manges, tu meurs. Qu'est-ce que c'est ?","Rien."],
+["Histoire","Comment peux-tu rester 8 jours sans dormir sans être fatigué ?","En dormant la nuit : tu ne dors simplement pas le jour."],
+["Histoire","Un panier contient 6 œufs. Six personnes en prennent chacune un, et pourtant il reste un œuf dans le panier. Comment ?","La dernière personne a pris le panier avec l'œuf dedans."],
+["Histoire","Un homme construit une maison dont les quatre façades sont orientées plein sud. Un ours passe devant. De quelle couleur est-il ?","Blanc. La seule façon d'avoir quatre façades au sud, c'est d'être au pôle Nord : c'est un ours polaire."],
+["Histoire","Tu conduis un bus. 10 personnes montent, 3 descendent, puis 5 montent. De quelle couleur sont les yeux du conducteur ?","De la couleur de tes yeux : c'est toi qui conduis."],
+["Casse-tête","Trois interrupteurs sont dans le couloir. Une seule ampoule est dans la pièce fermée. Tu ne peux entrer qu'une fois. Comment savoir quel interrupteur allume l'ampoule ?","Allume le 1er pendant 5 minutes, éteins-le, allume le 2e et entre. Ampoule allumée : le 2e. Éteinte mais chaude : le 1er. Éteinte et froide : le 3e."],
+["Casse-tête","Tu dois faire traverser une rivière à un loup, une chèvre et un chou. Ta barque ne prend qu'un passager avec toi. Seuls, le loup mange la chèvre et la chèvre mange le chou. Comment fais-tu ?","Chèvre d'abord. Reviens, prends le loup, ramène la chèvre. Prends le chou, reviens seul, puis reprends la chèvre."],
+["Casse-tête","Tu as un seau de 3 litres et un seau de 5 litres, et un robinet. Comment obtenir exactement 4 litres ?","Remplis le 5 L, verse dans le 3 L (il reste 2 L). Vide le 3 L, verses-y les 2 L. Remplis le 5 L et complète le 3 L (1 L). Il reste 4 L dans le 5 L."],
+["Casse-tête","Tu as deux cordes qui brûlent chacune en 1 heure, mais de façon irrégulière. Comment mesurer exactement 45 minutes ?","Allume la 1re corde aux deux bouts et la 2e à un seul bout. Quand la 1re a fini (30 min), allume l'autre bout de la 2e : elle finit 15 min plus tard."],
+["Casse-tête","Tu as 8 billes identiques, dont une un peu plus lourde, et une balance à plateaux. Comment trouver la lourde en seulement 2 pesées ?","Pèse 3 contre 3. Si c'est égal, pèse les 2 restantes. Sinon, prends les 3 du côté lourd et pèse-en 1 contre 1 : si c'est égal, c'est la troisième."],
+["Casse-tête","Deux portes, deux gardiens. L'une mène à la sortie. Un gardien ment toujours, l'autre dit toujours la vérité, et tu ne sais pas qui est qui. Une seule question. Laquelle ?","Demande à l'un : « Quelle porte l'autre gardien m'indiquerait-il ? » Puis prends l'autre porte. La réponse est toujours fausse."],
+["Casse-tête","Avec 6 allumettes, forme 4 triangles égaux, sans casser d'allumette.","Pense en 3D : une pyramide à base triangulaire (un tétraèdre). 3 allumettes pour la base, 3 qui se rejoignent au sommet."],
+["Casse-tête","Un homme doit traverser un désert en 6 jours, mais chacun ne peut porter que 4 jours de nourriture. Combien de porteurs au minimum doit-il emmener ?","Deux. Au jour 1, le premier porteur donne 1 jour de vivres à chacun et rentre. Au jour 2, le second fait pareil et rentre. L'homme repart avec 4 jours de vivres."],
+["Comble","Quel est le comble pour un électricien ?","Ne pas être au courant."],
+["Comble","Quel est le comble pour un boulanger ?","Être dans le pétrin."],
+["Comble","Quel est le comble pour un cordonnier ?","Être mal chaussé."],
+["Comble","Quel est le comble pour un jardinier ?","Se prendre un râteau."],
+["Comble","Quel est le comble pour un cuisinier ?","Tomber dans les pommes."],
+["Comble","Quel est le comble pour un astronaute ?","Être dans la lune."],
+["Comble","Quel est le comble pour un coiffeur ?","Friser le ridicule."],
+["Comble","Quel est le comble pour un professeur de musique ?","Ne pas avoir la note."],
+["Blague","Qu'est-ce qui est vert, qui monte et qui descend ?","Un petit pois dans un ascenseur."],
+["Blague","Que dit un zéro à un huit ?","« Tiens, jolie ceinture ! »"],
+["Blague","Si tu as 6 oranges dans une main et 7 pommes dans l'autre, qu'est-ce que tu as ?","De très grandes mains."],
+["Blague","Pourquoi les plongeurs plongent-ils toujours en arrière ?","Parce que sinon, ils tombent dans le bateau."]
+];
+
+const VF=[
+["Une pieuvre a trois cœurs.",true,"Deux pompent le sang vers les branchies, le troisième vers le reste du corps."],
+["La Grande Muraille de Chine est visible à l'œil nu depuis la Lune.",false,"Elle est très longue mais trop étroite. Depuis la Lune, on ne distingue aucune construction humaine."],
+["La tour Eiffel peut grandir de plus de 10 cm en été.",true,"Le métal se dilate à la chaleur : jusqu'à environ 15 cm."],
+["Les autruches enfouissent leur tête dans le sable quand elles ont peur.",false,"C'est un mythe. Elles baissent la tête pour retourner leurs œufs ou se faire discrètes."],
+["Un éclair ne frappe jamais deux fois au même endroit.",false,"L'Empire State Building est frappé plus de 20 fois par an."],
+["Botaniquement, la banane est une baie, mais pas la fraise.",true,"La fraise est un « faux fruit » : les vrais fruits sont les petits grains à sa surface."],
+["Les poissons rouges ont une mémoire de 3 secondes.",false,"Ils retiennent des informations pendant des mois."],
+["Le miel peut se conserver des milliers d'années.",true,"On a trouvé du miel encore comestible dans des tombes égyptiennes."],
+["Napoléon était particulièrement petit pour son époque.",false,"Il mesurait environ 1,69 m, un peu plus que la moyenne des Français de son temps."],
+["Les chauves-souris sont aveugles.",false,"Elles voient, et en plus elles s'orientent avec les ultrasons."],
+["Il y a plus d'arbres sur Terre que d'étoiles dans notre galaxie.",true,"Environ 3 000 milliards d'arbres, contre quelques centaines de milliards d'étoiles."],
+["Sur Vénus, un jour dure plus longtemps qu'une année.",true,"Vénus tourne sur elle-même en 243 jours terrestres et autour du Soleil en 225."],
+["Les humains n'utilisent que 10 % de leur cerveau.",false,"L'imagerie montre que toutes les zones du cerveau servent."],
+["Le koala est un ours.",false,"C'est un marsupial, comme le kangourou."],
+["La girafe a autant de vertèbres dans le cou que l'humain.",true,"Sept, mais chacune peut mesurer plus de 25 cm."],
+["Le diamant est fait de carbone.",true,"Comme la mine de crayon, mais organisé autrement."],
+["L'Everest est la plus haute montagne du système solaire.",false,"Olympus Mons, sur Mars, culmine à environ 22 km, presque trois fois l'Everest."],
+["Les pingouins vivent en Antarctique.",false,"Ce sont les manchots. Les pingouins vivent dans l'hémisphère Nord."],
+["Un bébé a plus d'os qu'un adulte.",true,"Environ 300 à la naissance, qui fusionnent pour arriver à 206."],
+["Le chameau stocke de l'eau dans sa bosse.",false,"Sa bosse contient de la graisse, une réserve d'énergie."],
+["Les flamants roses naissent gris et deviennent roses grâce à leur nourriture.",true,"Les pigments des crevettes et des algues qu'ils mangent les colorent."],
+["Le son va plus vite dans l'eau que dans l'air.",true,"Environ 1 500 m/s dans l'eau, contre 340 m/s dans l'air."],
+["La Joconde n'a pas de sourcils visibles.",true,"Ils ont peut-être disparu avec le temps ou les restaurations."],
+["Les dauphins dorment avec un œil ouvert.",true,"Une moitié de leur cerveau dort pendant que l'autre veille."],
+["Le cerveau ne ressent pas la douleur.",true,"Il n'a pas de récepteurs de la douleur. Les maux de tête viennent des tissus autour."],
+["L'Australie est plus large que la Lune.",true,"Environ 4 000 km d'est en ouest, contre 3 474 km de diamètre pour la Lune."],
+["Les ongles des mains poussent plus vite que ceux des pieds.",true,"Environ deux à trois fois plus vite."],
+["Le rouge rend les taureaux furieux.",false,"Les taureaux voient mal le rouge. C'est le mouvement de la cape qui les excite."],
+["La tomate est un fruit.",true,"Botaniquement oui : elle contient les graines de la plante."],
+["La Lune s'éloigne un peu de la Terre chaque année.",true,"Environ 3,8 cm par an."],
+["Les requins existaient avant les arbres.",true,"Les requins ont environ 450 millions d'années, les arbres environ 380."],
+["Le plus grand désert du monde est le Sahara.",false,"C'est l'Antarctique : un désert se définit par le peu de précipitations, pas par la chaleur."],
+["Le Sahara a toujours été un désert.",false,"Il y a 6 000 à 10 000 ans, il était vert, avec des lacs et des girafes."],
+["Les cheveux continuent de pousser après la mort.",false,"C'est la peau qui se rétracte et donne cette impression."],
+["Paris est plus au nord que Montréal.",true,"Paris est vers 48,9° de latitude nord, Montréal vers 45,5°."],
+["Le Japon compte plus de 6 000 îles.",true,"Plus de 14 000 selon le dernier recensement officiel."],
+["Le cœur humain bat environ 100 000 fois par jour.",true,"Soit à peu près 70 battements par minute."],
+["Le verre est un liquide qui coule très lentement.",false,"C'est un solide. Les vitres anciennes plus épaisses en bas viennent de leur fabrication."],
+["Les crocodiles ne peuvent pas tirer la langue.",true,"Leur langue est attachée au plancher de la bouche."],
+["La muraille de Chine a été construite en une seule fois.",false,"Elle a été bâtie et reconstruite sur près de 2 000 ans."],
+["Les abeilles peuvent reconnaître des visages humains.",true,"Des expériences ont montré qu'elles mémorisent des visages."],
+["Un escargot peut avoir plus de 10 000 dents.",true,"Elles sont minuscules, alignées sur une sorte de langue râpeuse."],
+["L'eau de mer gèle à 0 °C.",false,"Le sel abaisse son point de congélation vers −2 °C."],
+["Le Mont-Saint-Michel est en Bretagne.",false,"Il est en Normandie, juste à la frontière bretonne."],
+["Les vaches ont de meilleures amies.",true,"Des études montrent qu'elles sont moins stressées avec leur compagne préférée."]
+];
+
+const QUIZ=[
+["Quelle est la capitale de l'Australie ?",["Canberra","Sydney","Melbourne","Perth"]],
+["Combien d'os compte le squelette d'un adulte ?",["206","186","226","256"]],
+["Quelle planète est la plus proche du Soleil ?",["Mercure","Vénus","Mars","Terre"]],
+["Qui a peint « La Liberté guidant le peuple » ?",["Eugène Delacroix","Gustave Courbet","Édouard Manet","Jacques-Louis David"]],
+["En quelle année l'Homme a-t-il marché sur la Lune pour la première fois ?",["1969","1965","1972","1959"]],
+["Quel est le plus long fleuve de France ?",["La Loire","La Seine","Le Rhône","La Garonne"]],
+["Quel est le symbole chimique de l'or ?",["Au","Ag","Or","Go"]],
+["Qui a écrit « Les Misérables » ?",["Victor Hugo","Émile Zola","Honoré de Balzac","Alexandre Dumas"]],
+["Combien de côtés a un hexagone ?",["6","5","7","8"]],
+["Quel pays a remporté la Coupe du monde de football 2018 ?",["France","Croatie","Belgique","Brésil"]],
+["Quel est le plus grand océan du monde ?",["Pacifique","Atlantique","Indien","Arctique"]],
+["Quel est l'animal terrestre le plus rapide ?",["Guépard","Lion","Antilope","Lévrier"]],
+["Quelle langue parle-t-on principalement au Brésil ?",["Portugais","Espagnol","Brésilien","Italien"]],
+["Combien y a-t-il de minutes dans une journée ?",["1 440","1 240","1 340","1 640"]],
+["Quelle est la monnaie du Japon ?",["Yen","Won","Yuan","Ringgit"]],
+["Quel organe produit la bile ?",["Le foie","Le pancréas","La rate","L'estomac"]],
+["Combien de temps met la lumière du Soleil pour atteindre la Terre ?",["Environ 8 minutes","Environ 8 secondes","Environ 1 heure","Environ 1 jour"]],
+["Quel est le plus petit pays du monde ?",["Le Vatican","Monaco","Malte","Saint-Marin"]],
+["Qui a écrit « Le Petit Prince » ?",["Antoine de Saint-Exupéry","Albert Camus","Jules Verne","Marcel Pagnol"]],
+["Combien de cordes a une guitare classique ?",["6","4","5","7"]],
+["Quel gaz les plantes absorbent-elles pour la photosynthèse ?",["Le dioxyde de carbone","L'oxygène","L'azote","L'hélium"]],
+["Quelle est la capitale du Canada ?",["Ottawa","Toronto","Montréal","Vancouver"]],
+["Combien de départements compte la France métropolitaine ?",["96","101","95","100"]],
+["Dans quelle ville se trouve la Sagrada Família ?",["Barcelone","Madrid","Séville","Valence"]],
+["Quel gaz est le plus abondant dans l'air ?",["L'azote","L'oxygène","Le dioxyde de carbone","L'argon"]],
+["Quel peintre s'est coupé une partie de l'oreille ?",["Vincent van Gogh","Pablo Picasso","Claude Monet","Paul Gauguin"]],
+["Combien de cases compte un échiquier ?",["64","81","49","100"]],
+["Qui a composé « La Flûte enchantée » ?",["Mozart","Beethoven","Bach","Vivaldi"]],
+["Quel est le plus grand désert chaud du monde ?",["Le Sahara","Le Kalahari","Le désert de Gobi","Le désert d'Atacama"]],
+["En quelle année le mur de Berlin est-il tombé ?",["1989","1991","1985","1979"]],
+["Combien de pattes a une araignée ?",["8","6","10","12"]],
+["Quelle est la capitale de l'Islande ?",["Reykjavik","Oslo","Helsinki","Copenhague"]],
+["Quel sport pratique Teddy Riner ?",["Judo","Lutte","Boxe","Karaté"]],
+["Combien d'étoiles figurent sur le drapeau européen ?",["12","15","27","10"]],
+["Quel est le plus haut sommet des Alpes ?",["Le mont Blanc","Le Cervin","La Barre des Écrins","Le mont Rose"]],
+["Quel instrument a généralement 88 touches ?",["Le piano","L'orgue","L'accordéon","Le clavecin"]],
+["Quelle mer borde Marseille ?",["La Méditerranée","La mer Noire","La Manche","La mer du Nord"]],
+["Qui a peint la Joconde ?",["Léonard de Vinci","Michel-Ange","Raphaël","Botticelli"]],
+["Quel est l'os le plus long du corps humain ?",["Le fémur","Le tibia","L'humérus","Le péroné"]],
+["Quelle est la plus grande planète du système solaire ?",["Jupiter","Saturne","Neptune","Uranus"]],
+["Dans quel pays se trouve le Machu Picchu ?",["Pérou","Mexique","Bolivie","Chili"]],
+["Combien de joueurs compte une équipe de rugby à XV sur le terrain ?",["15","13","11","12"]],
+["Quel est le plus long fleuve d'Europe ?",["La Volga","Le Danube","Le Rhin","La Loire"]],
+["Qui a écrit « Les Fables » avec « Le Corbeau et le Renard » ?",["Jean de La Fontaine","Molière","Charles Perrault","Racine"]],
+["Quel pays a la forme d'une botte ?",["L'Italie","La Grèce","Le Portugal","La Croatie"]],
+["Quelle est la capitale de l'Espagne ?",["Madrid","Barcelone","Séville","Lisbonne"]],
+["Quel est le métal liquide à température ambiante ?",["Le mercure","Le plomb","L'étain","L'aluminium"]],
+["Quel est le plus grand mammifère du monde ?",["La baleine bleue","L'éléphant d'Afrique","Le cachalot","La girafe"]],
+["Qui a inventé le vaccin contre la rage ?",["Louis Pasteur","Marie Curie","Robert Koch","Claude Bernard"]]
+];
+const WORDS="MAISON JARDIN SOLEIL VOYAGE MUSIQUE CHOCOLAT MONTAGNE RIVIERE FROMAGE BATEAU CUISINE LUMIERE ORANGE CAMION PLANETE TOMATE FENETRE GUITARE PAPILLON CHATEAU DRAGON ETOILE NUAGE FORET BALADE VICTOIRE COURAGE LIBERTE SOURIRE ENERGIE PISCINE TENNIS CINEMA THEATRE LIVRE CRAYON POMME CERISE BANANE CITRON FRAISE ABRICOT CAROTTE TIGRE GIRAFE ZEBRE DAUPHIN BALEINE REQUIN HIBOU RENARD LAPIN CHEVAL HORIZON BOUSSOLE PHARE SABLE VAGUE OCEAN VOLCAN DESERT GLACIER CASCADE TUNNEL SPORT CALME PATIENCE PROGRES AVENTURE BISCUIT CROISSANT TARTINE PIZZA SALADE PRINTEMPS AUTOMNE HIVER TONNERRE ORAGE CHEMIN CABANE TRESOR PIRATE FUSEE ROBOT CLAVIER ECRAN MIROIR BOUGIE PINCEAU MARTEAU JONGLEUR CIRQUE MAGICIEN DANSEUR FOOTBALL BOXEUR VELO ESCALADE PLONGEE SURFEUR KAYAK PERROQUET KANGOUROU CROCODILE ELEPHANT PANTHERE TORTUE MANCHOT ARMOIRE ESCALIER BIBLIOTHEQUE TELESCOPE BOULANGERIE MARATHON CHAMPION MEDAILLE ORCHESTRE PIANISTE ACCORDEON TROMPETTE SPAGHETTI OMELETTE CREPE GALETTE MYRTILLE PASTEQUE ANANAS NOISETTE".split(" ");
+const MEM_SYM=["★","♠","♣","♥","♦","☀","☂","♪","☘","⚓","✿","☾"];
+
+const DEFIS=[
+{id:"marche",c:"bouger",t:"Marche 30 minutes dehors",d:"Choisis un parc, un bord d'eau ou une rue que tu ne connais pas. Évite le trajet qui passe devant ton bar habituel.",p:30},
+{id:"velo",c:"bouger",t:"Un tour à vélo",d:"30 minutes de vélo ou de trottinette, sans destination précise.",p:30},
+{id:"circuit",c:"bouger",t:"Circuit sport à la maison",d:"3 tours : 15 squats, 10 pompes (sur les genoux si besoin), 30 secondes de gainage.",p:25},
+{id:"course",c:"bouger",t:"Cours 15 minutes",d:"Même très doucement. Le sport libère des endorphines qui calment l'envie.",p:30},
+{id:"photo",c:"bouger",t:"Balade photo",d:"Sors et rapporte 5 photos de détails que tu n'avais jamais remarqués dans ton quartier.",p:30},
+{id:"salle",c:"bouger",t:"Salle ou piscine",d:"Une séance complète. Le meilleur bloc de l'après-midi : 1 h à 1 h 30 loin de la tentation.",p:45},
+{id:"cuisine",c:"faire",t:"Cuisine un plat qui prend du temps",d:"Une soupe, un curry, un gâteau, des cookies. Tes mains sont occupées pendant une heure.",p:35},
+{id:"ranger",c:"faire",t:"Range une pièce à fond",d:"Une seule pièce, mais complètement : sol, placards, tout. Mets de la musique.",p:30},
+{id:"bricole",c:"faire",t:"Répare un truc qui traîne",d:"Une étagère, un vélo, un vêtement à recoudre, un meuble à remonter.",p:30},
+{id:"tri",c:"faire",t:"Prépare un sac à donner",d:"Trie tes vêtements ou tes affaires et fais un sac pour une asso ou une recyclerie.",p:25},
+{id:"tuto",c:"faire",t:"Apprends un truc nouveau",d:"30 minutes de tuto : dessin, langue, code, guitare, jonglage, recette.",p:30},
+{id:"projet",c:"faire",t:"Avance un projet perso",d:"Le projet que tu repousses depuis longtemps. 45 minutes, téléphone en mode avion.",p:35},
+{id:"appel",c:"lien",t:"Appelle quelqu'un que tu apprécies",d:"Juste pour prendre des nouvelles. Pas besoin de parler d'alcool.",p:25},
+{id:"messages",c:"lien",t:"3 messages sincères",d:"Écris à trois personnes un message gentil ou un souvenir que tu as avec elles.",p:15},
+{id:"sortie",c:"lien",t:"Propose une sortie sans alcool",d:"Un café, un ciné, une balade, un match de foot, une salle d'escalade. Pas un bar.",p:30},
+{id:"service",c:"lien",t:"Rends service",d:"À un voisin, à ta famille, à un ami : porter des courses, aider à déménager, garder un animal.",p:25},
+{id:"asso",c:"lien",t:"Cherche un club ou une asso",d:"Sport, bénévolat, musique, jeux de société : repère un créneau en semaine l'après-midi.",p:20},
+{id:"douche",c:"calme",t:"Douche fraîche de 5 minutes",d:"Ça casse l'envie physiquement et ça remet les idées en place.",p:15},
+{id:"boisson",c:"calme",t:"Prépare-toi une vraie boisson",d:"Thé glacé, sirop avec eau pétillante bien froide, café, jus pressé. Dans un beau verre.",p:15},
+{id:"sucre",c:"calme",t:"Mange quelque chose de sucré",d:"Un fruit, un carré de chocolat, une compote. Le sucre calme souvent l'envie d'alcool.",p:10},
+{id:"ecrire",c:"calme",t:"Écris ce que tu ferais de l'argent",d:"Tu économises environ 300 € par semaine. Écris ce que tu t'offres avec dans un mois.",p:20},
+{id:"sieste",c:"calme",t:"Sieste ou podcast allongé",d:"20 minutes. La fatigue amplifie l'envie, le repos la réduit.",p:15},
+{id:"film",c:"calme",t:"Un film ou deux épisodes",d:"Installe-toi loin de la cuisine, avec une boisson sans alcool et quelque chose à grignoter.",p:15},
+{id:"album",c:"calme",t:"Un album en entier",d:"Écoute un album du début à la fin en dessinant, en rangeant ou en marchant.",p:15}
+];
+const CATS={bouger:"Bouger",faire:"Faire",lien:"Voir du monde",calme:"Souffler"};
+const GAMES=[
+{id:"enigmes",s:"tete",g:"?!",t:"Énigmes",d:RIDDLES.length+" devinettes, charades et pièges de logique.",dur:"10–40 min"},
+{id:"mystere",s:"tete",g:"…?",t:"Histoires mystère",d:"Situations bizarres, casse-têtes et combles. Trouve l'explication.",dur:"10–30 min",n:1},
+{id:"code",s:"tete",g:"####",t:"Code secret",d:"Devine le code à 4 chiffres grâce aux indices.",dur:"5–10 min",n:1},
+{id:"suites",s:"tete",g:"2·4·8",t:"Suites logiques",d:"Trouve le nombre qui vient après.",dur:"5–15 min"},
+{id:"sudoku",s:"tete",g:"9",t:"Sudoku",d:"Trois niveaux, ta partie est sauvegardée.",dur:"20–60 min"},
+{id:"demineur",s:"tete",g:"✹",t:"Déminage",d:"Ouvre toutes les cases sans tomber sur une mine.",dur:"5–20 min",n:1},
+{id:"lights",s:"tete",g:"◉",t:"Interrupteurs",d:"Éteins toutes les lampes. Chaque touche bascule une croix.",dur:"5–15 min",n:1},
+{id:"taquin",s:"tete",g:"15",t:"Taquin",d:"Remets les tuiles de 1 à 15 dans l'ordre.",dur:"10–30 min"},
+{id:"vraifaux",s:"mots",g:"V/F",t:"Vrai ou faux",d:"Des faits étonnants. Démêle le vrai du faux.",dur:"5 min",n:1},
+{id:"quiz",s:"mots",g:"Q",t:"Quiz culture",d:"10 questions, 4 réponses possibles.",dur:"5 min"},
+{id:"pendu",s:"mots",g:"A_C",t:"Mot caché",d:"Trouve le mot lettre par lettre, 7 erreurs permises.",dur:"3–15 min",n:1},
+{id:"anagrammes",s:"mots",g:"AZ",t:"Mot mystère",d:"Remets les lettres dans l'ordre.",dur:"5–20 min"},
+{id:"calcul",s:"vite",g:"×÷",t:"Calcul éclair",d:"Un maximum de calculs en 60 secondes.",dur:"1 min / partie"},
+{id:"bulles",s:"vite",g:"○○",t:"Bulles",d:"Éclate un maximum de bulles en 30 secondes.",dur:"30 s / partie",n:1},
+{id:"couleurs",s:"vite",g:"▚",t:"Séquence",d:"Mémorise la suite de couleurs qui s'allonge.",dur:"3–10 min",n:1},
+{id:"memory",s:"vite",g:"◐◑",t:"Paires",d:"Retrouve les 8 paires de symboles.",dur:"3–5 min"},
+{id:"c4",s:"vite",g:"●●●●",t:"4 alignés",d:"Aligne 4 jetons avant l'ordinateur.",dur:"5 min / partie",n:1}
+];
+const GSEC={tete:"Se creuser la tête",mots:"Mots et culture",vite:"Rapide et réflexes"};
+const GOAL=150;
+
+/* ================= ÉTAT ================= */
+const KEY="apres13h.v1";
+function defaults(){return{settings:{price:7,pints:6.5,start:13,dur:4},days:{},reasons:["Retrouver mes après-midis","Mettre de côté l'argent des bières","Mieux dormir et me réveiller en forme"],cravings:[],best:{calc:0,bulles:0,couleurs:0},riddle:0,myst:0,vf:0,sudoku:null,ackSafety:false,updatedAt:0}}
+function merge(o){const d=defaults();return Object.assign(d,o,{settings:Object.assign(d.settings,o&&o.settings),best:Object.assign(d.best,o&&o.best)})}
+let S=(()=>{try{const r=localStorage.getItem(KEY);if(r)return merge(JSON.parse(r))}catch(e){}return defaults()})();
+let remoteRef=null,remoteTimer=null,syncState="local";
+function save(){S.updatedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(remoteRef){clearTimeout(remoteTimer);remoteTimer=setTimeout(pushRemote,1200)}}
+async function pushRemote(){if(!remoteRef)return;try{await remoteRef.set({json:JSON.stringify(S),updatedAt:S.updatedAt});syncState="ok"}catch(e){syncState="err"}}
+async function initRemote(){
+  if(!window.claude||!window.claude.use)return;
+  try{
+    const [db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+    if(!db||!user)return;
+    const id=await user.id(); if(!id)return;
+    remoteRef=db.doc("data/users/"+id+"/state");
+    const snap=await remoteRef.get();
+    const d=snap.exists?snap.data():null;
+    let remote=null; try{remote=d&&d.json?JSON.parse(d.json):null}catch(e){}
+    if(remote&&(remote.updatedAt||0)>(S.updatedAt||0)){S=merge(remote);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if($("#sheet").hidden)render()}
+    else await pushRemote();
+    syncState="ok";
+  }catch(e){syncState="err"}
+}
+
+/* ================= OUTILS ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad2=n=>String(n).padStart(2,"0");
+const RM=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function dkey(d){d=d||new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())}
+function today(){const k=dkey();if(!S.days[k])S.days[k]={status:null,pts:0,done:[]};return S.days[k]}
+function hm(min){return pad2(Math.floor(min/60)%24)+":"+pad2(min%60)}
+function dur(min){min=Math.max(0,Math.round(min));const h=Math.floor(min/60),m=min%60;return h?h+" h "+pad2(m):m+" min"}
+function rnd(n){return Math.floor(Math.random()*n)}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function seeded(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+function seededShuffle(n,seed){const r=seeded(seed),a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function norm(s){return String(s).toLowerCase().replace(/œ/g,"oe").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’'`]/g," ").replace(/[^a-z0-9,.\- ]/g," ").replace(/\b(le|la|les|l|un|une|des|du|de|d|c est|c|est|son|sa|ses|mon|ma|ton|ta)\b/g," ").replace(/\s+/g," ").trim()}
+function eur(n){return Math.round(n).toLocaleString("fr-FR")+" €"}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+let toastT;function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.remove("on");void t.offsetWidth;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
+function bumpEl(el){if(!el)return;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}
+function addPts(n,label){const d=today();const before=d.pts;d.pts+=n;save();toast("+"+n+" pts · "+label);
+  if(before<GOAL&&d.pts>=GOAL){setTimeout(()=>{toast("Objectif du jour atteint. Bravo !");confetti(160)},2300)}
+  const sp=$("#sheet-pts");if(sp){sp.textContent=d.pts+" pts";bumpEl(sp)}if(tab==="home"&&$("#sheet").hidden)renderHome()}
+function nowMin(){const n=new Date();return n.getHours()*60+n.getMinutes()}
+
+/* confettis */
+const fx=$("#fx"),fctx=fx.getContext("2d");let parts=[],fxRun=false;
+function confetti(n,ox,oy){if(RM)return;const W=fx.width=innerWidth*devicePixelRatio,H=fx.height=innerHeight*devicePixelRatio;
+  const cols=[css("--accent"),css("--spark"),css("--p3"),css("--p4"),css("--ok")];
+  const x0=(ox??innerWidth/2)*devicePixelRatio,y0=(oy??innerHeight*.35)*devicePixelRatio;
+  for(let i=0;i<(n||90);i++){const a=Math.random()*Math.PI*2,v=(4+Math.random()*9)*devicePixelRatio;parts.push({x:x0,y:y0,vx:Math.cos(a)*v,vy:Math.sin(a)*v-6*devicePixelRatio,r:Math.random()*6,vr:(Math.random()-.5)*.4,s:(5+Math.random()*6)*devicePixelRatio,c:cols[i%cols.length],l:1})}
+  if(!fxRun){fxRun=true;requestAnimationFrame(fxTick)}}
+function fxTick(){fctx.clearRect(0,0,fx.width,fx.height);parts=parts.filter(p=>p.l>0&&p.y<fx.height+40);
+  for(const p of parts){p.vy+=.35*devicePixelRatio;p.vx*=.985;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.l-=.008;fctx.save();fctx.globalAlpha=Math.max(0,Math.min(1,p.l*1.5));fctx.translate(p.x,p.y);fctx.rotate(p.r);fctx.fillStyle=p.c;fctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);fctx.restore()}
+  if(parts.length)requestAnimationFrame(fxTick);else{fxRun=false;fctx.clearRect(0,0,fx.width,fx.height)}}
+
+/* écran de victoire */
+function winScreen(el,{medal,title,text,again,onAgain}){markBlk();el.innerHTML=`<div class="win"><div class="medal">${esc(medal)}</div><h2>${esc(title)}</h2><p class="muted">${esc(text||"")}</p><button class="btn" id="wagain">${esc(again||"Rejouer")}</button><button class="btn ghost sm" id="wother">Autre jeu</button></div>`;
+  $("#wagain").onclick=onAgain;$("#wother").onclick=()=>{closeSheet();setTab("jeux")};confetti(110)}
+
+/* ================= STATS ================= */
+function stats(){
+  const keys=Object.keys(S.days);
+  const sober=keys.filter(k=>S.days[k].status==="sober").length;
+  let streak=0;const d=new Date();
+  if(!S.days[dkey(d)]||S.days[dkey(d)].status!=="sober")d.setDate(d.getDate()-1);
+  while(S.days[dkey(d)]&&S.days[dkey(d)].status==="sober"){streak++;d.setDate(d.getDate()-1)}
+  const pints=sober*S.settings.pints;
+  return{sober,streak,money:pints*S.settings.price,pints,kcal:pints*250}
+}
+
+/* ================= PROGRAMME ================= */
+function program(){
+  const st=S.settings.start*60,n=Math.max(2,Math.round(S.settings.dur*2));
+  const k=dkey(),seed=Number(k.replace(/-/g,""));const r=seeded(seed);
+  const pick=a=>a[Math.floor(r()*a.length)];
+  const by=c=>DEFIS.filter(x=>x.c===c);
+  const slots=["vague","bouger","jeu","faire","esprit","lien","jeu","calme"];
+  const used=new Set();const out=[];
+  for(let i=0;i<n;i++){
+    const s=slots[i%slots.length],t=st+i*30;let b;
+    if(s==="vague")b={id:"vague"+i,kind:"vague",tag:"Démarrage",t:"Surfe la première vague",d:"3 minutes de respiration guidée, un grand verre d'eau fraîche et un vrai repas. La faim amplifie l'envie."};
+    else if(s==="jeu"||s==="esprit"){
+      const pool=s==="esprit"?["enigmes","mystere","quiz","vraifaux","anagrammes","suites","code","pendu"]:["sudoku","memory","taquin","calcul","demineur","lights","c4","couleurs","bulles"];
+      let g,tries=0;do{g=pick(pool);tries++}while(used.has(g)&&tries<30);used.add(g);
+      const G=GAMES.find(x=>x.id===g);b={id:"g:"+g,kind:"game",game:g,tag:s==="esprit"?"Cerveau":"Jeu",t:G.t,d:G.d};
+    }else{let x,tries=0;const pool=by(s);do{x=pick(pool);tries++}while(used.has(x.id)&&tries<30);used.add(x.id);b={id:"d:"+x.id,kind:"defi",defi:x,tag:CATS[s],t:x.t,d:x.d}}
+    b.time=t;out.push(b);
+  }
+  return out;
+}
+
+/* ================= VUES ================= */
+let tab="home";const TABS=["home","jeux","defis","moi"];
+function setTab(t){tab=t;document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===t?"true":"false"));
+  $("#ind").style.transform="translateX("+(TABS.indexOf(t)*100)+"%)";
+  TABS.forEach(v=>$("#v-"+v).hidden=v!==t);render(true);window.scrollTo(0,0)}
+function render(animate){const el=$("#v-"+tab);({home:renderHome,jeux:renderJeux,defis:renderDefis,moi:renderMoi})[tab]();
+  if(animate&&!RM){[...el.children].forEach((c,i)=>c.style.setProperty("--i",Math.min(i,10)));el.classList.remove("anim");void el.offsetWidth;el.classList.add("anim");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("anim"),1400);countUp(el)}}
+function countUp(root){root.querySelectorAll("[data-count]").forEach(n=>{const to=+n.dataset.count,fmt=n.dataset.fmt;if(!to)return;const t0=performance.now();
+  const f=now=>{const k=Math.min(1,(now-t0)/900),v=to*(1-Math.pow(1-k,3));n.textContent=fmt==="eur"?eur(v):Math.round(v);if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)})}
+
+function renderHome(){
+  const d=today(),st=S.settings.start*60,en=st+S.settings.dur*60,m=nowMin(),s=stats();
+  const date=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  let head,sub,phase;
+  if(d.status==="sober"){phase="done";head="Journée tenue";sub="Tu n'as pas bu aujourd'hui. Profite de ta soirée, tu l'as gagnée."}
+  else if(m<st){phase="before";head="Dans "+dur(st-m);sub="La fenêtre de "+hm(st)+" commence. Mange un vrai repas avant, et prépare une bouteille d'eau fraîche."}
+  else if(m<en){phase="in";head="Encore "+dur(en-m);sub="Tiens jusqu'à "+hm(en)+". Une activité à la fois, l'envie finit toujours par redescendre."}
+  else{phase="after";head="Fenêtre passée";sub="Le plus dur est derrière toi. Dis-moi comment ça s'est passé, ce soir."}
+  const pct=Math.min(100,Math.max(0,(m-st)/(en-st)*100));
+  const hours=[];for(let h=S.settings.start;h<=S.settings.start+S.settings.dur;h++)hours.push("<span>"+pad2(h%24)+"h</span>");
+  const reason=S.reasons.length?S.reasons[(new Date().getDate()+new Date().getHours())%S.reasons.length]:null;
+  const prog=program();
+  const cur=prog.findIndex(b=>m>=b.time&&m<b.time+30);
+  $("#v-home").innerHTML=`
+  <div class="top"><div><div class="eyebrow">${esc(date)}</div><div class="brand">Après <b>13h</b></div></div><span class="pts-pill">${d.pts} pts</span></div>
+  ${!S.ackSafety?`<div class="banner"><h3>À lire une fois</h3><p class="small">Tu bois tous les jours depuis un moment. Réduire ou arrêter d'un coup peut provoquer un sevrage : tremblements, sueurs, angoisse, et parfois des convulsions. Si ça t'arrive, appelle ton médecin ou le 15. Un sevrage accompagné par un médecin est simple, gratuit et sans danger. Alcool Info Service répond tous les jours au <b class="mono">0 980 980 930</b> (gratuit, anonyme).</p><div class="row"><button class="btn sm" data-act="ack">J'ai compris</button><button class="btn sm ghost" data-act="goaide">Voir l'aide</button></div></div>`:""}
+  <div class="card window">
+    <div class="eyebrow">Fenêtre ${hm(st)} → ${hm(en)}</div>
+    <div class="big">${head}</div>
+    <p class="muted">${sub}</p>
+    <div class="gauge" aria-hidden="true"><div class="track"><div class="fill" style="width:${phase==="done"?100:pct}%"><div class="wave"></div></div></div>
+      ${phase==="in"?`<div class="now" style="left:${pct}%" data-t="${hm(m)}"></div>`:""}<div class="ticks">${hours.join("")}</div></div>
+    <div class="goal"><div class="row" style="justify-content:space-between"><span class="small"><b>Objectif du jour</b> · ${Math.min(d.pts,GOAL)} / ${GOAL} pts</span><span class="small muted">≈ 3 à 4 h d'activités</span></div><div class="bar"><i style="width:${Math.min(100,d.pts/GOAL*100)}%"></i></div></div>
+  </div>
+  <button class="sos" data-act="vague"><div><strong>J'ai envie de boire</strong><span>3 minutes pour laisser passer la vague</span></div><span class="arrow"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
+  ${reason?`<div class="stack"><div class="eyebrow">Pourquoi je tiens</div><p class="reason">${esc(reason)}</p></div>`:""}
+  <div class="stats">
+    <div class="stat"><div class="v" data-count="${s.streak}">${s.streak}</div><div class="l">jour${s.streak>1?"s":""} d'affilée</div></div>
+    <div class="stat"><div class="v" data-count="${s.sober}">${s.sober}</div><div class="l">jours sans boire</div></div>
+    <div class="stat"><div class="v" data-count="${Math.round(s.money)}" data-fmt="eur">${eur(s.money)}</div><div class="l">économisés</div></div>
+    <div class="stat"><div class="v" data-count="${Math.round(s.pints)}">${Math.round(s.pints)}</div><div class="l">pintes évitées</div></div>
+  </div>
+  <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h2>Programme du jour</h2><span class="eyebrow">${prog.filter(b=>d.done.includes(b.id)).length}/${prog.length}</span></div>
+  <p class="small muted" style="margin-bottom:6px">Un bloc toutes les 30 minutes. Le programme change chaque jour.</p>
+  <div class="prog">${prog.map((b,i)=>{const done=d.done.includes(b.id);return`<div class="blk${i===cur?" now":""}${done?" done":""}"><div class="t">${hm(b.time)}</div><div><span class="tag">${i===cur?"Maintenant · ":""}${esc(b.tag)}</span><h3>${esc(b.t)}</h3><p>${esc(b.d)}</p>${done?`<span class="chk">✓ Fait</span>`:b.kind==="game"?`<button class="btn sm soft" data-game="${b.game}" data-blk="${b.id}">Jouer</button>`:b.kind==="vague"?`<button class="btn sm soft" data-act="vague" data-blk="${b.id}">Commencer</button>`:`<button class="btn sm soft" data-blkdefi="${b.defi.id}" data-blk="${b.id}">C'est fait · +${b.defi.p}</button>`}</div></div>`}).join("")}</div></div>
+  <div class="card stack"><h2>Ce soir</h2>
+  ${d.status==="sober"?`<p>Journée sans alcool enregistrée. ${s.streak>1?"Ça fait "+s.streak+" jours d'affilée.":"Premier jour de ta série."}</p><button class="btn sm ghost" data-act="unset">Annuler</button>`
+  :d.status==="drank"?`<p>Tu as bu aujourd'hui. Ça arrive, et ça n'efface rien : tes ${s.sober} jour${s.sober>1?"s":""} sans alcool comptent toujours. Demain, on reprend à ${hm(st)}.</p><button class="btn sm ghost" data-act="unset">Annuler</button>`
+  :`<p class="muted">Quand ta journée est finie, note-la honnêtement. Personne d'autre ne voit ces chiffres.</p><div class="row"><button class="btn" data-act="sober">Je n'ai pas bu</button><button class="btn ghost" data-act="drank">J'ai bu</button></div>`}
+  </div>`;
+}
+
+function renderJeux(){
+  const d=today();
+  $("#v-jeux").innerHTML=`<div class="top"><div><div class="eyebrow">Occuper la tête</div><h1>Jeux</h1></div><span class="pts-pill">${d.pts} pts</span></div>
+  <p class="muted">${GAMES.length} jeux. Chaque partie rapporte des points pour ton objectif du jour. Enchaîne-les quand l'envie traîne.</p>
+  ${Object.entries(GSEC).map(([k,v])=>`<div class="gsec"><div class="eyebrow">${v}</div><div class="games">${GAMES.filter(g=>g.s===k).map(g=>`<button class="game" data-game="${g.id}"><span class="g">${g.g}</span>${g.n?`<span class="new">Nouveau</span>`:""}<h3>${g.t}</h3><p>${g.d}</p><span class="dur">${g.dur}</span></button>`).join("")}</div></div>`).join("")}`;
+}
+
+let defiCat="all";
+function renderDefis(){
+  const d=today();const list=DEFIS.filter(x=>defiCat==="all"||x.c===defiCat);
+  $("#v-defis").innerHTML=`<div class="top"><div><div class="eyebrow">Dans la vraie vie</div><h1>Défis</h1></div><span class="pts-pill">${d.pts} pts</span></div>
+  <p class="muted">Les jeux tiennent un moment. Ce qui tient vraiment un après-midi, c'est de sortir et d'occuper ses mains.</p>
+  <button class="btn spark block" data-act="randdefi">Tire un défi au hasard</button>
+  <div id="randout"></div>
+  <div class="chips" role="group" aria-label="Catégories"><button class="chip" data-cat="all" aria-pressed="${defiCat==="all"}">Tous</button>${Object.entries(CATS).map(([k,v])=>`<button class="chip" data-cat="${k}" aria-pressed="${defiCat===k}">${v}</button>`).join("")}</div>
+  <div class="stack" id="defilist">${list.map(x=>defiCard(x,d)).join("")}</div>`;
+}
+function defiCard(x,d){const done=d.done.includes("x:"+x.id);return`<div class="card defi${done?" done":""}"><div class="hd"><div><span class="eyebrow">${CATS[x.c]}</span><h3>${esc(x.t)}</h3></div><span class="pts">+${x.p}</span></div><p>${esc(x.d)}</p>${done?`<span class="chk">✓ Fait aujourd'hui</span>`:`<div><button class="btn sm soft" data-defi="${x.id}">C'est fait</button></div>`}</div>`}
+function doDefi(id,blk,btn){const x=DEFIS.find(y=>y.id===id);const d=today();
+  if(btn){const r=btn.getBoundingClientRect();confetti(50,r.left+r.width/2,r.top)}
+  if(d.done.includes("x:"+id)){if(blk&&!d.done.includes(blk)){d.done.push(blk);save();render()}return}
+  d.done.push("x:"+id);if(blk&&!d.done.includes(blk))d.done.push(blk);addPts(x.p,x.t);render()}
+
+let confirmReset=false;
+function renderMoi(){
+  const s=stats();const cr=S.cravings.slice(-12).reverse();
+  $("#v-moi").innerHTML=`<div class="top"><div><div class="eyebrow">Mes raisons, mes chiffres</div><h1>Moi</h1></div></div>
+  <div class="card stack"><h2>Pourquoi j'arrête</h2><p class="small muted">Écris tes vraies raisons. Elles s'affichent sur l'écran du jour, au moment où l'envie arrive.</p>
+  <div class="list">${S.reasons.map((r,i)=>`<div class="it"><span>${esc(r)}</span><button class="btn sm ghost" data-delreason="${i}">Retirer</button></div>`).join("")||`<p class="muted small">Aucune raison pour l'instant.</p>`}</div>
+  <form id="reasonform" class="row"><input class="field" id="reason-in" style="flex:1;min-width:0" placeholder="Ex. : être en forme le matin" maxlength="120"><button class="btn">Ajouter</button></form></div>
+  <div class="card stack"><h2>Bilan</h2>
+  <div class="stats"><div class="stat"><div class="v" data-count="${s.sober}">${s.sober}</div><div class="l">jours sans boire</div></div><div class="stat"><div class="v" data-count="${Math.round(s.money)}" data-fmt="eur">${eur(s.money)}</div><div class="l">économisés</div></div><div class="stat"><div class="v" data-count="${Math.round(s.pints)}">${Math.round(s.pints)}</div><div class="l">pintes évitées</div></div><div class="stat"><div class="v">${Math.round(s.kcal/1000)}k</div><div class="l">kcal en moins</div></div></div>
+  ${weekStrip()}</div>
+  <div class="card stack"><h2>Mes envies</h2><p class="small muted">Chaque fois que tu utilises « J'ai envie de boire », l'intensité avant et après est notée ici.</p>
+  <div class="list">${cr.map(c=>`<div class="it"><span class="small">${new Date(c.t).toLocaleString("fr-FR",{weekday:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</span><span class="mono small"><b>${c.b}</b> → <b>${c.a??"?"}</b> /10</span></div>`).join("")||`<p class="muted small">Rien encore. La prochaine envie, appuie sur le bouton rouge.</p>`}</div></div>
+  <div class="card stack" id="aide"><h2>Aide</h2>
+  <p class="small"><b>Alcool Info Service</b>, gratuit et anonyme, tous les jours de 8 h à 2 h :</p>
+  <div class="row"><span class="phone">0 980 980 930</span><button class="btn sm ghost" data-copy="1">Copier</button></div>
+  <p class="small">Il existe aussi un chat sur <a href="https://www.alcool-info-service.fr" target="_blank" rel="noopener" style="color:var(--accent)">alcool-info-service.fr</a>. Les <b>CSAPA</b> (centres d'addictologie) reçoivent gratuitement, sans avance de frais.</p>
+  <p class="small"><b>Sevrage :</b> si tu as des tremblements, des sueurs, des nausées, une forte angoisse ou des hallucinations quand tu ne bois pas, appelle ton médecin ou le <b>15</b>. Ton médecin traitant peut t'accompagner pour arrêter sans danger, avec des médicaments si besoin.</p></div>
+  <div class="card stack"><h2>Réglages</h2>
+  <div class="set"><label for="s-price">Prix d'une pinte (€)</label><input id="s-price" type="number" step="0.5" min="0" value="${S.settings.price}"></div>
+  <div class="set"><label for="s-pints">Pintes par jour avant</label><input id="s-pints" type="number" step="0.5" min="0" value="${S.settings.pints}"></div>
+  <div class="set"><label for="s-start">Début de la fenêtre (heure)</label><input id="s-start" type="number" min="0" max="23" value="${S.settings.start}"></div>
+  <div class="set"><label for="s-dur">Durée de la fenêtre (heures)</label><input id="s-dur" type="number" min="1" max="10" value="${S.settings.dur}"></div>
+  <p class="small muted">${syncState==="ok"?"Tes données sont sauvegardées sur ton compte et suivent tes appareils.":"Tes données restent sur ce téléphone, dans ce navigateur."}</p>
+  <p class="small muted">Pour l'avoir comme une appli : sur iPhone, Safari → Partager → « Sur l'écran d'accueil ». Sur Android, Chrome → menu ⋮ → « Ajouter à l'écran d'accueil ».</p>
+  ${confirmReset?`<div class="banner"><p class="small">Tout effacer : jours, points, envies et raisons. C'est définitif.</p><div class="row"><button class="btn sm spark" data-act="doreset">Oui, tout effacer</button><button class="btn sm ghost" data-act="noreset">Garder</button></div></div>`:`<div><button class="btn sm ghost" data-act="reset">Effacer mes données</button></div>`}
+  </div>`;
+}
+function weekStrip(){
+  const cells=[];const d=new Date();d.setDate(d.getDate()-13);
+  for(let i=0;i<14;i++){const k=dkey(d),st=S.days[k]&&S.days[k].status;
+    cells.push(`<div title="${k}"><i class="${st==="sober"?"s":st==="drank"?"d":""}" style="animation-delay:${i*30}ms"></i><span>${d.toLocaleDateString("fr-FR",{weekday:"narrow"})}</span></div>`);d.setDate(d.getDate()+1)}
+  return`<div class="eyebrow">14 derniers jours</div><div class="cal">${cells.join("")}</div><p class="small muted">Plein : sans alcool · rosé : jour où tu as bu · vide : non noté.</p>`;
+}
+
+/* ================= FEUILLE DE JEU ================= */
+let cleanup=null,curBlk=null,closeT;
+let gameTimers=[];function later(fn,ms){const id=setTimeout(fn,ms);gameTimers.push(id);return id}
+function stopTimers(){gameTimers.forEach(clearTimeout);gameTimers=[]}
+function openSheet(title){clearTimeout(closeT);stopTimers();const sh=$("#sheet");$("#sheet-title").textContent=title;$("#sheet-pts").textContent=today().pts+" pts";sh.hidden=false;sh.scrollTop=0;document.body.style.overflow="hidden";requestAnimationFrame(()=>requestAnimationFrame(()=>sh.classList.add("open")));return $("#sheet-body")}
+function closeSheet(){if(cleanup){cleanup();cleanup=null}stopTimers();const sh=$("#sheet");sh.classList.remove("open");document.body.style.overflow="";curBlk=null;closeT=setTimeout(()=>{sh.hidden=true;$("#sheet-body").innerHTML=""},RM?0:420);render()}
+function markBlk(){if(curBlk){const d=today();if(!d.done.includes(curBlk)){d.done.push(curBlk);save()}}}
+const GAMEFN={};
+function openGame(id,blk){if(cleanup){cleanup();cleanup=null}curBlk=blk||null;const G=GAMES.find(g=>g.id===id);const el=openSheet(G.t);GAMEFN[id](el)}
+
+/* ---- La vague (envie) ---- */
+function openVague(blk){curBlk=blk||null;const el=openSheet("Laisser passer la vague");let before=null;
+  const scale=()=>`<div class="scale">${[1,2,3,4,5,6,7,8,9,10].map((n,i)=>`<button data-n="${n}" style="animation-delay:${i*35}ms">${n}</button>`).join("")}</div>`;
+  const step1=()=>{el.innerHTML=`<p class="eyebrow">Étape 1 sur 3</p><h2>À combien est ton envie, là, maintenant ?</h2><p class="muted">1 = à peine, 10 = irrésistible.</p>${scale()}`;
+    el.querySelectorAll(".scale button").forEach(b=>b.onclick=()=>{before=+b.dataset.n;step2()})};
+  const step2=()=>{const CYCLE=[["Inspire",4000,1],["Bloque",4000,1],["Expire",6000,.45]];const TOTAL=180000;let t0=Date.now(),i=0,timer,tick;
+    const tips=["Une envie, c'est une vague : elle monte, atteint un pic, puis redescend. En général en 15 à 30 minutes.","Tu n'as rien à faire d'autre que la regarder passer. Pas besoin de la combattre.","Remarque où tu la sens dans ton corps : la gorge, le ventre, les mains ?","Chaque envie que tu laisses passer rend la suivante un peu plus faible.","Pense à ce que tu feras à 17 h, l'esprit clair."];
+    el.innerHTML=`<p class="eyebrow">Étape 2 sur 3 · respiration</p><div class="breath"><div class="ring"></div><div class="rip"></div><div class="rip"></div><div class="orb" id="orb"></div><div class="lbl" id="blbl">Prêt</div></div><p class="mono" style="text-align:center" id="brem">3:00</p><p class="muted" id="btip" style="text-align:center;min-height:4.5em">${tips[0]}</p><button class="btn ghost block" id="bend">J'ai fini plus tôt</button>`;
+    const orb=$("#orb"),lbl=$("#blbl");
+    const next=()=>{const [name,ms,sc]=CYCLE[i%3];lbl.textContent=name;orb.style.transitionDuration=ms+"ms";orb.style.transform="scale("+sc+")";i++;timer=later(next,ms)};
+    timer=later(next,300);
+    tick=setInterval(()=>{const left=Math.max(0,TOTAL-(Date.now()-t0));$("#brem").textContent=Math.floor(left/60000)+":"+pad2(Math.floor(left/1000)%60);const tp=$("#btip"),nt=tips[Math.floor((Date.now()-t0)/36000)%tips.length];if(tp.textContent!==nt){tp.textContent=nt;tp.classList.remove("pop");void tp.offsetWidth;tp.classList.add("pop")}if(!left)fin()},250);
+    const stop=()=>{clearTimeout(timer);clearInterval(tick)};cleanup=stop;
+    const fin=()=>{stop();cleanup=null;step3()};$("#bend").onclick=fin};
+  const step3=()=>{el.innerHTML=`<p class="eyebrow">Étape 3 sur 3</p><h2>Et maintenant, ton envie ?</h2>${scale()}`;
+    el.querySelectorAll(".scale button").forEach(b=>b.onclick=()=>{const after=+b.dataset.n;S.cravings.push({t:Date.now(),b:before,a:after});if(S.cravings.length>300)S.cravings=S.cravings.slice(-300);markBlk();addPts(20,"Vague surfée");step4(after)})};
+  const step4=(after)=>{const diff=before-after;const g=GAMES[rnd(GAMES.length)];const x=DEFIS[rnd(DEFIS.length)];if(diff>0)confetti(90);
+    el.innerHTML=`<h2 class="pop">${diff>0?"Elle est passée de "+before+" à "+after+".":diff===0?"Elle tient encore. C'est normal.":"Elle est montée. Ça arrive, elle va redescendre."}</h2>
+    <p class="muted">${diff>0?"Tu viens de prouver que l'envie redescend toute seule. Garde l'élan :":"Enchaîne tout de suite sur quelque chose d'autre. Bouger marche mieux que rester assis :"}</p>
+    <div class="card stack"><b>1. Bois un grand verre d'eau fraîche, ou pétillante avec du sirop.</b><span class="small muted">Ta main et ta bouche cherchent un verre : donne-leur-en un.</span></div>
+    <div class="card stack"><b>2. ${esc(x.t)}</b><span class="small muted">${esc(x.d)}</span><div><button class="btn sm soft" id="v-defi">C'est fait · +${x.p}</button></div></div>
+    <div class="card stack"><b>3. Ou une partie de ${esc(g.t)}</b><div><button class="btn sm" id="v-game">Jouer</button></div></div>
+    <button class="btn ghost block" id="v-again">Recommencer la respiration</button>`;
+    [...el.children].forEach((c,i)=>{c.style.animation="rise .5s var(--ease) both";c.style.animationDelay=i*70+"ms"});
+    $("#v-defi").onclick=e=>{doDefi(x.id,null,e.currentTarget);$("#v-defi").outerHTML=`<span class="chk pop">✓ Fait</span>`};
+    $("#v-game").onclick=()=>openGame(g.id);$("#v-again").onclick=step1};
+  step1()}
+
+/* ---- Énigmes ---- */
+GAMEFN.enigmes=el=>{
+  const order=seededShuffle(RIDDLES.length,1307);
+  const show=()=>{const i=order[S.riddle%order.length];const [q,ans,kind]=RIDDLES[i];let hint=false,solved=false;
+    el.innerHTML=`<div class="hud"><span>Énigme <b>${S.riddle%RIDDLES.length+1}</b> / ${RIDDLES.length}</span><span class="kind">${kind}</span></div><p class="riddle pop">${esc(q)}</p>
+    <form id="rf" class="stack"><input class="field" id="ra" autocomplete="off" placeholder="Ta réponse"><div class="row"><button class="btn">Vérifier</button><button type="button" class="btn ghost" id="rh">Indice</button><button type="button" class="btn ghost" id="rs">Réponse</button></div></form><div id="rfb"></div><button class="btn soft block" id="rn" hidden>Énigme suivante</button>`;
+    const fb=$("#rfb");
+    const done=()=>{solved=true;S.riddle++;save();$("#rn").hidden=false;$("#rn").classList.add("pop")};
+    $("#rf").onsubmit=e=>{e.preventDefault();if(solved)return;const v=" "+norm($("#ra").value)+" ";if(!v.trim())return;
+      if(ans.some(a=>{const n=norm(a);return n&&v.includes(" "+n+" ")})){fb.innerHTML=`<div class="fb ok">Bien vu : « ${esc(ans[0])} ».</div>`;markBlk();addPts(hint?3:5,"Énigme");const r=$("#ra").getBoundingClientRect();confetti(40,r.left+r.width/2,r.top);done()}
+      else{fb.innerHTML=`<div class="fb bad">Pas ça. Réessaie, ou demande un indice.</div>`;const f=$("#ra");f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake")}};
+    $("#rh").onclick=()=>{hint=true;const a=ans[0];fb.innerHTML=`<div class="fb info">Indice : ça commence par « ${esc(a[0].toUpperCase())} » et ça fait ${a.replace(/ /g,"").length} caractères.</div>`};
+    $("#rs").onclick=()=>{if(solved)return;fb.innerHTML=`<div class="fb info">La réponse : <b>${esc(ans[0])}</b>.</div>`;done()};
+    $("#rn").onclick=show;
+  };show()};
+
+/* ---- Histoires mystère ---- */
+GAMEFN.mystere=el=>{
+  const order=seededShuffle(MYST.length,4219);
+  const show=()=>{const [kind,q,a]=MYST[order[S.myst%order.length]];
+    el.innerHTML=`<div class="hud"><span>N° <b>${S.myst%MYST.length+1}</b> / ${MYST.length}</span><span class="kind">${kind}</span></div><p class="story pop">${esc(q)}</p>
+    <p class="small muted">${kind==="Histoire"||kind==="Casse-tête"?"Prends ton temps : cherche au moins 2 minutes, imagine des scénarios, note tes idées.":"Essaie de deviner avant de regarder."}</p>
+    <button class="btn block" id="mr">Voir la réponse</button><div id="mo"></div>`;
+    $("#mr").onclick=()=>{$("#mr").hidden=true;$("#mo").innerHTML=`<div class="stack"><div class="answer"><b>Réponse.</b> ${esc(a)}</div><div class="row"><button class="btn" id="my">J'avais trouvé · +8</button><button class="btn ghost" id="mn">Pas trouvé · +2</button></div></div>`;
+      const nx=(p,l,b)=>{S.myst++;save();markBlk();addPts(p,l);if(p>2){const r=b.getBoundingClientRect();confetti(50,r.left+r.width/2,r.top)}later(show,500)};
+      $("#my").onclick=e=>nx(8,"Mystère résolu",e.currentTarget);$("#mn").onclick=e=>nx(2,"Mystère",e.currentTarget)}};
+  show()};
+
+/* ---- Vrai ou faux ---- */
+GAMEFN.vraifaux=el=>{
+  const order=seededShuffle(VF.length,777);
+  const play=()=>{let i=0,good=0;
+    const show=()=>{const [q,t,ex]=VF[order[S.vf%order.length]];
+      el.innerHTML=`<div class="hud"><span>Question <b>${i+1}</b>/10</span><span>Bonnes <b>${good}</b></span></div><p class="riddle pop">${esc(q)}</p><div class="vf"><button data-v="1">Vrai</button><button data-v="0">Faux</button></div><div id="vo"></div>`;
+      el.querySelectorAll(".vf button").forEach(b=>b.onclick=()=>{const ok=(b.dataset.v==="1")===t;if(ok)good++;S.vf++;save();
+        el.querySelectorAll(".vf button").forEach(x=>{x.disabled=true;if((x.dataset.v==="1")===t)x.classList.add("right")});if(!ok)b.classList.add("wrong");
+        $("#vo").innerHTML=`<div class="fb ${ok?"ok":"bad"}">${ok?"Exact.":"Raté."} <span style="font-weight:400">${esc(ex)}</span></div><button class="btn soft block" id="vn" style="margin-top:12px">${i<9?"Suivante":"Voir le score"}</button>`;
+        $("#vn").onclick=()=>{i++;i<10?show():end()}})};
+    const end=()=>{if(good)addPts(good*3,"Vrai ou faux");winScreen(el,{medal:good+"/10",title:good>=8?"Imbattable":good>=5?"Bien joué":"Pas évident, hein ?",text:"Les affirmations changent à chaque partie.",again:"Nouvelle partie",onAgain:play})};
+    show()};play()};
+
+/* ---- Calcul éclair ---- */
+GAMEFN.calcul=el=>{let timer;
+  const intro=()=>{el.innerHTML=`<p class="muted">Résous un maximum de calculs en 60 secondes. Pas besoin de valider : la bonne réponse passe toute seule à la suivante.</p><div class="card"><div class="hud"><span>Record</span><b>${S.best.calc}</b></div></div><button class="btn block" id="cgo">Lancer la partie</button>`;$("#cgo").onclick=play};
+  const gen=lvl=>{const r=(a,b)=>a+rnd(b-a+1);const t=rnd(lvl<3?2:4);let a,b;
+    if(t===0){a=r(2,10+lvl*8);b=r(2,10+lvl*8);return[a+" + "+b,a+b]}
+    if(t===1){a=r(5,15+lvl*8);b=r(1,a);return[a+" − "+b,a-b]}
+    if(t===2){a=r(2,5+lvl);b=r(2,9+Math.min(lvl,4));return[a+" × "+b,a*b]}
+    b=r(2,9);a=b*r(2,5+lvl);return[a+" ÷ "+b,a/b]};
+  const play=()=>{let score=0,end=Date.now()+60000,cur;
+    el.innerHTML=`<div class="hud"><span>Score <b id="cs">0</b></span><span>Temps <b id="ct">60</b> s</span></div><div class="calc-q" id="cq"></div><input class="field mono" id="ci" inputmode="numeric" autocomplete="off" style="text-align:center;font-size:1.6rem" aria-label="Réponse"><button class="btn ghost block" id="cskip">Passer</button>`;
+    const nq=()=>{cur=gen(Math.floor(score/5));const q=$("#cq");q.textContent=cur[0];q.classList.remove("pop");void q.offsetWidth;q.classList.add("pop");$("#ci").value="";$("#ci").focus()};
+    $("#ci").oninput=()=>{if($("#ci").value.trim()===String(cur[1])){score++;$("#cs").textContent=score;bumpEl($("#cs"));nq()}};
+    $("#cskip").onclick=nq;nq();
+    timer=setInterval(()=>{const l=Math.max(0,Math.ceil((end-Date.now())/1000));$("#ct").textContent=l;if(!l){clearInterval(timer);over(score)}},200)};
+  const over=score=>{const rec=score>S.best.calc;if(rec)S.best.calc=score;addPts(Math.min(30,5+score),"Calcul éclair");
+    winScreen(el,{medal:String(score),title:score+" calcul"+(score>1?"s":"")+" en 60 s",text:rec?"Nouveau record !":"Record : "+S.best.calc,onAgain:play})};
+  cleanup=()=>clearInterval(timer);intro()};
+
+/* ---- Mot mystère (anagrammes) ---- */
+GAMEFN.anagrammes=el=>{let count=0,last="";
+  const next=()=>{let w;do{w=WORDS[rnd(WORDS.length)]}while(w===last||w.length>10);last=w;let letters;do{letters=shuffle(w.split(""))}while(letters.join("")===w);
+    let picked=[],hints=0;
+    const draw=()=>{el.innerHTML=`<div class="hud"><span>Mots trouvés <b>${count}</b></span><span>${w.length} lettres</span></div>
+      <div class="slots" id="as">${w.split("").map((_,i)=>`<div class="slot${picked[i]!=null?" f":""}">${picked[i]!=null?`<span>${letters[picked[i]]}</span>`:""}</div>`).join("")}</div>
+      <div class="tiles">${letters.map((l,i)=>`<button class="tile${picked.includes(i)?" used":""}" data-i="${i}" style="animation-delay:${i*30}ms">${l}</button>`).join("")}</div>
+      <div class="row" style="justify-content:center"><button class="btn ghost sm" id="aback">Effacer</button><button class="btn ghost sm" id="ahint">Indice</button><button class="btn ghost sm" id="askip">Passer</button></div><div id="afb"></div>`;
+      el.querySelectorAll(".tile").forEach(b=>{b.style.animationDelay="0ms";b.onclick=()=>{picked.push(+b.dataset.i);if(picked.length===w.length)check();else draw()}});
+      $("#aback").onclick=()=>{picked=picked.slice(0,Math.max(hints,picked.length-1));draw()};
+      $("#ahint").onclick=()=>{picked=picked.slice(0,hints);const need=w[hints];const idx=letters.findIndex((l,i)=>l===need&&!picked.includes(i));picked.push(idx);hints++;if(picked.length===w.length)check();else draw()};
+      $("#askip").onclick=()=>{$("#afb").innerHTML=`<div class="fb info">C'était <b>${w}</b>.</div>`;later(next,1300)}};
+    const check=()=>{draw();const g=picked.map(i=>letters[i]).join("");
+      if(g===w){count++;$("#afb").innerHTML=`<div class="fb ok">${w}</div>`;markBlk();addPts(Math.max(1,4-hints),"Mot mystère");const r=$("#as").getBoundingClientRect();confetti(40,r.left+r.width/2,r.top);later(next,1100)}
+      else{$("#as").classList.add("shake");later(()=>{picked=picked.slice(0,hints);draw()},450)}};
+    draw()};next()};
+
+/* ---- Mot caché (lettre par lettre) ---- */
+GAMEFN.pendu=el=>{let wins=0;
+  const play=()=>{const w=WORDS[rnd(WORDS.length)];const found=new Set(),miss=new Set();const MAX=7;
+    const draw=(last)=>{const done=w.split("").every(c=>found.has(c));const lost=miss.size>=MAX;
+      el.innerHTML=`<div class="hud"><span>Mots trouvés <b>${wins}</b></span><div class="lives" aria-label="${MAX-miss.size} essais restants">${[...Array(MAX)].map((_,i)=>`<i class="${i<miss.size?"off":""}"></i>`).join("")}</div></div>
+      <div class="slots" id="ps">${w.split("").map(c=>`<div class="slot${found.has(c)||lost?" f":""}">${found.has(c)||lost?`<span style="${lost&&!found.has(c)?"color:var(--bad)":""}">${c}</span>`:""}</div>`).join("")}</div>
+      <div class="kbd">${"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(c=>`<button data-c="${c}" class="${found.has(c)?"hit":miss.has(c)?"miss":""}" ${found.has(c)||miss.has(c)||done||lost?"disabled":""}>${c}</button>`).join("")}</div><div id="po"></div>`;
+      if(last==="miss"){$("#ps").classList.add("shake")}
+      el.querySelectorAll(".kbd button").forEach(b=>b.onclick=()=>{const c=b.dataset.c;if(w.includes(c)){found.add(c);draw("hit")}else{miss.add(c);draw("miss")}});
+      if(done){wins++;markBlk();addPts(Math.max(3,10-miss.size),"Mot caché");confetti(70);$("#po").innerHTML=`<div class="fb ok">Trouvé : ${w}</div><button class="btn block" id="pn" style="margin-top:10px">Mot suivant</button>`;$("#pn").onclick=play}
+      else if(lost){$("#po").innerHTML=`<div class="fb bad">Raté, c'était ${w}.</div><button class="btn block" id="pn" style="margin-top:10px">Nouveau mot</button>`;$("#pn").onclick=play}};
+    draw()};play()};
+
+/* ---- Quiz ---- */
+GAMEFN.quiz=el=>{
+  const play=()=>{const qs=shuffle(QUIZ).slice(0,10);let i=0,good=0;
+    const show=()=>{const [q,opts]=qs[i];const sh=shuffle(opts);
+      el.innerHTML=`<div class="hud"><span>Question <b>${i+1}</b>/10</span><span>Bonnes <b>${good}</b></span></div><p class="riddle pop">${esc(q)}</p><div class="opts">${sh.map((o,k)=>`<button class="opt" style="animation-delay:${80+k*60}ms">${esc(o)}</button>`).join("")}</div>`;
+      el.querySelectorAll(".opt").forEach((b,k)=>b.onclick=()=>{el.querySelectorAll(".opt").forEach((x,j)=>{x.disabled=true;if(sh[j]===opts[0])x.classList.add("right")});
+        if(sh[k]===opts[0])good++;else b.classList.add("wrong");later(()=>{i++;i<10?show():end()},1300)})};
+    const end=()=>{if(good)addPts(good*3,"Quiz");winScreen(el,{medal:good+"/10",title:good>=8?"Excellent":good>=5?"Pas mal du tout":"À retenter",text:"Les questions changent à chaque partie.",again:"Nouvelle partie",onAgain:play})};
+    show()};play()};
+
+/* ---- Suites logiques ---- */
+GAMEFN.suites=el=>{let count=0;
+  const gen=()=>{const r=(a,b)=>a+rnd(b-a+1);const t=rnd(9);let s=[],rule;
+    if(t===0){const a=r(1,30),d=r(2,15);for(let i=0;i<6;i++)s.push(a+i*d);rule="On ajoute "+d+" à chaque fois."}
+    else if(t===1){const a=r(1,5),q=r(2,3);for(let i=0;i<6;i++)s.push(a*q**i);rule="On multiplie par "+q+" à chaque fois."}
+    else if(t===2){const k=r(1,8);for(let i=0;i<6;i++)s.push((k+i)**2);rule="Ce sont des carrés : "+k+"², "+(k+1)+"², …"}
+    else if(t===3){let a=r(1,5),b=r(1,6);s=[a,b];while(s.length<6)s.push(s[s.length-1]+s[s.length-2]);rule="Chaque nombre est la somme des deux précédents."}
+    else if(t===4){let a=r(1,20),d=r(1,4);s=[a];for(let i=1;i<6;i++){s.push(s[i-1]+d);d++}rule="L'écart augmente de 1 à chaque fois."}
+    else if(t===5){const a=r(10,40),x=r(3,9),y=r(1,x-1);s=[a];for(let i=1;i<6;i++)s.push(s[i-1]+(i%2?x:-y));rule="On alterne +"+x+" et −"+y+"."}
+    else if(t===6){const a=r(1,6);s=[a];for(let i=1;i<6;i++)s.push(s[i-1]*2+1);rule="On double et on ajoute 1."}
+    else if(t===7){const a=r(60,120),d=r(3,9);for(let i=0;i<6;i++)s.push(a-i*d);rule="On retire "+d+" à chaque fois."}
+    else{const k=r(1,4);for(let i=0;i<6;i++){const n=k+i;s.push(n*(n+1)/2)}rule="L'écart augmente de 1 : ce sont les nombres triangulaires."}
+    return{show:s.slice(0,5),ans:s[5],rule}};
+  const next=()=>{const q=gen();let tries=0;
+    el.innerHTML=`<div class="hud"><span>Trouvées <b>${count}</b></span><span></span></div><p class="muted">Quel nombre vient ensuite ?</p><div class="seq">${q.show.map((n,i)=>`<span style="animation-delay:${i*70}ms">${n}</span>`).join("")}<span class="q" style="animation-delay:350ms">?</span></div>
+    <form id="sf" class="stack"><input class="field mono" id="si" inputmode="numeric" autocomplete="off" placeholder="Ta réponse" style="text-align:center;font-size:1.4rem"><div class="row"><button class="btn">Vérifier</button><button type="button" class="btn ghost" id="sr">Voir la solution</button></div></form><div id="sfb"></div>`;
+    $("#sf").onsubmit=e=>{e.preventDefault();const v=$("#si").value.trim();if(!v)return;
+      if(Number(v)===q.ans){count++;$("#sfb").innerHTML=`<div class="fb ok">Exact : ${q.ans}. ${esc(q.rule)}</div>`;markBlk();addPts(tries?2:4,"Suite logique");confetti(40);later(next,1800)}
+      else{tries++;$("#sfb").innerHTML=`<div class="fb bad">Non.${tries>=2?" Indice : "+esc(q.rule):" Regarde l'écart entre chaque nombre."}</div>`;const f=$("#si");f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake")}};
+    $("#sr").onclick=()=>{$("#sfb").innerHTML=`<div class="fb info">C'était <b>${q.ans}</b>. ${esc(q.rule)}</div><button class="btn soft block" id="sn" style="margin-top:10px">Suivante</button>`;$("#sn").onclick=next}};
+  next()};
+
+/* ---- Code secret ---- */
+GAMEFN.code=el=>{
+  const play=()=>{const code=shuffle([0,1,2,3,4,5,6,7,8,9]).slice(0,4).join("");const hist=[];const MAX=10;
+    const draw=(msg)=>{el.innerHTML=`<p class="muted">Le code a 4 chiffres <b>tous différents</b>. Après chaque essai : ● = bon chiffre bien placé, ○ = bon chiffre mal placé.</p>
+      <div class="hud"><span>Essai <b>${Math.min(hist.length+1,MAX)}</b> / ${MAX}</span><span></span></div>
+      <div class="hist">${hist.map(h=>`<div><span style="letter-spacing:.3em;font-weight:700">${h.g}</span><span class="pegs">${"<i class='b'></i>".repeat(h.b)}${"<i></i>".repeat(h.m)}${"<i class='e'></i>".repeat(4-h.b-h.m)}</span></div>`).join("")}</div>
+      <form id="kf" class="row"><input class="field mono" id="ki" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234" style="flex:1;min-width:0;text-align:center;font-size:1.4rem;letter-spacing:.3em"><button class="btn">Tester</button></form><div id="ko">${msg||""}</div>`;
+      $("#kf").onsubmit=e=>{e.preventDefault();const g=$("#ki").value.trim();
+        if(!/^\d{4}$/.test(g)||new Set(g).size!==4){draw(`<div class="fb bad">Entre 4 chiffres différents, par exemple 0381.</div>`);return}
+        let b=0,m=0;for(let i=0;i<4;i++){if(g[i]===code[i])b++;else if(code.includes(g[i]))m++}hist.push({g,b,m});
+        if(b===4){addPts(Math.max(10,42-hist.length*3),"Code secret");winScreen(el,{medal:hist.length+" essais",title:"Code cassé : "+code,text:hist.length<=6?"Du travail de pro.":"Essaie de descendre sous 7 essais.",onAgain:play});return}
+        if(hist.length>=MAX){draw(`<div class="fb bad">Perdu, le code était ${code}.</div><button class="btn block" id="kn" style="margin-top:10px">Nouveau code</button>`);$("#kn").onclick=play;return}
+        draw()}};
+    draw()};play()};
+
+/* ---- Sudoku ---- */
+function sdkGen(holes){const g=Array(81).fill(0);
+  const ok=(g,i,n)=>{const r=Math.floor(i/9),c=i%9,br=r-r%3,bc=c-c%3;for(let k=0;k<9;k++){if(g[r*9+k]===n||g[k*9+c]===n)return false;if(g[(br+Math.floor(k/3))*9+bc+k%3]===n)return false}return true};
+  const fill=i=>{if(i===81)return true;for(const n of shuffle([1,2,3,4,5,6,7,8,9])){if(ok(g,i,n)){g[i]=n;if(fill(i+1))return true;g[i]=0}}return false};
+  fill(0);const puz=g.slice();shuffle([...Array(81).keys()]).slice(0,holes).forEach(i=>puz[i]=0);
+  return{given:puz.map(v=>v>0),cur:puz}}
+GAMEFN.sudoku=el=>{
+  const LV={facile:[38,30],moyen:[46,45],difficile:[53,60]};
+  const menu=()=>{el.innerHTML=`<p class="muted">Remplis la grille pour que chaque ligne, chaque colonne et chaque carré de 3×3 contienne les chiffres de 1 à 9 une seule fois.</p>
+    ${S.sudoku?`<button class="btn block" id="sres">Reprendre ma partie (${esc(S.sudoku.name)})</button>`:""}
+    <div class="stack">${Object.entries(LV).map(([k,v])=>`<button class="btn ${S.sudoku?"ghost":"soft"} block" data-lv="${k}">Nouvelle grille ${k} · +${v[1]} pts</button>`).join("")}</div>`;
+    if(S.sudoku)$("#sres").onclick=()=>play();
+    el.querySelectorAll("[data-lv]").forEach(b=>b.onclick=()=>{const k=b.dataset.lv;S.sudoku=Object.assign(sdkGen(LV[k][0]),{name:k,pts:LV[k][1]});save();play()})};
+  let sel=-1;
+  const conflicts=g=>{const bad=new Set();for(let i=0;i<81;i++){if(!g[i])continue;const r=Math.floor(i/9),c=i%9;for(let j=i+1;j<81;j++){if(g[j]!==g[i])continue;const r2=Math.floor(j/9),c2=j%9;if(r===r2||c===c2||(Math.floor(r/3)===Math.floor(r2/3)&&Math.floor(c/3)===Math.floor(c2/3))){bad.add(i);bad.add(j)}}}return bad};
+  const play=(just)=>{const P=S.sudoku;const g=P.cur;const bad=conflicts(g);const left=g.filter(v=>!v).length;
+    const sr=sel>=0?Math.floor(sel/9):-1,sc=sel%9,sv=sel>=0?g[sel]:0;
+    el.innerHTML=`<div class="hud"><span>Niveau <b>${esc(P.name)}</b></span><span>Cases vides <b>${left}</b></span></div>
+    <div class="sdk" role="grid">${g.map((v,i)=>{const r=Math.floor(i/9),c=i%9;const cls=[P.given[i]?"given":"",c%3===2&&c<8?"c3":"",r%3===2&&r<8?"r3":"",i===sel?"sel":(sv&&v===sv?"same":(sel>=0&&(r===sr||c===sc||(Math.floor(r/3)===Math.floor(sr/3)&&Math.floor(c/3)===Math.floor(sc/3)))?"hl":"")),bad.has(i)&&!P.given[i]?"err":"",i===just?"just":""].join(" ");return`<button class="${cls}" data-i="${i}" aria-label="Ligne ${r+1} colonne ${c+1}">${v||""}</button>`}).join("")}</div>
+    <div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-n="${n}">${n}</button>`).join("")}<button data-n="0" aria-label="Effacer">⌫</button></div>
+    <div class="row" style="justify-content:center"><button class="btn ghost sm" id="smenu">Autre grille</button></div>`;
+    el.querySelectorAll(".sdk button").forEach(b=>b.onclick=()=>{sel=+b.dataset.i;play()});
+    el.querySelectorAll(".pad button").forEach(b=>b.onclick=()=>{if(sel<0||P.given[sel])return;g[sel]=+b.dataset.n;save();
+      if(!g.includes(0)&&conflicts(g).size===0){const p=P.pts,nm=P.name;S.sudoku=null;save();addPts(p,"Sudoku "+nm);winScreen(el,{medal:"9×9",title:"Grille terminée",text:"Bien joué. Ça, c'est du temps gagné sur l'envie.",again:"Nouvelle grille",onAgain:menu});return}
+      play(sel)});
+    $("#smenu").onclick=menu};
+  S.sudoku?play():menu()};
+
+/* ---- Déminage ---- */
+GAMEFN.demineur=el=>{
+  const LV={facile:[9,9,10,30],moyen:[9,13,20,45]};
+  const menu=()=>{el.innerHTML=`<p class="muted">Ouvre toutes les cases qui ne cachent pas de mine. Chaque chiffre indique combien de mines touchent la case (diagonales comprises). Ta première case est toujours sûre.</p>
+    <div class="stack">${Object.entries(LV).map(([k,v])=>`<button class="btn soft block" data-lv="${k}">${k[0].toUpperCase()+k.slice(1)} · ${v[0]}×${v[1]}, ${v[2]} mines · +${v[3]} pts</button>`).join("")}</div>`;
+    el.querySelectorAll("[data-lv]").forEach(b=>b.onclick=()=>play(...LV[b.dataset.lv]))};
+  const play=(W,H,M,P)=>{const N=W*H;let mines=new Set(),rev=new Array(N).fill(false),flag=new Array(N).fill(false),first=true,over=false,mode="open";
+    const nb=i=>{const r=Math.floor(i/W),c=i%W,o=[];for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const rr=r+dr,cc=c+dc;if(rr>=0&&rr<H&&cc>=0&&cc<W)o.push(rr*W+cc)}return o};
+    const cnt=i=>nb(i).filter(j=>mines.has(j)).length;
+    const open=i=>{const st=[i];while(st.length){const k=st.pop();if(rev[k]||flag[k])continue;rev[k]=true;if(cnt(k)===0)nb(k).forEach(j=>{if(!rev[j])st.push(j)})}};
+    const act=(i,asFlag)=>{if(over||rev[i])return;
+      if(asFlag||mode==="flag"){flag[i]=!flag[i];draw();return}
+      if(flag[i])return;
+      if(first){const safe=new Set([i,...nb(i)]);const pool=shuffle([...Array(N).keys()].filter(k=>!safe.has(k)));mines=new Set(pool.slice(0,M));first=false}
+      if(mines.has(i)){over=true;draw(i);$("#mo").innerHTML=`<div class="fb bad">Boum. Ça arrive aux meilleurs.</div><button class="btn block" id="mn2" style="margin-top:10px">Rejouer</button>`;$("#mn2").onclick=()=>play(W,H,M,P);return}
+      open(i);if(rev.filter(Boolean).length===N-M){over=true;addPts(P,"Déminage");winScreen(el,{medal:"✹",title:"Terrain déminé",text:"Aucune mine touchée. Sang-froid total.",onAgain:()=>play(W,H,M,P)});return}
+      draw()};
+    const draw=(boom)=>{const flags=flag.filter(Boolean).length;
+      el.innerHTML=`<div class="hud"><span>Mines <b>${M-flags}</b></span><div class="toggle" role="group"><button data-m="open" aria-pressed="${mode==="open"}">Ouvrir</button><button data-m="flag" aria-pressed="${mode==="flag"}">Drapeau</button></div></div>
+      <div class="mn" style="grid-template-columns:repeat(${W},1fr)">${[...Array(N).keys()].map(i=>{const showMine=over&&mines.has(i);const c=rev[i]?cnt(i):0;return`<button data-i="${i}" class="${rev[i]?"r n"+c:""}${flag[i]&&!rev[i]?" f":""}${showMine?" x":""}" aria-label="Case ${i+1}">${rev[i]&&c?c:flag[i]&&!rev[i]?"⚑":showMine?"✹":""}</button>`}).join("")}</div>
+      <p class="small muted" style="text-align:center">Astuce : un appui long pose un drapeau.</p><div id="mo"></div>`;
+      el.querySelectorAll(".toggle button").forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw()});
+      el.querySelectorAll(".mn button").forEach(b=>{let t,long=false;const i=+b.dataset.i;
+        b.addEventListener("pointerdown",()=>{long=false;t=later(()=>{long=true;act(i,true)},420)});
+        ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(t)));
+        b.addEventListener("contextmenu",e=>e.preventDefault());
+        b.onclick=()=>{if(long)return;act(i,false)}})};
+    draw()};
+  menu()};
+
+/* ---- Interrupteurs ---- */
+GAMEFN.lights=el=>{
+  const play=()=>{const g=new Array(25).fill(false);let moves=0;
+    const tog=i=>{const r=Math.floor(i/5),c=i%5;[[0,0],[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{const rr=r+dr,cc=c+dc;if(rr>=0&&rr<5&&cc>=0&&cc<5)g[rr*5+cc]=!g[rr*5+cc]})};
+    const presses=shuffle([...Array(25).keys()]).slice(0,6+rnd(5));presses.forEach(tog);if(!g.some(Boolean))tog(12);
+    const draw=()=>{el.innerHTML=`<p class="muted">Éteins toutes les lampes. Toucher une case inverse cette case et ses 4 voisines.</p><div class="hud"><span>Coups <b>${moves}</b></span><span>Allumées <b>${g.filter(Boolean).length}</b></span></div>
+      <div class="lo">${g.map((v,i)=>`<button class="${v?"on":""}" data-i="${i}" aria-label="Lampe ${i+1} ${v?"allumée":"éteinte"}"></button>`).join("")}</div><div class="row" style="justify-content:center"><button class="btn ghost sm" id="lnew">Nouvelle grille</button></div>`;
+      el.querySelectorAll(".lo button").forEach(b=>b.onclick=()=>{tog(+b.dataset.i);moves++;if(!g.some(Boolean)){addPts(30,"Interrupteurs");winScreen(el,{medal:"◉",title:"Tout est éteint",text:"Résolu en "+moves+" coups.",again:"Nouvelle grille",onAgain:play});return}draw()});
+      $("#lnew").onclick=play};
+    draw()};play()};
+
+/* ---- Taquin ---- */
+GAMEFN.taquin=el=>{
+  const play=()=>{let t=[...Array(15).keys()].map(i=>i+1).concat(0);let e=15,prev=-1;
+    for(let k=0;k<300;k++){const nb=[e-4,e+4,e%4?e-1:-1,e%4<3?e+1:-1].filter(x=>x>=0&&x<16&&x!==prev);const n=nb[rnd(nb.length)];t[e]=t[n];t[n]=0;prev=e;e=n}
+    let moves=0;
+    const draw=(mv)=>{el.innerHTML=`<div class="hud"><span>Coups <b>${moves}</b></span><span>Touche une tuile à côté du vide</span></div><div class="tq">${t.map((v,i)=>`<button class="${v===0?"empty":v===i+1?"ok":""}${i===mv?" moved":""}" data-i="${i}" ${v===0?'tabindex="-1" aria-hidden="true"':""}>${v||""}</button>`).join("")}</div><div class="row" style="justify-content:center"><button class="btn ghost sm" id="tnew">Mélanger à nouveau</button></div>`;
+      el.querySelectorAll(".tq button").forEach(b=>b.onclick=()=>{const i=+b.dataset.i,z=t.indexOf(0);const adj=(Math.abs(i-z)===4)||(Math.abs(i-z)===1&&Math.floor(i/4)===Math.floor(z/4));if(!adj)return;t[z]=t[i];t[i]=0;moves++;
+        if(t.slice(0,15).every((v,k)=>v===k+1)){addPts(40,"Taquin");winScreen(el,{medal:"15",title:"Résolu en "+moves+" coups",text:"Pas facile, celui-là. Respect.",again:"Nouvelle partie",onAgain:play});return}
+        draw(z)});
+      $("#tnew").onclick=play};draw()};play()};
+
+/* ---- Paires ---- */
+GAMEFN.memory=el=>{
+  const play=()=>{const syms=shuffle(MEM_SYM).slice(0,8);const deck=shuffle([...syms,...syms]);const st=deck.map(()=>0);let open=[],moves=0,lock=false,found=0;
+    el.innerHTML=`<div class="hud"><span>Coups <b id="mm">0</b></span><span>Paires <b id="mf">0</b>/8</span></div><div class="mem">${deck.map((s,i)=>`<button data-i="${i}" aria-label="Carte ${i+1}" class="pop" style="animation-delay:${i*25}ms"><span>${s}</span></button>`).join("")}</div>`;
+    const btns=[...el.querySelectorAll(".mem button")];
+    const paint=()=>{btns.forEach((b,i)=>{b.classList.toggle("up",st[i]===1);b.classList.toggle("ok",st[i]===2)});$("#mm").textContent=moves;$("#mf").textContent=found};
+    btns.forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(lock||st[i])return;st[i]=1;open.push(i);
+      if(open.length===2){moves++;const [a,c]=open;if(deck[a]===deck[c]){st[a]=st[c]=2;found++;open=[];if(found===8){paint();addPts(20,"Paires");later(()=>winScreen(el,{medal:moves+"",title:"Toutes les paires en "+moves+" coups",text:moves<=12?"Mémoire d'éléphant.":"Essaie de passer sous les 14 coups.",onAgain:play}),600);return}}
+        else{lock=true;later(()=>{st[a]=st[c]=0;open=[];lock=false;paint()},850)}}
+      paint()})};play()};
+
+/* ---- Séquence de couleurs ---- */
+let actx=null;function beep(i){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=[330,392,494,587][i];o.type="sine";g.gain.setValueAtTime(.0001,actx.currentTime);g.gain.exponentialRampToValueAtTime(.18,actx.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.35);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+.4)}catch(e){}}
+GAMEFN.couleurs=el=>{let timers=[];const clear=()=>{timers.forEach(clearTimeout);timers=[]};cleanup=clear;
+  const intro=()=>{el.innerHTML=`<p class="muted">Regarde la suite de couleurs, puis reproduis-la. Elle s'allonge d'une couleur à chaque tour.</p><div class="card"><div class="hud"><span>Record</span><b>${S.best.couleurs}</b></div></div><button class="btn block" id="sgo">Commencer</button>`;$("#sgo").onclick=play};
+  const play=()=>{const seq=[];let pos=0,input=false;
+    el.innerHTML=`<div class="hud"><span>Niveau <b id="sl">1</b></span><span id="ss">Regarde…</span></div><div class="simon">${[0,1,2,3].map(i=>`<button data-i="${i}" aria-label="Couleur ${i+1}"></button>`).join("")}</div>`;
+    const pads=[...el.querySelectorAll(".simon button")];
+    const flash=(i,ms)=>{pads[i].classList.add("lit");beep(i);timers.push(later(()=>pads[i].classList.remove("lit"),ms))};
+    const round=()=>{seq.push(rnd(4));pos=0;input=false;$("#sl").textContent=seq.length;$("#ss").textContent="Regarde…";const sp=Math.max(280,620-seq.length*25);
+      seq.forEach((c,k)=>timers.push(later(()=>flash(c,sp*.7),700+k*sp)));timers.push(later(()=>{input=true;$("#ss").textContent="À toi"},700+seq.length*sp))};
+    pads.forEach(p=>p.onclick=()=>{if(!input)return;const i=+p.dataset.i;flash(i,220);
+      if(i!==seq[pos]){input=false;const lvl=seq.length-1;const rec=lvl>S.best.couleurs;if(rec)S.best.couleurs=lvl;if(lvl>0)addPts(Math.min(30,4+lvl*2),"Séquence");else save();
+        timers.push(later(()=>winScreen(el,{medal:String(lvl),title:lvl+" couleur"+(lvl>1?"s":"")+" retenue"+(lvl>1?"s":""),text:rec?"Nouveau record !":"Record : "+S.best.couleurs,onAgain:play}),500));return}
+      pos++;if(pos===seq.length){input=false;$("#ss").textContent="Bravo";bumpEl($("#sl"));timers.push(later(round,700))}});
+    round()};
+  intro()};
+
+/* ---- Bulles ---- */
+GAMEFN.bulles=el=>{let timers=[],iv=null;const clear=()=>{timers.forEach(clearTimeout);timers=[];clearInterval(iv)};cleanup=clear;
+  const intro=()=>{el.innerHTML=`<p class="muted">Éclate un maximum de bulles en 30 secondes. Les petites rapportent 2 points.</p><div class="card"><div class="hud"><span>Record</span><b>${S.best.bulles}</b></div></div><button class="btn block" id="bgo">Commencer</button>`;$("#bgo").onclick=play};
+  const play=()=>{clear();let score=0;const end=Date.now()+30000;const cols=["--p1","--p2","--p3","--p4"];
+    el.innerHTML=`<div class="hud"><span>Score <b id="bs">0</b></span><span>Temps <b id="bt">30</b> s</span></div><div class="arena" id="ar"></div>`;
+    const ar=$("#ar");
+    const spawn=()=>{if(Date.now()>=end)return;const W=ar.clientWidth,H=ar.clientHeight;const small=Math.random()<.25;const s=small?36:52+rnd(26);const life=Math.max(900,1900-(30000-(end-Date.now()))/30);
+      const b=document.createElement("button");b.className="bub";b.setAttribute("aria-label","Bulle");b.style.cssText=`width:${s}px;height:${s}px;left:${rnd(Math.max(1,W-s))}px;top:${rnd(Math.max(1,H-s))}px;--c:var(${cols[rnd(4)]});--life:${life}ms`;
+      b.onpointerdown=e=>{e.preventDefault();if(b.classList.contains("gone"))return;b.classList.add("gone");score+=small?2:1;$("#bs").textContent=score;bumpEl($("#bs"));timers.push(later(()=>b.remove(),260))};
+      ar.appendChild(b);timers.push(later(()=>b.remove(),life+50));
+      timers.push(later(spawn,Math.max(260,620-(30000-(end-Date.now()))/60)))};
+    spawn();
+    iv=setInterval(()=>{const l=Math.max(0,Math.ceil((end-Date.now())/1000));$("#bt").textContent=l;if(!l){clear();const rec=score>S.best.bulles;if(rec)S.best.bulles=score;addPts(Math.min(20,3+Math.floor(score/3)),"Bulles");winScreen(el,{medal:String(score),title:score+" points",text:rec?"Nouveau record !":"Record : "+S.best.bulles,onAgain:play})}},200)};
+  intro()};
+
+/* ---- 4 alignés ---- */
+GAMEFN.c4=el=>{
+  const C=7,R=6;
+  const lines=[];for(let r=0;r<R;r++)for(let c=0;c<C;c++){[[0,1],[1,0],[1,1],[1,-1]].forEach(([dr,dc])=>{const l=[];for(let k=0;k<4;k++){const rr=r+dr*k,cc=c+dc*k;if(rr<0||rr>=R||cc<0||cc>=C)return;l.push(rr*C+cc)}lines.push(l)})}
+  const winLine=(b,p)=>lines.find(l=>l.every(i=>b[i]===p));
+  const lowest=(b,c)=>{for(let r=R-1;r>=0;r--)if(!b[r*C+c])return r*C+c;return -1};
+  const valid=b=>[3,2,4,1,5,0,6].filter(c=>!b[c]);
+  const evalB=b=>{let s=0;for(const l of lines){let a=0,h=0;for(const i of l){if(b[i]===2)a++;else if(b[i]===1)h++}if(a&&h)continue;if(a===3)s+=50;else if(a===2)s+=8;if(h===3)s-=60;else if(h===2)s-=8}for(let r=0;r<R;r++)if(b[r*C+3]===2)s+=4;return s};
+  const mm=(b,d,al,be,max)=>{if(winLine(b,2))return 1e6+d;if(winLine(b,1))return -1e6-d;const v=valid(b);if(!v.length)return 0;if(!d)return evalB(b);
+    if(max){let best=-Infinity;for(const c of v){const i=lowest(b,c);b[i]=2;best=Math.max(best,mm(b,d-1,al,be,false));b[i]=0;al=Math.max(al,best);if(al>=be)break}return best}
+    let best=Infinity;for(const c of v){const i=lowest(b,c);b[i]=1;best=Math.min(best,mm(b,d-1,al,be,true));b[i]=0;be=Math.min(be,best);if(al>=be)break}return best};
+  const ai=b=>{let bc=valid(b)[0],bs=-Infinity;for(const c of valid(b)){const i=lowest(b,c);b[i]=2;const s=mm(b,4,-Infinity,Infinity,false)+(Math.random()*3);b[i]=0;if(s>bs){bs=s;bc=c}}return bc};
+  const play=()=>{const b=new Array(C*R).fill(0);let busy=false,last=-1,over=false;
+    const draw=(msg,wl)=>{el.innerHTML=`<p class="muted">Tes jetons sont <b style="color:var(--p2)">rouges</b>. Touche une colonne pour lâcher un jeton. Aligne-en 4 (ligne, colonne ou diagonale).</p>
+      <div class="c4">${b.map((v,i)=>`<button data-c="${i%C}" aria-label="Colonne ${i%C+1}">${v?`<i class="p${v}${i===last?" drop":""}${wl&&wl.includes(i)?" w":""}" style="--d:${Math.floor(i/C)+1}"></i>`:""}</button>`).join("")}</div><div id="co">${msg||""}</div>`;
+      el.querySelectorAll(".c4 button").forEach(x=>x.onclick=()=>move(+x.dataset.c))};
+    const finish=(txt,pts,wl,win)=>{over=true;if(pts)addPts(pts,"4 alignés");draw(`<div class="fb ${win?"ok":"info"}">${txt}</div><button class="btn block" id="cn" style="margin-top:10px">Rejouer</button>`,wl);$("#cn").onclick=play;if(win)confetti(110)};
+    const move=c=>{if(busy||over)return;const i=lowest(b,c);if(i<0)return;b[i]=1;last=i;let w=winLine(b,1);if(w){markBlk();finish("Gagné ! Bien joué.",25,w,true);return}
+      if(!valid(b).length){finish("Match nul.",10);return}
+      busy=true;draw(`<p class="small muted" style="text-align:center">L'ordinateur réfléchit…</p>`);
+      later(()=>{const ac=ai(b);const j=lowest(b,ac);b[j]=2;last=j;busy=false;w=winLine(b,2);if(w){finish("L'ordinateur a gagné. Revanche ?",3,w);return}if(!valid(b).length){finish("Match nul.",10);return}draw()},550)};
+    draw()};play()};
+
+/* ================= ÉVÉNEMENTS ================= */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.closest("#sheet-body")&&!b.dataset.act)return;
+  if(b.dataset.tab){if(b.dataset.tab!==tab)setTab(b.dataset.tab);return}
+  if(b.dataset.game){openGame(b.dataset.game,b.dataset.blk);return}
+  if(b.dataset.blkdefi){doDefi(b.dataset.blkdefi,b.dataset.blk,b);return}
+  if(b.dataset.defi){doDefi(b.dataset.defi,null,b);return}
+  if(b.dataset.cat){defiCat=b.dataset.cat;renderDefis();const l=$("#defilist");if(l&&!RM){[...l.children].forEach((c,i)=>{c.style.animation="rise .4s var(--ease) both";c.style.animationDelay=i*40+"ms"})}return}
+  if(b.dataset.delreason!=null){S.reasons.splice(+b.dataset.delreason,1);save();renderMoi();return}
+  if(b.dataset.copy){const txt="0 980 980 930";try{navigator.clipboard.writeText(txt).then(()=>toast("Numéro copié"),()=>toast("Sélectionne le numéro pour le copier"))}catch(err){toast("Sélectionne le numéro pour le copier")}return}
+  const a=b.dataset.act;if(!a)return;const d=today();
+  if(a==="vague")openVague(b.dataset.blk);
+  else if(a==="ack"){S.ackSafety=true;save();renderHome()}
+  else if(a==="goaide"){S.ackSafety=true;save();setTab("moi");setTimeout(()=>{const x=$("#aide");x&&x.scrollIntoView({behavior:"smooth"})},80)}
+  else if(a==="sober"){d.status="sober";save();renderHome();confetti(180);{const k=stats().streak;toast("Journée sans alcool. "+k+" jour"+(k>1?"s":"")+" d'affilée.")}}
+  else if(a==="drank"){d.status="drank";save();renderHome()}
+  else if(a==="unset"){d.status=null;save();renderHome()}
+  else if(a==="randdefi"){const pool=DEFIS.filter(x=>!d.done.includes("x:"+x.id));const x=pool.length?pool[rnd(pool.length)]:DEFIS[rnd(DEFIS.length)];const o=$("#randout");o.innerHTML=defiCard(x,d);o.firstElementChild.classList.add("pop")}
+  else if(a==="reset"){confirmReset=true;renderMoi()}
+  else if(a==="noreset"){confirmReset=false;renderMoi()}
+  else if(a==="doreset"){confirmReset=false;const keep=S.updatedAt;S=defaults();S.updatedAt=keep;save();renderMoi();toast("Données effacées")}
+});
+document.addEventListener("submit",e=>{if(e.target.id==="reasonform"){e.preventDefault();const v=$("#reason-in").value.trim();if(v){S.reasons.push(v);save();renderMoi();toast("Raison ajoutée")}}});
+document.addEventListener("change",e=>{const m={"s-price":"price","s-pints":"pints","s-start":"start","s-dur":"dur"}[e.target.id];if(!m)return;let v=parseFloat(e.target.value);if(isNaN(v))return;
+  if(m==="start")v=Math.min(23,Math.max(0,Math.round(v)));if(m==="dur")v=Math.min(10,Math.max(1,v));S.settings[m]=v;save();toast("Réglage enregistré")});
+$("#sheet-close").onclick=closeSheet;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden)closeSheet()});
+let lastMin=nowMin();setInterval(()=>{const m=nowMin();if(m!==lastMin){lastMin=m;if(tab==="home"&&$("#sheet").hidden)renderHome()}},15000);
+
+function start(){render(true);setTimeout(initRemote,0)}
+if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(start);else start();
+</script>
+
+<script>
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
