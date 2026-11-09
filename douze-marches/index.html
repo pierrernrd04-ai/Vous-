@@ -65,7 +65,7 @@ input,textarea,select{font:inherit;color:inherit}
 .top-in{max-width:46rem;margin:0 auto;padding-left:var(--gutter-l);padding-right:var(--gutter-r);padding-block:.55rem .1rem;display:flex;align-items:center;gap:.5rem}
 .brand{display:flex;align-items:center;gap:.55rem;min-width:0;flex:1;text-align:left}
 .brand-mark{width:30px;height:30px;flex:none}
-.brand-name{font:700 1.32rem/1 var(--font-display);letter-spacing:.02em}
+.brand-name{font:700 1.32rem/1 var(--font-display);letter-spacing:.02em;white-space:nowrap}
 .brand-txt{min-width:0}
 .brand-sub{display:block;font:500 .7rem/1.2 var(--font-ui);color:var(--ink-3);letter-spacing:.04em;margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .icon-btn{width:40px;height:40px;display:inline-grid;place-items:center;border-radius:999px;color:var(--ink-2);flex:none}
@@ -513,6 +513,28 @@ a.chip{text-decoration:none;color:var(--ink-2)}
 .hit span{display:block;font-size:.88rem;color:var(--ink-2);line-height:1.5;margin-top:.15rem}
 .hit small{font:600 .68rem/1 var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--gold-ink)}
 
+/* Essai et premium */
+.trial{flex:none;display:inline-flex;align-items:center;border-radius:999px;padding:.45rem .7rem;font:600 .74rem/1 var(--font-ui);color:var(--gold-ink);background:color-mix(in srgb,var(--gold-b) 15%,transparent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.trial.end{background:linear-gradient(135deg,var(--gold-c),var(--gold-b));color:#fff}
+.trial-strip{align-items:center}
+.trial-strip .btn{flex:none;padding:.6rem .95rem}
+.lock{margin-top:1.4rem;display:grid;grid-template-columns:auto minmax(0,1fr);gap:.7rem .9rem;align-items:start;background:var(--surface);border:1px solid color-mix(in srgb,var(--gold-b) 45%,var(--line));border-radius:18px;padding:1.1rem}
+.lock .tile-ico{margin:0}
+.lock h3{margin:0;font:700 1.05rem/1.3 var(--font-display)}
+.lock p{margin:.3rem 0 0;color:var(--ink-2);font-size:.92rem;line-height:1.5}
+.lock .btn-row,.lock .fine{grid-column:1/-1}
+.price{display:flex;align-items:baseline;gap:.7rem;margin-top:1rem}
+.price b{font:700 2.8rem/1 var(--font-display);background:linear-gradient(135deg,var(--gold-c),var(--gold-b) 40%,var(--gold-ink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.price span{font-size:.86rem;color:var(--ink-3)}
+.pp-box{margin-top:1.1rem;min-height:3rem;max-width:26rem}
+@media (max-width:26rem){
+  .tp-l{display:none}
+  .top-in .icon-btn{width:36px;height:36px}
+  .brand-mark{width:26px;height:26px}
+  .brand-name{font-size:1.1rem}
+  .top-in{gap:.25rem}
+}
+
 /* Toast */
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(10px);z-index:60;background:var(--ink);color:var(--bg);border-radius:999px;padding:.6rem 1rem;font:600 .84rem/1 var(--font-ui);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -550,6 +572,7 @@ a.chip{text-decoration:none;color:var(--ink-2)}
       <span id="brandMark"></span>
       <span class="brand-txt"><span class="brand-name">Douze Marches</span><span class="brand-sub">Le chemin des 12 étapes, un jour à la fois</span></span>
     </button>
+    <button class="trial" id="trialPill" data-act="paywall" hidden></button>
     <button class="icon-btn" data-act="search" aria-label="Rechercher"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></button>
     <button class="icon-btn" data-act="help" aria-label="Numéros d’aide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="m6 6 3.5 3.5M18 6l-3.5 3.5M6 18l3.5-3.5M18 18l-3.5-3.5"/></svg></button>
     <button class="icon-btn" data-act="settings" aria-label="Réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg></button>
@@ -2456,7 +2479,7 @@ function renderToday(){
   var day=dayNumber(),qd=Q[hash("jour"+day)%Q.length];
   var isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent),standalone=window.navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
   var h='<div class="view">';
-  if(isIOS&&!standalone&&!P.get("installHidden",false)) h+='<div class="install" id="install"><p><strong>Installer l’application :</strong> dans Safari, touche le bouton Partager, puis « Sur l’écran d’accueil ».</p><button class="link-btn" data-act="hide-install">OK</button></div>';
+  h+=installHTML()+trialStripHTML();
   h+='<section class="hero" aria-label="Ma sobriété">'+heroSeam(hash("hero"+day),Math.round(w))+'<div class="hero-body">';
   if(!so){
     h+='<p class="eyebrow">Bienvenue</p><h1 class="welcome">Un jour à la fois, à ton rythme.</h1>'+
@@ -2485,9 +2508,9 @@ function renderToday(){
   var cur=currentStep(),soirDone=!!(jd.soir&&Object.keys(jd.soir).length),ciDone=jd.m!=null||jd.c!=null;
   h+='<h2 class="sec">Pour aujourd’hui</h2><div class="today-grid">'+
     actCard("checkin","pen",20,"Mon point du jour",ciDone?("Noté · humeur "+(jd.m?MOODS[jd.m-1].toLowerCase():"—")+", envie "+(jd.c!=null?jd.c+"/10":"—")):"Humeur, envie, HALT, gratitude",ciDone)+
-    actCard("soir","moon",268,"Inventaire du soir",soirDone?"Fait ce soir":"Dixième étape · 5 minutes",soirDone)+
+    actCard("soir","moon",268,"Inventaire du soir",locked()?"Premium · 5 €":(soirDone?"Fait ce soir":"Dixième étape · 5 minutes"),soirDone&&!locked())+
     '<button class="act-card" data-act="go" data-view="etape-'+cur.n+'" style="--h:'+cur.hue+'">'+bowl({id:"s"+cur.n,hue:cur.hue},"tile-ico",stepStatus(cur.n)===2?"":"half")+'<span class="act-t">Étape '+cur.n+' · '+esc(cur.title)+'</span><span class="act-s">'+(stepStatus(cur.n)===1?"En cours":"À commencer")+' · '+esc(cur.principle)+'</span></button>'+
-    actCard("meditation","breath",150,"Méditer 5 minutes","Onzième étape · respiration guidée",false)+
+    actCard("meditation","breath",150,"Méditer 5 minutes",locked()?"Premium · 5 €":"Onzième étape · respiration guidée",false)+
   '</div>';
 
   // Pensée du jour
@@ -2510,7 +2533,7 @@ function renderToday(){
 
   // Grille de navigation
   h+='<h2 class="sec">Le programme</h2><p class="sec-lead">Douze étapes, des outils pour les moments difficiles, un journal, et le guide du Gros Livre.</p><div class="grid">'+
-    STEPS.map(function(s){var st=stepStatus(s.n);return '<button class="tile" data-act="go" data-view="etape-'+s.n+'" style="--h:'+s.hue+'">'+bowl({id:"s"+s.n,hue:s.hue},"",st===2?"":(st===1?"half":"faint"))+'<span class="tile-k">Étape '+s.n+'</span><span class="tile-name">'+esc(s.title)+'</span><span class="tile-tag">'+esc(s.principle)+'</span>'+stPill(st)+'</button>';}).join("")+'</div>';
+    STEPS.map(function(s){var st=stepStatus(s.n);return '<button class="tile" data-act="go" data-view="etape-'+s.n+'" style="--h:'+s.hue+'">'+bowl({id:"s"+s.n,hue:s.hue},"",st===2?"":(st===1?"half":"faint"))+'<span class="tile-k">Étape '+s.n+'</span><span class="tile-name">'+esc(s.title)+'</span><span class="tile-tag">'+esc(s.principle)+'</span>'+(locked()&&s.n>3?lockPill():stPill(st))+'</button>';}).join("")+'</div>';
   h+='<p class="disclaimer">Douze Marches est une application indépendante : elle n’est ni affiliée ni approuvée par les Alcooliques anonymes ou AA World Services. Elle accompagne le programme et ne remplace ni une réunion, ni un parrain ou une marraine, ni un médecin. En cas de danger, appelle le 15 ou le 112.</p>';
   h+='</div>';
   main.innerHTML=h; animateDraw(main);
@@ -2536,7 +2559,7 @@ function renderSteps(){
     STEPS.map(function(s){var st=stepStatus(s.n);return '<span style="--h:'+s.hue+'" class="'+(st===2?"done":(st===1?"on":""))+'" title="Étape '+s.n+'"></span>';}).join("")+'</div></div>';
   GROUPS.forEach(function(g){
     h+='<h2 class="sec">'+esc(g.t)+'</h2><p class="sec-lead">'+esc(g.r)+' · '+esc(g.x)+'</p><div class="grid">'+
-      g.s.map(function(n){var s=STEPS[n-1],st=stepStatus(n);return '<button class="tile" data-act="go" data-view="etape-'+n+'" style="--h:'+s.hue+'">'+bowl({id:"s"+n,hue:s.hue},"",st===2?"":(st===1?"half":"faint"))+'<span class="tile-k">Étape '+n+'</span><span class="tile-name">'+esc(s.title)+'</span><span class="tile-tag">'+esc(s.principle)+'</span>'+stPill(st)+'</button>';}).join("")+'</div>';
+      g.s.map(function(n){var s=STEPS[n-1],st=stepStatus(n);return '<button class="tile" data-act="go" data-view="etape-'+n+'" style="--h:'+s.hue+'">'+bowl({id:"s"+n,hue:s.hue},"",st===2?"":(st===1?"half":"faint"))+'<span class="tile-k">Étape '+n+'</span><span class="tile-name">'+esc(s.title)+'</span><span class="tile-tag">'+esc(s.principle)+'</span>'+(locked()&&s.n>3?lockPill():stPill(st))+'</button>';}).join("")+'</div>';
   });
   h+='<h2 class="sec">Le texte des Douze Étapes</h2><p class="sec-lead">Traduction libre de l’édition de 1939 du Gros Livre. Le texte français officiel figure dans les publications des AA.</p><ol class="steps-list">'+
     STEPS.map(function(s){return '<li><span class="n">'+s.n+'</span><div><b>'+esc(s.title)+'</b><p>'+esc(s.text)+'</p></div></li>';}).join("")+'</ol>';
@@ -2556,8 +2579,14 @@ function renderStep(n){
   var h='<div class="view" style="--h:'+s.hue+'"><header class="cat-head">'+bowl({id:"s"+n,hue:s.hue},"",st===2?"":(st===1?"half":"faint"))+
     '<div><p class="eyebrow">Étape '+n+' sur 12 · '+esc(s.group)+'</p><h1>'+esc(s.title)+'</h1><p class="cat-tag">Principe spirituel : '+esc(s.principle)+'</p></div></header>'+
     '<blockquote class="step-text">'+esc(s.text)+'</blockquote><p class="fine">Traduction libre du texte de 1939.</p>'+
-    '<div class="plain"><span class="label">En clair</span><p>'+esc(s.plain)+'</p></div>'+
-    '<div class="status-row"><div class="seg" role="group" aria-label="Où en es-tu ?">'+
+    '<div class="plain"><span class="label">En clair</span><p>'+esc(s.plain)+'</p></div>';
+  if(locked()&&n>3){
+    var pv0=STEPS[n-2],nx0=STEPS[n];
+    h+=lockCard("L’étape "+n+" fait partie du programme complet","Débloque les 12 étapes : explications, ce que dit le Gros Livre, exercices écrits, outils d’inventaire et citations.")+
+      '<nav class="step-nav"><button data-act="go" data-view="etape-'+pv0.n+'"><small>‹ Étape '+pv0.n+'</small><span>'+esc(pv0.title)+'</span></button>'+(nx0?'<button data-act="go" data-view="etape-'+nx0.n+'"><small>Étape '+nx0.n+' ›</small><span>'+esc(nx0.title)+'</span></button>':'<button data-act="go" data-view="reunions"><small>Et après ›</small><span>Réunions</span></button>')+'</nav></div>';
+    main.innerHTML=h;animateDraw(main);return;
+  }
+  h+='<div class="status-row"><div class="seg" role="group" aria-label="Où en es-tu ?">'+
       [[0,"À venir"],[1,"En cours"],[2,"Vécue"]].map(function(o){return '<button data-act="step-st" data-n="'+n+'" data-v="'+o[0]+'" aria-pressed="'+(st===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>'+
     '<section class="prose"><h2 class="sec">Comprendre</h2><p class="lead">'+esc(s.intro)+'</p></section>'+
     '<section class="prose"><h2 class="sec">Ce que dit le Gros Livre</h2><p>'+esc(s.book)+'</p></section>'+
@@ -2620,7 +2649,8 @@ function renderJournal(){
   h+='</div><div class="cal-l"><span><i></i>Jour de sobriété</span><span><i class="dot"></i>Point noté</span><span><i class="eng"></i>Engagement du matin</span></div></div>';
   // Tendances
   var series=[],ms=[];for(var k=29;k>=0;k--){var dd=ymd(addDays(now,-k)),ee=J[dd];series.push({d:dd,v:ee&&ee.c!=null?+ee.c:null});ms.push({d:dd,v:ee&&ee.m?+ee.m:null});}
-  h+='<h2 class="sec">Mes 30 derniers jours</h2><p class="sec-lead">Une envie qui baisse, même lentement, est un vrai progrès. Les jours sans point noté restent vides.</p>'+
+  if(locked()) h+='<h2 class="sec">Mes 30 derniers jours</h2>'+lockCard("Tes courbes et ton journal complet","Suis l’évolution de ton envie et de ton humeur sur 30 jours, et relis toutes tes journées.");
+  else h+='<h2 class="sec">Mes 30 derniers jours</h2><p class="sec-lead">Une envie qui baisse, même lentement, est un vrai progrès. Les jours sans point noté restent vides.</p>'+
     trendHTML("craving","Envie de boire",series,0,10,function(v){return v+"/10";})+
     trendHTML("mood","Humeur",ms,1,5,function(v){return MOODS[v-1];});
   var nG=0,nM=0,nS=0,nE=0;keys.forEach(function(k2){var e2=J[k2];nG+=(e2.g||[]).filter(function(x){return x&&x.trim();}).length;if(e2.meet)nM++;nS+=(e2.surf||[]).length;if(e2.soir&&Object.keys(e2.soir).length)nE++;});
@@ -2628,7 +2658,7 @@ function renderJournal(){
   // Entrées
   h+='<h2 class="sec">Mes journées</h2>';
   if(!keys.length) h+='<div class="empty">'+bowl({id:"vide",hue:20})+'<h3>Ton journal commence aujourd’hui</h3><p>Note ton humeur, ton envie et trois gratitudes. Une minute suffit.</p><div class="btn-row" style="justify-content:center"><button class="btn btn-ink" data-act="checkin">Mon point du jour</button></div></div>';
-  else h+='<div class="entries">'+keys.slice(0,40).map(function(k3){return entryHTML(k3,J[k3]);}).join("")+'</div>'+(keys.length>40?'<p class="fine">Les 40 journées les plus récentes sont affichées. Touche un jour du calendrier pour ouvrir les plus anciennes.</p>':"");
+  else h+='<div class="entries">'+(locked()?keys.filter(function(k4){return k4>=ymd(addDays(new Date(),-6));}):keys).slice(0,40).map(function(k3){return entryHTML(k3,J[k3]);}).join("")+'</div>'+(locked()?'<p class="fine">Sans le premium, le journal affiche tes 7 derniers jours. Les autres restent enregistrés sur ton téléphone.</p>':"")+(keys.length>40?'<p class="fine">Les 40 journées les plus récentes sont affichées. Touche un jour du calendrier pour ouvrir les plus anciennes.</p>':"");
   h+='</div>';
   main.innerHTML=h; bindTrends(main);
 }
@@ -2697,6 +2727,7 @@ function citeList(){
 }
 function renderCites(){
   var main=$("#main"),cnt={};Q.forEach(function(q){cnt[q.th]=(cnt[q.th]||0)+1;});
+  if(locked()){var qd0=Q[hash("jour"+dayNumber())%Q.length];main.innerHTML='<div class="view"><header class="cat-head">'+bowl({id:"cites",hue:200})+'<div><p class="eyebrow">Pensées pour le chemin</p><h1>Citations</h1><p class="cat-tag">'+fmt(Q.length)+' citations, chacune expliquée et reliée aux étapes</p></div></header><h2 class="sec">La pensée du jour</h2><div class="list">'+cardHTML(qd0,{showCat:true})+'</div>'+lockCard("Les "+fmt(Q.length)+" citations expliquées","Chaque citation a son analyse et une piste concrète, filtrable par thème et par étape.")+'</div>';return;}
   var h='<div class="view"><header class="cat-head">'+bowl({id:"cites",hue:200})+'<div><p class="eyebrow">Pensées pour le chemin</p><h1>Citations</h1><p class="cat-tag">'+fmt(Q.length)+' citations, chacune expliquée et reliée aux étapes</p></div>'+
     '<p class="cat-intro">Des membres des fraternités, des soignants, des écrivains passés par l’alcool et des sagesses anciennes. Chaque citation a son analyse et une piste concrète pour aujourd’hui.</p></header>'+
     '<div class="filters"><div class="chips" role="group" aria-label="Thème">'+
@@ -2738,8 +2769,9 @@ function renderBook(){
   var main=$("#main"),rd=D("livre").read,nRead=BOOK.chapters.filter(function(c){return rd[c.id];}).length;
   var h='<div class="view"><header class="cat-head">'+bowl({id:"livre",hue:288})+'<div><p class="eyebrow">Guide de lecture</p><h1>Le Gros Livre</h1><p class="cat-tag">Alcoholics Anonymous, 1939 · chapitre par chapitre</p></div></header>'+
     '<section class="prose"><p class="lead">'+esc(BOOK.intro)+'</p></section><div class="help-strip"><p>'+esc(BOOK.note)+'</p></div>'+
-    '<h2 class="sec">Comment le lire</h2><ul class="keys">'+BOOK.howto.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>'+
-    '<h2 class="sec">Les chapitres</h2><div class="prog" style="--h:288"><p><b>'+nRead+'</b> sur '+BOOK.chapters.length+' parties lues</p><div class="bar" style="margin-top:.6rem"><span style="width:'+Math.round(nRead*100/BOOK.chapters.length)+'%"></span></div></div><div style="margin-top:.8rem">'+
+    '<h2 class="sec">Comment le lire</h2><ul class="keys">'+BOOK.howto.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>';
+  if(locked()){main.innerHTML=h+lockCard("Le guide complet du Gros Livre",BOOK.chapters.length+" parties résumées avec leurs idées clés et une question à méditer, les Promesses, les Trois Héritages et l’histoire des AA.")+'</div>';return;}
+  h+='<h2 class="sec">Les chapitres</h2><div class="prog" style="--h:288"><p><b>'+nRead+'</b> sur '+BOOK.chapters.length+' parties lues</p><div class="bar" style="margin-top:.6rem"><span style="width:'+Math.round(nRead*100/BOOK.chapters.length)+'%"></span></div></div><div style="margin-top:.8rem">'+
     BOOK.chapters.map(function(c){
       var open=!!openAcc[c.id],r=!!rd[c.id];
       return '<div class="acc" id="acc-'+c.id+'"><button class="acc-h" data-act="acc" data-v="'+c.id+'" aria-expanded="'+open+'"><span class="mk'+(r?" on":"")+'">'+(r?I.check:"")+'</span><span class="num">'+esc(c.n)+' · '+esc(c.pages)+'</span><span class="ttl">'+esc(c.fr)+'<small>'+esc(c.en)+'</small></span>'+I.chev+'</button>'+
@@ -2902,7 +2934,7 @@ function renderTools(){
   var h='<div class="view"><header class="cat-head">'+bowl({id:"outils",hue:172})+'<div><p class="eyebrow">Pour les moments difficiles</p><h1>Boîte à outils</h1><p class="cat-tag">Des exercices éprouvés, à portée de main</p></div>'+
     '<p class="cat-intro">L’envie de boire passe, presque toujours en moins d’une demi-heure, que l’on boive ou non. Ces outils servent à traverser ce moment, puis à préparer les suivants. Ils viennent des fraternités et des thérapies validées en addictologie : prévention de la rechute, entretien motivationnel, pleine conscience.</p></header>';
   TOOLS.forEach(function(g){
-    h+='<h2 class="sec">'+esc(g.g)+'</h2><div class="grid">'+g.items.map(function(t){return '<button class="tile" data-act="'+(t[0]==="sos"||t[0]==="checkin"||t[0]==="soir"||t[0]==="meditation"||t[0]==="plan"?t[0]:"tool")+'" data-v="'+t[0]+'" style="--h:'+t[2]+'">'+ico(t[1],t[2])+'<span class="tile-name">'+esc(t[3])+'</span><span class="tile-tag">'+esc(t[4])+'</span></button>';}).join("")+'</div>';
+    h+='<h2 class="sec">'+esc(g.g)+'</h2><div class="grid">'+g.items.map(function(t){return '<button class="tile" data-act="'+(t[0]==="sos"||t[0]==="checkin"||t[0]==="soir"||t[0]==="meditation"||t[0]==="plan"?t[0]:"tool")+'" data-v="'+t[0]+'" style="--h:'+t[2]+'">'+ico(t[1],t[2])+'<span class="tile-name">'+esc(t[3])+'</span><span class="tile-tag">'+esc(t[4])+'</span>'+(locked()&&PREMIUM_TOOLS.indexOf(t[0])>=0?lockPill():"")+'</button>';}).join("")+'</div>';
   });
   if(p.reasons) h+='<h2 class="sec">Mes raisons</h2><p class="reasons">'+esc(p.reasons)+'</p>';
   h+='<h2 class="sec">Les slogans</h2><p class="sec-lead">Des phrases courtes, faciles à retenir quand la tête s’emballe.</p><dl class="gloss">'+SLOGANS.map(function(s){return '<div><dt>'+esc(s.t)+'</dt><dd>'+esc(s.x)+'</dd><dd class="fine">'+esc(s.use)+'</dd></div>';}).join("")+'</dl>';
@@ -3213,7 +3245,8 @@ function openSettings(){
     '<div class="set"><span class="label">Sauvegarde</span><p>Copie une sauvegarde complète (journal, étapes, inventaires) et colle-la dans tes notes, ou restaure-la sur un autre appareil.</p><div class="btn-row"><button class="btn btn-line" data-act="backup-copy">'+I.copy+'Copier ma sauvegarde</button></div>'+
       '<label class="field" for="restoreIn" style="margin-top:.8rem"><span class="field-l">Restaurer une sauvegarde</span><textarea id="restoreIn" rows="2" placeholder="Colle ici le texte de ta sauvegarde"></textarea></label><div class="btn-row"><button class="btn btn-line" data-act="backup-restore">Restaurer</button></div></div>'+
     '<div class="set"><span class="label">Effacer</span><p>Supprime ton compteur, ton journal, tes réponses et tes inventaires, sur cet appareil et sur ton compte.</p><div class="btn-row"><button class="btn btn-line" data-act="wipe">Effacer toutes mes données</button></div></div>'+
-    '<div class="set"><span class="label">Sur l’écran d’accueil</span><p>Dans Safari, touche Partager puis « Sur l’écran d’accueil ». L’application s’ouvre alors en plein écran.</p></div>'+
+    (paywallOn()?'<div class="set"><span class="label">Accès premium</span>'+(isPremium()?'<p>Tout est débloqué'+(prem()&&prem().at?' depuis le '+esc(frDate(new Date(prem().at))):"")+'. Merci pour ton soutien.</p>':'<p>'+(locked()?"Ton essai gratuit est terminé.":"Essai gratuit en cours : "+trialMinLeft()+" min restantes.")+'</p><div class="btn-row"><button class="btn btn-gold" data-act="paywall">Débloquer pour 5 €</button></div>')+'</div>':"")+
+    '<div class="set"><span class="label">Sur l’écran d’accueil</span><p>Sur iPhone, dans Safari : touche Partager, puis « Sur l’écran d’accueil ». Sur Android, dans Chrome : menu ⋮, puis « Installer l’application ». Elle s’ouvre alors en plein écran, même sans réseau.</p></div>'+
     '<div class="set"><span class="label">À propos</span><p>Douze Marches est une application indépendante, non affiliée aux Alcooliques anonymes ni à AA World Services. Les Douze Étapes y sont proposées en traduction libre de l’édition de 1939 ; les autres textes sont des résumés et des paraphrases. Elle ne remplace ni les réunions, ni un parrain ou une marraine, ni un avis médical.</p></div>';
   openSheet(h);
   var ss=$("#setStart");if(ss)ss.addEventListener("change",function(){if(ss.value&&ss.value<=ymd()){p.start=ss.value;touch("profil");sheetDirty=true;toast("Compteur mis à jour");}});
@@ -3230,8 +3263,106 @@ function openDraw(){
   openSheet(sheetHead("Une pensée pour toi")+cardHTML(q,{showCat:true,open:true,width:w})+'<div class="btn-row"><button class="btn btn-ink" data-act="draw" data-autofocus>Une autre pensée</button></div>');
 }
 function openTool(v){
+  if(locked()&&PREMIUM_TOOLS.indexOf(v)>=0){openPaywall();return;}
   var m={surf:function(){openSurf();},breath:function(){openBreath(5);},halt:openHalt,film:openFilm,serenite:openSerenite,plan:openPlan,letter:openLetter,balance:openBalance,audit:openAudit,sevrage:openSevrage,relapse:openRelapse,checkin:function(){openCheckin();},soir:function(){openSoir();},meditation:function(){openMeditation(5);},sos:openSOS};
   if(m[v])m[v]();
+}
+
+/* ---------- Essai gratuit de 30 minutes et accès premium ---------- */
+/* clientId : l’identifiant client PayPal (application « Live » du compte PayPal Business). Vide = paiement désactivé, app entièrement ouverte. */
+var PREMIUM={clientId:"",price:"5.00",trialMin:30};
+var inClaude=!!(window.claude&&typeof window.claude.use==="function");
+var forceEnd=/[?&]essai=fin\b/.test(location.search);
+function prem(){return P.get("premium",null);}
+function isPremium(){return inClaude||!!prem();}
+function paywallOn(){return !inClaude&&(!!PREMIUM.clientId||forceEnd);}
+function trialUsed(){return +P.get("trialSec",0)||0;}
+function trialLeftSec(){return forceEnd?0:Math.max(0,PREMIUM.trialMin*60-trialUsed());}
+function locked(){return paywallOn()&&!isPremium()&&trialLeftSec()<=0;}
+var PREMIUM_TOOLS=["letter","balance","meditation","soir"];
+function trialMinLeft(){return Math.max(1,Math.ceil(trialLeftSec()/60));}
+
+function updatePill(){
+  var pill=$("#trialPill");if(!pill)return;
+  if(!paywallOn()||isPremium()){pill.hidden=true;return;}
+  pill.hidden=false;
+  if(locked()){pill.className="trial end";pill.innerHTML='<span class="tp-l">Débloquer · </span>5 €';pill.setAttribute("aria-label","Débloquer l’application pour 5 €");}
+  else{pill.className="trial";pill.innerHTML='<span class="tp-l">Essai · </span>'+trialMinLeft()+' min';pill.setAttribute("aria-label","Essai gratuit : "+trialMinLeft()+" minutes restantes");}
+}
+var trialEnded=locked();
+function tickTrial(){
+  if(!paywallOn()||isPremium()||document.hidden||forceEnd)return;
+  var u=trialUsed(),max=PREMIUM.trialMin*60;if(u>=max)return;
+  P.set("trialSec",Math.min(max,u+5));updatePill();
+  if(!trialEnded&&trialLeftSec()<=0){trialEnded=true;onTrialEnd();}
+}
+function onTrialEnd(){
+  updatePill();sheetDirty=true;
+  if($("#sheet").hidden){openPaywall(true);}
+  else{var y=window.scrollY;show(view,true);window.scrollTo(0,y);}
+}
+
+function trialStripHTML(){
+  if(!paywallOn()||isPremium())return "";
+  if(locked())return '<div class="install trial-strip"><p><strong>Ton essai gratuit est terminé.</strong> Le compteur, le SOS, les numéros d’aide, les étapes 1 à 3 et les réunions restent gratuits. Tout le reste se débloque pour 5 €, une seule fois.</p><button class="btn btn-gold" data-act="paywall">Débloquer</button></div>';
+  return '<div class="install trial-strip"><p><strong>Essai complet gratuit :</strong> tout est ouvert pendant 30 minutes. Ensuite, 5 € une seule fois pour tout garder, à vie. Il te reste <b>'+trialMinLeft()+' min</b>.</p><button class="link-btn" data-act="paywall">Débloquer</button></div>';
+}
+function lockCard(title,text){
+  return '<div class="lock">'+ico("shield",42)+'<div><h3>'+esc(title)+'</h3><p>'+esc(text)+'</p></div><div class="btn-row" style="margin:0"><button class="btn btn-gold" data-act="paywall">Débloquer pour 5 €</button></div><p class="fine">Paiement unique, sans abonnement. Le SOS et les numéros d’aide restent toujours gratuits.</p></div>';
+}
+function lockPill(){return '<span class="st-pill">Premium</span>';}
+
+var BENEFITS=["Les 12 étapes en entier, avec leurs 40 exercices","Les inventaires guidés : ressentiments, peurs, défauts, réparations","L’inventaire du soir et la méditation guidée","Le journal complet et tes courbes d’envie et d’humeur","Toutes les citations expliquées, reliées aux étapes","Le guide de lecture du Gros Livre, chapitre par chapitre","La lettre de rupture et la balance décisionnelle"];
+function openPaywall(auto){
+  if(isPremium()){toast("Tout est déjà débloqué");return;}
+  var h=sheetHead(auto?"Ton essai gratuit est terminé":"Débloquer Douze Marches")+
+    '<p class="sheet-lead">'+(auto?"Tu as découvert l’application pendant 30 minutes. ":"")+'Pour 5 €, une seule fois, tout le programme est à toi, à vie. Pas d’abonnement, pas de publicité.</p>'+
+    '<div class="price"><b>5 €</b><span>paiement unique · accès à vie</span></div>'+
+    '<ul class="keys" style="margin-top:.8rem">'+BENEFITS.map(function(b){return '<li>'+esc(b)+'</li>';}).join("")+'</ul>'+
+    '<div id="ppBox" class="pp-box"><p class="fine">Chargement du paiement sécurisé…</p></div>'+
+    '<p class="fine">Paiement sécurisé par PayPal, avec un compte PayPal ou une carte bancaire. Tes notes et ton journal restent sur ton téléphone.</p>'+
+    '<div class="card" style="margin-top:1rem"><h3>Toujours gratuit</h3><p>Le compteur, le bouton SOS, les numéros d’aide, les étapes 1 à 3 et les réunions restent ouverts, même sans payer.</p></div>';
+  openSheet(h);loadPayPal();
+}
+function loadPayPal(){
+  var box=$("#ppBox");if(!box)return;
+  if(!PREMIUM.clientId){box.innerHTML='<p class="warnbox">Le paiement n’est pas encore activé sur cette version de l’application.</p>';return;}
+  function fail(){var b=$("#ppBox");if(b)b.innerHTML='<p class="warnbox">Le paiement ne peut pas se charger. Vérifie ta connexion, puis rouvre cette page.</p>';}
+  function render(){
+    var b=$("#ppBox");if(!b)return;b.innerHTML="";
+    try{
+      window.paypal.Buttons({
+        style:{layout:"vertical",shape:"pill",color:"gold",label:"pay"},
+        createOrder:function(data,actions){return actions.order.create({purchase_units:[{amount:{currency_code:"EUR",value:PREMIUM.price},description:"Douze Marches · accès premium à vie"}],application_context:{shipping_preference:"NO_SHIPPING",brand_name:"Douze Marches"}});},
+        onApprove:function(data,actions){return actions.order.capture().then(function(det){unlockPremium((det&&det.id)||data.orderID);});},
+        onCancel:function(){toast("Paiement annulé");},
+        onError:function(){toast("Le paiement n’a pas abouti. Réessaie dans un instant.");}
+      }).render("#ppBox").catch(fail);
+    }catch(e){fail();}
+  }
+  if(window.paypal&&window.paypal.Buttons){render();return;}
+  var s=document.createElement("script");
+  s.src="https://www.paypal.com/sdk/js?client-id="+encodeURIComponent(PREMIUM.clientId)+"&currency=EUR&intent=capture&components=buttons&enable-funding=card&locale=fr_FR";
+  s.onload=render;s.onerror=fail;document.head.appendChild(s);
+}
+function unlockPremium(id){
+  P.set("premium",{id:String(id||""),at:new Date().toISOString()});
+  updatePill();sheetDirty=true;
+  openSheet(sheetHead("Merci, tout est débloqué")+'<div class="prayer"><p class="pr">Les 12 étapes, les exercices, le journal complet, les citations et le guide sont à toi, à vie.</p></div><p class="sheet-lead" style="margin-top:1rem">Garde ta référence de paiement : <b>'+esc(id||"")+'</b>. PayPal t’envoie aussi un reçu par e-mail.</p><div class="btn-row"><button class="btn btn-ink" data-act="close">Continuer mon chemin</button></div>');
+}
+
+/* Installation sur l’écran d’accueil (Android) */
+var installEvt=null;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();installEvt=e;var b=$("#installAndroid");if(b)b.hidden=false;});
+window.addEventListener("appinstalled",function(){installEvt=null;toast("Application installée");});
+function installHTML(){
+  if(inClaude)return "";
+  var ua=navigator.userAgent,isIOS=/iPhone|iPad|iPod/.test(ua),isAndroid=/Android/.test(ua);
+  var standalone=window.navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+  if(standalone||P.get("installHidden",false))return "";
+  if(isIOS)return '<div class="install" id="install"><p><strong>Installer l’application :</strong> dans Safari, touche le bouton Partager, puis « Sur l’écran d’accueil ». Elle s’ouvre ensuite en plein écran, même sans réseau.</p><button class="link-btn" data-act="hide-install">OK</button></div>';
+  if(isAndroid)return '<div class="install" id="install"><p><strong>Installer l’application</strong> sur ton téléphone : une icône sur l’écran d’accueil, en plein écran, même sans réseau.</p><button class="btn btn-ink" id="installAndroid" data-act="install-android"'+(installEvt?"":" hidden")+'>Installer</button><button class="link-btn" data-act="hide-install">Plus tard</button></div>';
+  return "";
 }
 
 /* ---------- Routage ---------- */
@@ -3287,7 +3418,7 @@ function savedFlash(el){
   s._t=setTimeout(function(){s.textContent="Enregistré";s.classList.add("on");},700);
 }
 function findEx(id){var r=null;STEPS.forEach(function(s){s.exercises.forEach(function(e){if(e.id===id)r={s:s,e:e};});});return r;}
-function backupJSON(){var out={app:"douze-marches",v:1,at:new Date().toISOString(),docs:{}};Object.keys(DOCS).forEach(function(k){out.docs[k]=DOCS[k];});return JSON.stringify(out);}
+function backupJSON(){var out={app:"douze-marches",v:1,at:new Date().toISOString(),docs:{}};Object.keys(DOCS).forEach(function(k){out.docs[k]=DOCS[k];});var pr0=P.get("premium",null);if(pr0)out.premium=pr0;return JSON.stringify(out);}
 
 /* ---------- Recherche ---------- */
 var searchTimer=null,searchIdx=null;
@@ -3380,8 +3511,10 @@ document.addEventListener("click",function(e){
     case "sos": openSOS(); break;
     case "sos-call": var c=$("#sosCall");if(c)c.scrollIntoView({behavior:"smooth",block:"start"});break;
     case "checkin": openCheckin(v&&/^\d{4}-\d\d-\d\d$/.test(v)?v:null); break;
-    case "soir": openSoir(v&&/^\d{4}-\d\d-\d\d$/.test(v)?v:null); break;
-    case "meditation": openMeditation(+v||5); break;
+    case "soir": if(locked()){openPaywall();break;} openSoir(v&&/^\d{4}-\d\d-\d\d$/.test(v)?v:null); break;
+    case "meditation": if(locked()){openPaywall();break;} openMeditation(+v||5); break;
+    case "paywall": if(!$("#search").hidden)closeSearch(); openPaywall(false); break;
+    case "install-android": if(installEvt){installEvt.prompt();var ie=installEvt;installEvt=null;ie.userChoice.then(function(){},function(){});}var ib=$("#installAndroid");if(ib)ib.hidden=true;break;
     case "plan": openPlan(); break;
     case "tool": openTool(v); break;
 
@@ -3449,7 +3582,7 @@ document.addEventListener("click",function(e){
     case "backup-copy": copyText(backupJSON(),"Sauvegarde copiée"); break;
     case "backup-restore":
       var raw=($("#restoreIn").value||"").trim();
-      try{var bk=JSON.parse(raw);if(!bk||bk.app!=="douze-marches"||!bk.docs)throw 0;var now=Date.now();Object.keys(bk.docs).forEach(function(k2){if(!/^[a-z0-9-]{1,40}$/.test(k2))return;var d2=bk.docs[k2];if(d2&&typeof d2==="object"){d2._t=now;DOCS[k2]=d2;writeLocal(k2);queueRemote(k2);}});loadFavs();toast("Sauvegarde restaurée");closeSheet();show(view,true);}
+      try{var bk=JSON.parse(raw);if(!bk||bk.app!=="douze-marches"||!bk.docs)throw 0;if(bk.premium&&bk.premium.id)P.set("premium",bk.premium);var now=Date.now();Object.keys(bk.docs).forEach(function(k2){if(!/^[a-z0-9-]{1,40}$/.test(k2))return;var d2=bk.docs[k2];if(d2&&typeof d2==="object"){d2._t=now;DOCS[k2]=d2;writeLocal(k2);queueRemote(k2);}});loadFavs();toast("Sauvegarde restaurée");closeSheet();show(view,true);}
       catch(err){toast("Ce texte n’est pas une sauvegarde Douze Marches");}
       break;
     case "wipe":
@@ -3468,6 +3601,7 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden&&vie
 loadLocal();loadFavs();
 $("#brandMark").outerHTML=bowl({id:"douze-marches",hue:205},"brand-mark");
 applyPrefs();renderTabs();route();
+updatePill();setInterval(tickTrial,5000);if(forceEnd)setTimeout(function(){openPaywall(true);},500);
 initRemote();
 if(!window.claude){
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});}catch(e){}
