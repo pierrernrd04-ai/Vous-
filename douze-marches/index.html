@@ -15,9 +15,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Shippori+Mincho:wght@500;700&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
 /* Layout : coque d’application centrée (46rem), identique à Kintsugi — en-tête collant + onglets défilants ;
@@ -526,6 +524,9 @@ a.chip{text-decoration:none;color:var(--ink-2)}
 .price{display:flex;align-items:baseline;gap:.7rem;margin-top:1rem}
 .price b{font:700 2.8rem/1 var(--font-display);background:linear-gradient(135deg,var(--gold-c),var(--gold-b) 40%,var(--gold-ink));-webkit-background-clip:text;background-clip:text;color:transparent}
 .price span{font-size:.86rem;color:var(--ink-3)}
+.consent{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.6rem;align-items:start;margin-top:1.1rem;font-size:.86rem;line-height:1.5;color:var(--ink-2);max-width:30rem;cursor:pointer}
+.consent input{width:20px;height:20px;margin:.1rem 0 0;accent-color:var(--gold-b)}
+.consent a{color:var(--gold-ink)}
 .pp-box{margin-top:1.1rem;min-height:3rem;max-width:30rem}
 .pay-steps{margin-top:0}
 .alt-pay{margin-top:.8rem;max-width:30rem}
@@ -3254,7 +3255,7 @@ function openSettings(){
     '<div class="set"><span class="label">Effacer</span><p>Supprime ton compteur, ton journal, tes réponses et tes inventaires, sur cet appareil et sur ton compte.</p><div class="btn-row"><button class="btn btn-line" data-act="wipe">Effacer toutes mes données</button></div></div>'+
     (paywallOn()?'<div class="set"><span class="label">Accès premium</span>'+(isPremium()?'<p>Tout est débloqué'+(prem()&&prem().at?' depuis le '+esc(frDate(new Date(prem().at))):"")+'. Merci pour ton soutien.</p>':'<p>'+(locked()?"Ton essai gratuit est terminé.":"Essai gratuit en cours : "+trialMinLeft()+" min restantes.")+'</p><div class="btn-row"><button class="btn btn-gold" data-act="paywall">Débloquer pour 5 €</button></div>')+'</div>':"")+
     '<div class="set"><span class="label">Sur l’écran d’accueil</span><p>Sur iPhone, dans Safari : touche Partager, puis « Sur l’écran d’accueil ». Sur Android, dans Chrome : menu ⋮, puis « Installer l’application ». Elle s’ouvre alors en plein écran, même sans réseau.</p></div>'+
-    '<div class="set"><span class="label">À propos</span><p>Douze Marches est une application indépendante, non affiliée aux Alcooliques anonymes ni à AA World Services. Les Douze Étapes y sont proposées en traduction libre de l’édition de 1939 ; les autres textes sont des résumés et des paraphrases. Elle ne remplace ni les réunions, ni un parrain ou une marraine, ni un avis médical.</p></div>';
+    '<div class="set"><span class="label">À propos</span><p>Douze Marches est une application indépendante, non affiliée aux Alcooliques anonymes ni à AA World Services. Les Douze Étapes y sont proposées en traduction libre de l’édition de 1939 ; les autres textes sont des résumés et des paraphrases. Elle ne remplace ni les réunions, ni un parrain ou une marraine, ni un avis médical.</p>'+(inClaude?"":'<p><a href="legal/" target="_blank" rel="noopener">Mentions légales, conditions de vente et confidentialité</a></p>')+'</div>';
   openSheet(h);
   var ss=$("#setStart");if(ss)ss.addEventListener("change",function(){if(ss.value&&ss.value<=ymd()){p.start=ss.value;touch("profil");sheetDirty=true;toast("Compteur mis à jour");}});
 }
@@ -3328,6 +3329,7 @@ function openPaywall(auto){
     '<p class="sheet-lead">'+(auto?"Tu as découvert l’application pendant 30 minutes. ":"")+'Pour 5 €, une seule fois, tout le programme est à toi, à vie. Pas d’abonnement, pas de publicité.</p>'+
     '<div class="price"><b>5 €</b><span>paiement unique · accès à vie</span></div>'+
     '<ul class="keys" style="margin-top:.8rem">'+BENEFITS.map(function(b){return '<li>'+esc(b)+'</li>';}).join("")+'</ul>'+
+    '<label class="consent" for="cgvOk"><input type="checkbox" id="cgvOk"><span>J’accepte les <a href="legal/#cgv" target="_blank" rel="noopener">conditions de vente</a> et je demande l’accès immédiat au contenu. Je renonce ainsi à mon droit de rétractation de 14 jours.</span></label>'+
     '<div id="ppBox" class="pp-box"><p class="fine">Chargement du paiement sécurisé…</p></div>'+
     (PREMIUM.clientId&&PREMIUM.link?'<details class="alt-pay"><summary>Le bouton ne s’affiche pas ? Payer avec le lien PayPal</summary>'+linkPayHTML()+'</details>':"")+
     '<p class="fine">Paiement sécurisé par PayPal, avec un compte PayPal ou une carte bancaire. Tes notes et ton journal restent sur ton téléphone.</p>'+
@@ -3344,6 +3346,8 @@ function loadPayPal(){
     try{
       window.paypal.Buttons({
         style:{layout:"vertical",shape:"pill",color:"gold",label:"pay"},
+        onInit:function(data,actions){var cb=$("#cgvOk");if(!cb)return;if(!cb.checked)actions.disable();cb.addEventListener("change",function(){if(cb.checked)actions.enable();else actions.disable();});},
+        onClick:function(){var cb=$("#cgvOk");if(cb&&!cb.checked)toast("Coche d’abord la case des conditions de vente");},
         createOrder:function(data,actions){return actions.order.create({purchase_units:[{amount:{currency_code:"EUR",value:PREMIUM.price},description:"Douze Marches · accès premium à vie"}],application_context:{shipping_preference:"NO_SHIPPING",brand_name:"Douze Marches"}});},
         onApprove:function(data,actions){return actions.order.capture().then(function(det){unlockPremium((det&&det.id)||data.orderID);});},
         onCancel:function(){toast("Paiement annulé");},
@@ -3364,7 +3368,7 @@ function unlockPremium(id){
 
 function linkPayHTML(){
   return '<ol class="steps-list pay-steps">'+
-    '<li><span class="n">1</span><div><b>Paie 5 € sur PayPal</b><p>Une page PayPal sécurisée s’ouvre : compte PayPal ou carte bancaire, sans créer de compte.</p><div class="btn-row" style="margin-top:.6rem"><a class="btn btn-gold" href="'+esc(PREMIUM.link)+'" target="_blank" rel="noopener">Payer 5 € avec PayPal</a></div></div></li>'+
+    '<li><span class="n">1</span><div><b>Paie 5 € sur PayPal</b><p>Une page PayPal sécurisée s’ouvre : compte PayPal ou carte bancaire, sans créer de compte.</p><div class="btn-row" style="margin-top:.6rem"><a class="btn btn-gold" data-act="paylink" href="'+esc(PREMIUM.link)+'" target="_blank" rel="noopener">Payer 5 € avec PayPal</a></div></div></li>'+
     '<li><span class="n">2</span><div><b>Reviens ici et saisis ton numéro de transaction</b><p>Il s’affiche sur la page de confirmation PayPal et dans l’e-mail de reçu : 17 lettres et chiffres.</p>'+
       '<div class="unlock-row"><label class="sr" for="txId">Numéro de transaction PayPal</label><input class="inp" id="txId" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="24" placeholder="Ex. 8AB12345CD678901E"><button class="btn btn-ink" data-act="unlock-tx">Débloquer</button></div></div></li>'+
   '</ol>';
@@ -3540,6 +3544,7 @@ document.addEventListener("click",function(e){
     case "meditation": if(locked()){openPaywall();break;} openMeditation(+v||5); break;
     case "paywall": if(!$("#search").hidden)closeSearch(); openPaywall(false); break;
     case "unlock-tx": unlockWithTx(); break;
+    case "paylink": var cg=$("#cgvOk");if(cg&&!cg.checked){e.preventDefault();toast("Coche d’abord la case des conditions de vente");try{cg.focus();}catch(err){}}break;
     case "install-android": if(installEvt){installEvt.prompt();var ie=installEvt;installEvt=null;ie.userChoice.then(function(){},function(){});}var ib=$("#installAndroid");if(ib)ib.hidden=true;break;
     case "plan": openPlan(); break;
     case "tool": openTool(v); break;
