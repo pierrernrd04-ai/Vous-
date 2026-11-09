@@ -1,5 +1,5 @@
 /* Douze Marches — fonctionnement hors ligne. Ne touche qu’aux caches « douze-marches-… » (les autres applis du site gardent les leurs). */
-const VERSION = "douze-marches-202611091318";
+const VERSION = "douze-marches-202611091355";
 const CORE = ["./", "index.html", "manifest.webmanifest", "fonts/fonts.css", "icons/apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
