@@ -526,7 +526,14 @@ a.chip{text-decoration:none;color:var(--ink-2)}
 .price{display:flex;align-items:baseline;gap:.7rem;margin-top:1rem}
 .price b{font:700 2.8rem/1 var(--font-display);background:linear-gradient(135deg,var(--gold-c),var(--gold-b) 40%,var(--gold-ink));-webkit-background-clip:text;background-clip:text;color:transparent}
 .price span{font-size:.86rem;color:var(--ink-3)}
-.pp-box{margin-top:1.1rem;min-height:3rem;max-width:26rem}
+.pp-box{margin-top:1.1rem;min-height:3rem;max-width:30rem}
+.pay-steps{margin-top:0}
+.alt-pay{margin-top:.8rem;max-width:30rem}
+.alt-pay summary{cursor:pointer;font:600 .84rem/1.4 var(--font-ui);color:var(--gold-ink);padding:.4rem 0}
+.alt-pay[open] summary{margin-bottom:.4rem}
+.pay-steps a.btn{text-decoration:none}
+.unlock-row{display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap}
+.unlock-row .inp{flex:1 1 12rem;min-width:0;font-variant-numeric:tabular-nums;letter-spacing:.04em;text-transform:uppercase}
 @media (max-width:26rem){
   .tp-l{display:none}
   .top-in .icon-btn{width:36px;height:36px}
@@ -3270,12 +3277,13 @@ function openTool(v){
 
 /* ---------- Essai gratuit de 30 minutes et accès premium ---------- */
 /* clientId : l’identifiant client PayPal (application « Live » du compte PayPal Business). Vide = paiement désactivé, app entièrement ouverte. */
-var PREMIUM={clientId:"",price:"5.00",trialMin:30};
+/* link : lien de paiement PayPal (sans code). Avec un lien, la personne débloque en saisissant son numéro de transaction. */
+var PREMIUM={clientId:"BAA84hDvJj4nL3qkkC-EBeUmRmY62ofQEOcMuZzpCgmt3WGRFy3O0GxgJAzJsgkTV7NYBt7hyUvb8NE0mg",link:"https://www.paypal.com/ncp/payment/ZEZNG87ZQJSFY",price:"5.00",trialMin:30};
 var inClaude=!!(window.claude&&typeof window.claude.use==="function");
 var forceEnd=/[?&]essai=fin\b/.test(location.search);
 function prem(){return P.get("premium",null);}
 function isPremium(){return inClaude||!!prem();}
-function paywallOn(){return !inClaude&&(!!PREMIUM.clientId||forceEnd);}
+function paywallOn(){return !inClaude&&(!!PREMIUM.clientId||!!PREMIUM.link||forceEnd);}
 function trialUsed(){return +P.get("trialSec",0)||0;}
 function trialLeftSec(){return forceEnd?0:Math.max(0,PREMIUM.trialMin*60-trialUsed());}
 function locked(){return paywallOn()&&!isPremium()&&trialLeftSec()<=0;}
@@ -3291,6 +3299,7 @@ function updatePill(){
 }
 var trialEnded=locked();
 function tickTrial(){
+  updatePill();
   if(!paywallOn()||isPremium()||document.hidden||forceEnd)return;
   var u=trialUsed(),max=PREMIUM.trialMin*60;if(u>=max)return;
   P.set("trialSec",Math.min(max,u+5));updatePill();
@@ -3320,14 +3329,16 @@ function openPaywall(auto){
     '<div class="price"><b>5 €</b><span>paiement unique · accès à vie</span></div>'+
     '<ul class="keys" style="margin-top:.8rem">'+BENEFITS.map(function(b){return '<li>'+esc(b)+'</li>';}).join("")+'</ul>'+
     '<div id="ppBox" class="pp-box"><p class="fine">Chargement du paiement sécurisé…</p></div>'+
+    (PREMIUM.clientId&&PREMIUM.link?'<details class="alt-pay"><summary>Le bouton ne s’affiche pas ? Payer avec le lien PayPal</summary>'+linkPayHTML()+'</details>':"")+
     '<p class="fine">Paiement sécurisé par PayPal, avec un compte PayPal ou une carte bancaire. Tes notes et ton journal restent sur ton téléphone.</p>'+
     '<div class="card" style="margin-top:1rem"><h3>Toujours gratuit</h3><p>Le compteur, le bouton SOS, les numéros d’aide, les étapes 1 à 3 et les réunions restent ouverts, même sans payer.</p></div>';
   openSheet(h);loadPayPal();
 }
 function loadPayPal(){
   var box=$("#ppBox");if(!box)return;
+  if(!PREMIUM.clientId&&PREMIUM.link){box.innerHTML=linkPayHTML();return;}
   if(!PREMIUM.clientId){box.innerHTML='<p class="warnbox">Le paiement n’est pas encore activé sur cette version de l’application.</p>';return;}
-  function fail(){var b=$("#ppBox");if(b)b.innerHTML='<p class="warnbox">Le paiement ne peut pas se charger. Vérifie ta connexion, puis rouvre cette page.</p>';}
+  function fail(){var b=$("#ppBox");if(!b)return;if(PREMIUM.link){b.innerHTML=linkPayHTML();var alt=$(".alt-pay");if(alt)alt.remove();}else b.innerHTML='<p class="warnbox">Le paiement ne peut pas se charger. Vérifie ta connexion, puis rouvre cette page.</p>';}
   function render(){
     var b=$("#ppBox");if(!b)return;b.innerHTML="";
     try{
@@ -3349,6 +3360,20 @@ function unlockPremium(id){
   P.set("premium",{id:String(id||""),at:new Date().toISOString()});
   updatePill();sheetDirty=true;
   openSheet(sheetHead("Merci, tout est débloqué")+'<div class="prayer"><p class="pr">Les 12 étapes, les exercices, le journal complet, les citations et le guide sont à toi, à vie.</p></div><p class="sheet-lead" style="margin-top:1rem">Garde ta référence de paiement : <b>'+esc(id||"")+'</b>. PayPal t’envoie aussi un reçu par e-mail.</p><div class="btn-row"><button class="btn btn-ink" data-act="close">Continuer mon chemin</button></div>');
+}
+
+function linkPayHTML(){
+  return '<ol class="steps-list pay-steps">'+
+    '<li><span class="n">1</span><div><b>Paie 5 € sur PayPal</b><p>Une page PayPal sécurisée s’ouvre : compte PayPal ou carte bancaire, sans créer de compte.</p><div class="btn-row" style="margin-top:.6rem"><a class="btn btn-gold" href="'+esc(PREMIUM.link)+'" target="_blank" rel="noopener">Payer 5 € avec PayPal</a></div></div></li>'+
+    '<li><span class="n">2</span><div><b>Reviens ici et saisis ton numéro de transaction</b><p>Il s’affiche sur la page de confirmation PayPal et dans l’e-mail de reçu : 17 lettres et chiffres.</p>'+
+      '<div class="unlock-row"><label class="sr" for="txId">Numéro de transaction PayPal</label><input class="inp" id="txId" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="24" placeholder="Ex. 8AB12345CD678901E"><button class="btn btn-ink" data-act="unlock-tx">Débloquer</button></div></div></li>'+
+  '</ol>';
+}
+function unlockWithTx(){
+  var el=$("#txId");if(!el)return;
+  var v=el.value.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(!/^[A-Z0-9]{17}$/.test(v)){toast("Le numéro de transaction PayPal fait 17 lettres et chiffres");try{el.focus();}catch(e){}return;}
+  unlockPremium(v);
 }
 
 /* Installation sur l’écran d’accueil (Android) */
@@ -3514,6 +3539,7 @@ document.addEventListener("click",function(e){
     case "soir": if(locked()){openPaywall();break;} openSoir(v&&/^\d{4}-\d\d-\d\d$/.test(v)?v:null); break;
     case "meditation": if(locked()){openPaywall();break;} openMeditation(+v||5); break;
     case "paywall": if(!$("#search").hidden)closeSearch(); openPaywall(false); break;
+    case "unlock-tx": unlockWithTx(); break;
     case "install-android": if(installEvt){installEvt.prompt();var ie=installEvt;installEvt=null;ie.userChoice.then(function(){},function(){});}var ib=$("#installAndroid");if(ib)ib.hidden=true;break;
     case "plan": openPlan(); break;
     case "tool": openTool(v); break;
