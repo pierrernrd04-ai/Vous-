@@ -65,3 +65,11 @@ petit, moyen, grand ; écran verrouillé rond, rectangulaire, en ligne). Le para
   vérifié avec le vecteur officiel FIPS-197 et contre les messages chiffrés par link.js).
 - iOS rafraîchit les widgets lui-même, en général toutes les 5 à 15 minutes : ce n'est pas instantané comme sur le PC.
 - Le script se met à jour depuis `…/Vous-/widgets/iphone.js` quand on l'ouvre dans l'appli (constante VERSION).
+- Appui sur un widget (1.1) : `scriptable:///run/Tracker?ouvrir=<onglet>` ouvre le tracker dans le navigateur intégré
+  de Scriptable, relié par le code de liaison (clé `VW2.<clé>.<canal>.<code>`). Il repart de la copie des données gardée
+  sur l'iPhone : à chaque passage, le script lit les messages complets du tracker (déchiffrement + décompression
+  « deflate » en JavaScript pur, vérifiée contre zlib et CompressionStream) et les fusionne champ par champ. À la
+  fermeture, le tracker envoie ce qui attend (`RP_LINK.flush()`) et donne son résumé aux widgets.
+- Rafraîchissement demandé à iOS : 1 min dans les 20 min qui suivent une saisie, 5 min le jour, 30 min la nuit.
+- Fusion champ par champ (tracker, `rp-link-fmeta`) : chaque champ d'une journée, des réglages et des tâches garde
+  l'heure de sa dernière modification ; une donnée saisie ailleurs n'efface plus celles saisies ici entre-temps.

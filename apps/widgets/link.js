@@ -41,7 +41,8 @@
       for (var i = 32; i < 44; i++) hex += (bits[i] < 16 ? '0' : '') + bits[i].toString(16);
       return crypto.subtle.importKey('raw', bits.slice(0, 32), 'AES-GCM', false, ['encrypt', 'decrypt']).then(function (key) {
         // clé iPhone : la même clé, prête pour les widgets Scriptable (qui n'ont pas WebCrypto)
-        return { key: key, topic: 'vous-' + hex, phone: 'VW1.' + b64(bits.slice(0, 32)) + '.' + hex };
+        // (avec le code : le script ouvre le tracker relié dans son navigateur intégré)
+        return { key: key, topic: 'vous-' + hex, phone: 'VW2.' + b64(bits.slice(0, 32)) + '.' + hex + '.' + clean(code) };
       });
     });
   }

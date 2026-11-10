@@ -5,15 +5,18 @@
 /* Widgets du tracker « Routine & Performance » pour l'écran d'accueil et l'écran verrouillé de l'iPhone.
    À coller dans Scriptable (App Store, gratuit). Le tracker envoie un résumé chiffré à chaque modification ;
    ce script lit le dernier, le déchiffre ici avec ta clé iPhone et dessine le widget.
+   Toucher un widget ouvre ton tracker, relié et à jour, dans Scriptable ; en le fermant, les widgets se redessinent.
    Paramètre du widget (appui long › Modifier le widget › Parameter) : score, eau, pas, sobriete, repas,
    sommeil, taches, banque, doit, sport, semaine (petit) ; journee, banque, taches, semaine (moyen). */
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
+const TRACKER = 'https://pierrernrd04-ai.github.io/Vous-/';
 const SRC = 'https://pierrernrd04-ai.github.io/Vous-/widgets/iphone.js';
 const RELAYS = ['https://ntfy.envs.net/', 'https://ntfy.adminforge.de/'];
 const KEY_NAME = 'vous-tracker-cle-iphone';
 const fm = FileManager.local();
 const CACHE = fm.joinPath(fm.documentsDirectory(), 'vous-tracker-widgets.json');
+const STORE = fm.joinPath(fm.documentsDirectory(), 'vous-tracker-donnees.json');
 
 /* ================= déchiffrement (AES-256-GCM, partie compteur) en JavaScript pur ================= */
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
@@ -84,9 +87,56 @@ function utf8(b) {
   }
   return out;
 }
-/* message : [1][0 = non compressé][iv 12 octets][texte chiffré][étiquette 16 octets] ; compteur GCM = iv || 2, 3, … */
+/* décompression « deflate » (RFC 1951) en JavaScript pur : les messages complets du tracker sont compressés */
+const LBASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+const LEXT = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+const DBASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
+const DEXT = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+const CLORD = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+function inflateRaw(data) {
+  let pos = 0, bit = 0, op = 0, out = new Uint8Array(Math.max(4096, data.length * 5));
+  const room = (n) => { if (op + n <= out.length) return; let m = out.length * 2; while (m < op + n) m *= 2; const o = new Uint8Array(m); o.set(out.subarray(0, op)); out = o; };
+  const bits = (n) => { let v = 0; for (let i = 0; i < n; i++) { if (pos >= data.length) throw new Error('inflate'); v |= ((data[pos] >> bit) & 1) << i; if (++bit === 8) { bit = 0; pos++; } } return v; };
+  const build = (lens) => { const count = new Uint16Array(16), offs = new Uint16Array(16), sym = new Uint16Array(lens.length); for (const l of lens) count[l]++; count[0] = 0; for (let i = 1; i < 16; i++) offs[i] = offs[i - 1] + count[i - 1]; for (let n = 0; n < lens.length; n++) if (lens[n]) sym[offs[lens[n]]++] = n; return { count, sym }; };
+  const decode = (h) => { let code = 0, first = 0, index = 0; for (let len = 1; len < 16; len++) { code |= bits(1); const c = h.count[len]; if (code - c < first) return h.sym[index + (code - first)]; index += c; first = (first + c) << 1; code <<= 1; } throw new Error('inflate'); };
+  let fixL = null, fixD = null, last = 0;
+  do {
+    last = bits(1);
+    const type = bits(2);
+    if (type === 0) {
+      if (bit) { bit = 0; pos++; }
+      const len = data[pos] | (data[pos + 1] << 8); pos += 4;
+      room(len); out.set(data.subarray(pos, pos + len), op); op += len; pos += len;
+      continue;
+    }
+    let lit, dist;
+    if (type === 1) {
+      if (!fixL) { const l = []; for (let i = 0; i < 288; i++) l.push(i < 144 ? 8 : i < 256 ? 9 : i < 280 ? 7 : 8); fixL = build(l); fixD = build(new Array(30).fill(5)); }
+      lit = fixL; dist = fixD;
+    } else if (type === 2) {
+      const nlen = bits(5) + 257, ndist = bits(5) + 1, ncode = bits(4) + 4, cl = new Array(19).fill(0);
+      for (let i = 0; i < ncode; i++) cl[CLORD[i]] = bits(3);
+      const ch = build(cl), lens = [];
+      while (lens.length < nlen + ndist) {
+        const sy = decode(ch);
+        if (sy < 16) lens.push(sy);
+        else { let rep, val = 0; if (sy === 16) { val = lens[lens.length - 1]; rep = 3 + bits(2); } else if (sy === 17) rep = 3 + bits(3); else rep = 11 + bits(7); while (rep--) lens.push(val); }
+      }
+      lit = build(lens.slice(0, nlen)); dist = build(lens.slice(nlen));
+    } else throw new Error('inflate');
+    for (;;) {
+      const sy = decode(lit);
+      if (sy < 256) { room(1); out[op++] = sy; continue; }
+      if (sy === 256) break;
+      const len = LBASE[sy - 257] + bits(LEXT[sy - 257]), ds = decode(dist), d = DBASE[ds] + bits(DEXT[ds]);
+      room(len); for (let i = 0; i < len; i++) { out[op] = out[op - d]; op++; }
+    }
+  } while (!last);
+  return out.subarray(0, op);
+}
+/* message : [1][0 ou 1 = compressé][iv 12 octets][texte chiffré][étiquette 16 octets] ; compteur GCM = iv || 2, 3, … */
 function openMsg(key, u8) {
-  if (u8[0] !== 1 || u8[1] !== 0) throw new Error('format');
+  if (u8[0] !== 1 || u8[1] > 1) throw new Error('format');
   const w = expandKey(key), ctr = new Uint8Array(16), ct = u8.subarray(14, u8.length - 16), out = new Uint8Array(ct.length);
   ctr.set(u8.subarray(2, 14));
   for (let o = 0, n = 2; o < ct.length; o += 16, n++) {
@@ -94,13 +144,16 @@ function openMsg(key, u8) {
     const ks = encryptBlock(w, ctr);
     for (let i = 0; i < 16 && o + i < ct.length; i++) out[o + i] = ct[o + i] ^ ks[i];
   }
-  return JSON.parse(utf8(out));
+  return JSON.parse(utf8(u8[1] === 1 ? inflateRaw(out) : out));
 }
+/* VW2.<clé>.<canal>.<code de liaison> ; VW1 (sans le code) affiche les widgets mais n'ouvre pas le tracker */
 function parseKey(s) {
-  const m = /^VW1\.([\w-]{43})\.([0-9a-f]{24})$/.exec(String(s || '').trim());
-  if (!m) return null;
-  const key = unb64(m[1]);
-  return key.length === 32 ? { key, topic: 'vous-' + m[2] + '-w', raw: m[0] } : null;
+  const m = /^VW([12])\.([\w-]{43})\.([0-9a-f]{24})(?:\.([0-9A-HJKMNP-TV-Z]{12}))?$/.exec(String(s || '').trim());
+  if (!m || (m[1] === '2') !== !!m[4]) return null;
+  const key = unb64(m[2]);
+  if (key.length !== 32) return null;
+  const code = m[4] ? m[4].slice(0, 4) + '-' + m[4].slice(4, 8) + '-' + m[4].slice(8) : null;
+  return { key, main: 'vous-' + m[3], topic: 'vous-' + m[3] + '-w', code, raw: m[0] };
 }
 
 /* ================= données ================= */
@@ -124,7 +177,69 @@ async function fetchSum(k) {
   }
   return { sum: best, reached };
 }
+/* copie des données sur l'iPhone : à chaque passage, le script lit les nouveaux messages complets du tracker et les
+   fusionne champ par champ (la modification la plus récente de chaque champ gagne). Le tracker ouvert depuis un widget
+   repart de cette copie : elle ne s'efface pas au bout de 12 h comme les relais. */
+const fieldT = (x, k) => (x.f ? (x.f[k] != null ? x.f[k] : x.f['*'] != null ? x.f['*'] : x.t) : x.t);
+function mergeInto(docs, id, d) {
+  if (!d || !(d.t > 0)) return false;
+  const cur = docs[id];
+  if (!cur) { docs[id] = d; return true; }
+  if (!d.v || !cur.v || typeof d.v !== 'object' || typeof cur.v !== 'object') { if (d.t > cur.t) { docs[id] = d; return true; } return false; }
+  const v = Object.assign({}, cur.v), f = Object.assign({ '*': cur.f && cur.f['*'] != null ? cur.f['*'] : cur.t }, cur.f || {});
+  let ch = false;
+  for (const k of new Set(Object.keys(cur.v).concat(Object.keys(d.v)))) {
+    const ti = fieldT(d, k);
+    if (!(ti > fieldT(cur, k))) continue;
+    if (k in d.v) v[k] = d.v[k]; else if (d.f && d.f[k] != null) delete v[k]; else continue;
+    f[k] = ti; ch = true;
+  }
+  docs[id] = { t: Math.max(cur.t, d.t), v, f };
+  return ch;
+}
+function readStore(k) {
+  try { if (fm.fileExists(STORE)) { const j = JSON.parse(fm.readString(STORE)); if (j.main === k.main) return j; } } catch (e) {}
+  return { main: k.main, last: 0, synced: 0, docs: {}, done: [] };
+}
+async function syncDocs(k) {
+  const st = readStore(k), parts = {};
+  let maxT = st.last || 0, reached = 0;
+  for (const relay of RELAYS) {
+    try {
+      const req = new Request(relay + k.main + '/json?poll=1&since=' + (st.last ? st.last - 1 : 'all'));
+      req.timeoutInterval = 10;
+      const lines = (await req.loadString()).split('\n').filter(Boolean);
+      reached++;
+      for (const l of lines) {
+        const m = JSON.parse(l), x = /^v1:([0-9A-Z]{6,16}):(\d+)\/(\d+):([\w-]+)$/.exec(m.message || '');
+        if (m.event !== 'message' || !x) continue;
+        if (m.time > maxT) maxT = m.time;
+        const p = parts[x[1]] || (parts[x[1]] = { n: +x[3], got: {} });
+        p.got[x[2]] = x[4];
+      }
+    } catch (e) { /* relais suivant */ }
+  }
+  if (!reached) return st;
+  const done = new Set(st.done || []);
+  for (const mid of Object.keys(parts)) {
+    const p = parts[mid];
+    if (done.has(mid) || Object.keys(p.got).length < p.n) continue;
+    let b = ''; for (let i = 0; i < p.n; i++) b += p.got[i];
+    try {
+      const obj = openMsg(k.key, unb64(b));
+      done.add(mid);
+      if (obj && obj.v === 1 && obj.docs) for (const id of Object.keys(obj.docs)) mergeInto(st.docs, id, obj.docs[id]);
+    } catch (e) { /* message abîmé ou d'une autre clé */ }
+  }
+  const cut = dayId(new Date(Date.now() - 45 * 864e5));
+  for (const id of Object.keys(st.docs)) if (/^\d{4}-/.test(id) && id < cut) delete st.docs[id];
+  st.last = maxT; st.synced = Date.now(); st.done = Array.from(done).slice(-500);
+  try { fm.writeString(STORE, JSON.stringify(st)); } catch (e) {}
+  return st;
+}
 async function load(k) {
+  // la copie des données suit les relais (au plus toutes les 10 min depuis un widget)
+  if (k.code && Date.now() - (readStore(k).synced || 0) > 10 * 60e3) { try { await syncDocs(k); } catch (e) {} }
   const cache = readCache();
   const r = await fetchSum(k);
   let sum = cache && cache.sum, fresh = false;
@@ -597,12 +712,23 @@ function noKey(w, fam) {
   txt(w, 'Copie d\'abord ta clé iPhone dans le tracker (Widgets PC).', Font.mediumSystemFont(10), MUTED, { lines: 3 });
 }
 
+const TAB = { eau: 'home', score: 'home', journee: 'home', sommeil: 'home', semaine: 'home', pas: 'sport', sport: 'sport', sobriete: 'beer', repas: 'food', taches: 'todo', banque: 'foxbank', doit: 'doit' };
+/* iOS décide quand redessiner : on demande 1 min juste après une saisie, 5 min le jour, 30 min la nuit */
+function nextRefresh(sum) {
+  const now = Date.now(), h = new Date().getHours();
+  if (sum && now - sum.at < 20 * 60e3) return 60e3;
+  return h < 6 ? 30 * 60e3 : 5 * 60e3;
+}
 async function build(fam, param, k) {
   const w = new ListWidget();
-  w.refreshAfterDate = new Date(Date.now() + 5 * 60 * 1000); // iOS décide, en général toutes les 5 à 15 minutes
-  if (!k) { noKey(w, fam); return w; }
+  const p = String(param || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // un appui ouvre ton tracker dans Scriptable, sur l'onglet du widget
+  let name = 'Tracker'; try { name = Script.name(); } catch (e) {}
+  w.url = 'scriptable:///run/' + encodeURIComponent(name) + '?ouvrir=' + (TAB[p] || 'home');
+  if (!k) { w.refreshAfterDate = new Date(Date.now() + 5 * 60e3); noKey(w, fam); return w; }
   const { sum } = await load(k);
-  const v = view(sum), p = String(param || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  w.refreshAfterDate = new Date(Date.now() + nextRefresh(sum));
+  const v = view(sum);
   if (fam && fam.startsWith('accessory')) lock(w, v, fam, p);
   else if (fam === 'medium') medium(w, v, p);
   else if (fam === 'large' || fam === 'extraLarge') large(w, v);
@@ -619,11 +745,11 @@ async function askKey() {
     const a = new Alert();
     a.title = 'Relier le tracker';
     a.message = "Dans le tracker de l'iPhone : Accueil › Widgets PC › Copier ma clé iPhone. Reviens ici : la clé est lue toute seule. Ou colle-la ci-dessous.";
-    a.addTextField('VW1.…', '');
+    a.addTextField('VW2.…', '');
     a.addAction('Relier'); a.addCancelAction('Annuler');
     if ((await a.presentAlert()) < 0) return null;
     k = parseKey(a.textFieldValue(0));
-    if (!k) { const e = new Alert(); e.title = 'Clé non reconnue'; e.message = 'Elle commence par VW1. Recopie-la depuis le tracker.'; e.addAction('OK'); await e.presentAlert(); return null; }
+    if (!k) { const e = new Alert(); e.title = 'Clé non reconnue'; e.message = 'Elle commence par VW2. Recopie-la depuis le tracker (Widgets PC › Copier ma clé iPhone).'; e.addAction('OK'); await e.presentAlert(); return null; }
   }
   Keychain.set(KEY_NAME, k.raw);
   const r = await fetchSum(k);
@@ -647,24 +773,56 @@ async function selfUpdate() {
   } catch (e) { return false; }
 }
 
-const savedKey = Keychain.contains(KEY_NAME) ? parseKey(Keychain.get(KEY_NAME)) : null;
+/* le tracker dans Scriptable : relié par le code de liaison, il repart de la copie des données du téléphone ;
+   à la fermeture, il envoie ce qui attend et donne son résumé aux widgets, qui se redessinent */
+async function openTracker(k, tab) {
+  if (!k.code) {
+    const a = new Alert();
+    a.title = 'Nouvelle clé nécessaire';
+    a.message = "Pour ouvrir le tracker depuis un widget, recopie ta clé iPhone : tracker › Accueil › Widgets PC › Copier ma clé iPhone, puis reviens ici.";
+    a.addAction('OK'); await a.presentAlert();
+    return;
+  }
+  let st = readStore(k);
+  try { st = await syncDocs(k); } catch (e) {}
+  const wv = new WebView();
+  await wv.loadURL(TRACKER + '#' + (tab || 'home') + '&lien=' + k.code);
+  const docs = JSON.stringify(st.docs || {});
+  await wv.evaluateJavaScript('(function wait(n){if(window.RP_LINK&&window.RP_LINK.absorb){try{window.RP_LINK.absorb(' + docs + ')}catch(e){}completion(true)}else if(n>200)completion(false);else setTimeout(function(){wait(n+1)},100)})(0)', true);
+  await wv.present(true);
+  let sum = null;
+  try { sum = await wv.evaluateJavaScript('(window.RP_LINK?window.RP_LINK.flush():Promise.resolve()).then(function(){completion(window.RP_LINK?window.RP_LINK.sum():null)},function(){completion(null)})', true); } catch (e) {}
+  if (sum && sum.date) {
+    const c = readCache();
+    if (!c || !c.sum || (sum.dt || 0) >= (c.sum.dt || 0)) writeCache({ sum, saved: Date.now() });
+  }
+}
+
+let savedKey = Keychain.contains(KEY_NAME) ? parseKey(Keychain.get(KEY_NAME)) : null;
 if (config.runsInWidget) {
   Script.setWidget(await build(config.widgetFamily, args.widgetParameter, savedKey));
 } else {
+  // une clé copiée dans le tracker est reprise toute seule (même canal : simple mise à niveau)
+  let clip = null; try { clip = parseKey(Pasteboard.paste()); } catch (e) {}
+  if (clip && (!savedKey || clip.raw !== savedKey.raw) && (!savedKey || clip.main === savedKey.main)) { Keychain.set(KEY_NAME, clip.raw); savedKey = clip; }
   let k = savedKey;
+  const q = (args.queryParameters || {});
   if (!k) k = await askKey();
-  if (k) {
+  if (k && q.ouvrir) {
+    await openTracker(k, String(q.ouvrir));
+  } else if (k) {
     const upd = await selfUpdate();
     const a = new Alert();
     a.title = 'Widgets du tracker';
-    a.message = (upd ? 'Script mis à jour (version ' + upd + '). ' : '') + 'Données lues sur les relais. Les widgets se rafraîchissent tout seuls, en général toutes les 5 à 15 minutes.';
-    ['Aperçu petit', 'Aperçu moyen', 'Aperçu grand', 'Changer de clé'].forEach((x) => a.addAction(x));
+    a.message = (upd ? 'Script mis à jour (version ' + upd + '). ' : '') + 'Touche un widget pour ouvrir ton tracker. Les aperçus montrent chaque taille avec tes données.';
+    ['Ouvrir le tracker', 'Aperçu petit', 'Aperçu moyen', 'Aperçu grand', 'Changer de clé'].forEach((x) => a.addAction(x));
     a.addCancelAction('Fermer');
     const i = await a.presentAlert();
-    if (i === 3) { Keychain.remove(KEY_NAME); await askKey(); }
-    else if (i >= 0) {
-      const w = await build(['small', 'medium', 'large'][i], null, k);
-      if (i === 0) await w.presentSmall(); else if (i === 1) await w.presentMedium(); else await w.presentLarge();
+    if (i === 0) await openTracker(k, 'home');
+    else if (i === 4) { Keychain.remove(KEY_NAME); await askKey(); }
+    else if (i > 0) {
+      const w = await build(['small', 'medium', 'large'][i - 1], null, k);
+      if (i === 1) await w.presentSmall(); else if (i === 2) await w.presentMedium(); else await w.presentLarge();
     }
   }
 }

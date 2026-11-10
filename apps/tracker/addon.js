@@ -307,7 +307,7 @@ if (window.RP_STANDALONE && window.RPLink) {
     }
     queue.clear();
     const docs = {};
-    for (const id of ids) { const v = docVal(id); if (v !== undefined && meta[id] > 0) docs[id] = { t: meta[id], v }; }
+    for (const id of ids) { const v = docVal(id); if (v !== undefined && meta[id] > 0) docs[id] = fmeta[id] ? { t: meta[id], v, f: fmeta[id] } : { t: meta[id], v }; }
     // un résumé impossible à calculer ne doit jamais bloquer l'envoi des données
     let sum = null;
     try { sum = linkSum(); } catch (e) { cfg.sumErr = String(e && e.message || e).slice(0, 80); }
@@ -327,9 +327,44 @@ if (window.RP_STANDALONE && window.RPLink) {
       schedule(null, cfg.err === 'rate' ? 60e3 : 10000);
     } finally { sending = false; linkPaint(); }
   }
+  /* fusion champ par champ : chaque champ d'une journée (eau, repas, pas…), des réglages et des tâches garde l'heure
+     de sa dernière modification ; à la réception, le plus récent gagne champ par champ. Une donnée saisie sur un autre
+     appareil (widget iPhone, PC) n'efface donc plus celles saisies ici entre-temps. */
+  const FK = 'rp-link-fmeta';
+  let fmeta = jget(FK, {});
+  const shadow = {};
+  const baseOf = (id) => (id === 'settings' ? clone(DEF) : id === 'todos' ? { items: [] } : blank(id));
+  const fieldsOf = (v) => { const o = {}; for (const k of Object.keys(v || {})) o[k] = JSON.stringify(v[k]); return o; };
+  const snapShadow = (id) => { const v = docVal(id); if (v && typeof v === 'object') shadow[id] = fieldsOf(v); };
+  docIds().forEach(snapShadow);
   function touched(id) {
     if (!cfg || !(DOC_RE.test(id) || id.startsWith('ls:'))) return;
-    meta[id] = Date.now(); jset(MK, meta); queue.add(id); schedule();
+    const now = Date.now();
+    if (DOC_RE.test(id)) {
+      const cur = fieldsOf(docVal(id)), prev = shadow[id] || fieldsOf(baseOf(id)), fm = fmeta[id] || (fmeta[id] = { '*': meta[id] || now });
+      for (const k of new Set([...Object.keys(cur), ...Object.keys(prev)])) if (cur[k] !== prev[k]) fm[k] = now;
+      shadow[id] = cur; jset(FK, fmeta);
+    }
+    meta[id] = now; jset(MK, meta); queue.add(id); schedule();
+  }
+  function mergeDoc(id, d) {
+    const local = docVal(id), rf = d.f && typeof d.f === 'object' ? d.f : null;
+    const tIn = (k) => (rf ? (rf[k] != null ? rf[k] : rf['*'] != null ? rf['*'] : d.t) : d.t);
+    if (!local || !(meta[id] > 0)) { fmeta[id] = rf ? { ...rf } : { '*': d.t }; meta[id] = d.t; return clone(d.v); }
+    const lf = fmeta[id] || (fmeta[id] = { '*': meta[id] || 0 });
+    const tLo = (k) => (lf[k] != null ? lf[k] : lf['*'] != null ? lf['*'] : meta[id] || 0);
+    const out = clone(local);
+    let any = false;
+    for (const k of new Set([...Object.keys(local), ...Object.keys(d.v)])) {
+      const ti = tIn(k);
+      if (!(ti > tLo(k))) continue;
+      if (k in d.v) { if (JSON.stringify(d.v[k]) !== JSON.stringify(local[k])) any = true; out[k] = clone(d.v[k]); }
+      else if (rf && rf[k] != null) { if (k in out) any = true; delete out[k]; }
+      else continue;
+      lf[k] = ti;
+    }
+    if (d.t > (meta[id] || 0)) meta[id] = d.t;
+    return any ? out : null;
   }
   const _saveLink = save;
   save = function (id) { _saveLink.apply(this, arguments); if (!S.ro) touched(id); };
@@ -361,19 +396,28 @@ if (window.RP_STANDALONE && window.RPLink) {
       return;
     }
     if (m.k === 's') { gotSnap = true; if (!cfg.got) { cfg.got = true; saveCfg(); } }
-    let changed = false, theme = false;
+    let changed = false, theme = false, metaDirty = false;
     for (const [id, d] of Object.entries(m.docs || {})) {
-      if (!d || !(d.t > (meta[id] || 0))) continue;
+      if (!d || !(d.t > 0)) continue;
+      if (DOC_RE.test(id)) {
+        if (!d.v || typeof d.v !== 'object') continue;
+        const merged = mergeDoc(id, d);
+        metaDirty = true;
+        if (!merged) continue;
+        apply(id, merged); snapShadow(id); if (id === 'settings') theme = true;
+        changed = true;
+        continue;
+      }
+      if (!(d.t > (meta[id] || 0))) continue;
       if (id.startsWith('ls:')) {
         const k = id.slice(3);
         if (!LS_SYNC.includes(k) || typeof d.v !== 'string') continue;
         try { localStorage.setItem(k, d.v); } catch (e) { continue; }
         lsLast[k] = d.v; embedReload.add(k === 'foxbank-v1' ? 'foxbank' : 'doit');
-      } else if (DOC_RE.test(id) && d.v && typeof d.v === 'object') {
-        apply(id, d.v); if (id === 'settings') theme = true;
       } else continue;
       meta[id] = d.t; queue.delete(id); changed = true;
     }
+    if (metaDirty) { jset(MK, meta); jset(FK, fmeta); }
     if (!changed) return;
     // enregistré tout de suite (pas après le délai habituel) : l'appli peut être fermée dans la seconde
     clearTimeout(lsT);
@@ -436,8 +480,8 @@ if (window.RP_STANDALONE && window.RPLink) {
   function disable() {
     if (conn) conn.close();
     conn = null; cfg = null; live = 'off'; queue.clear();
-    try { localStorage.removeItem(CK); localStorage.removeItem(MK); } catch (e) {}
-    meta = {};
+    try { localStorage.removeItem(CK); localStorage.removeItem(MK); localStorage.removeItem(FK); } catch (e) {}
+    meta = {}; fmeta = {};
   }
 
   /* --- réglage dans « Mes apps » --- */
@@ -547,5 +591,18 @@ if (window.RP_STANDALONE && window.RPLink) {
   if (lien && (!cfg || cfg.code !== lien)) { enable(lien, false); setTimeout(() => toast('Tracker relié à tes widgets : tes données arrivent.'), 1200); }
   else if (cfg) start();
   if ((location.hash || '').split('&')[0].toLowerCase() === '#widgets') setTimeout(linkOpen, 600);
-  window.RP_LINK = { sum: linkSum, state: () => ({ cfg, live, queue: [...queue], meta: Object.keys(meta).length, rate }) };
+  /* pour le script Scriptable de l'iPhone, qui ouvre ce tracker dans son navigateur intégré :
+     absorb() reçoit sa copie des données (plus complète que les relais, qui oublient après 12 h),
+     flush() envoie tout de suite ce qui attend avant la fermeture */
+  async function flush() {
+    if (pubT) { clearTimeout(pubT.id); pubT = null; await publish(); }
+    for (let i = 0; i < 80 && sending; i++) await new Promise((r) => setTimeout(r, 100));
+    if (queue.size && cfg && conn) await publish();
+    return true;
+  }
+  window.RP_LINK = {
+    sum: linkSum, flush, code: () => cfg && cfg.code,
+    absorb: (docs) => { if (cfg && docs && typeof docs === 'object') onData({ v: 1, k: 's', dev: 'scriptable', at: Date.now(), docs }, null); return true; },
+    state: () => ({ cfg, live, queue: [...queue], meta: Object.keys(meta).length, rate }),
+  };
 }
