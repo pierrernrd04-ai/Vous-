@@ -40,14 +40,15 @@
       var bits = new Uint8Array(buf), hex = '';
       for (var i = 32; i < 44; i++) hex += (bits[i] < 16 ? '0' : '') + bits[i].toString(16);
       return crypto.subtle.importKey('raw', bits.slice(0, 32), 'AES-GCM', false, ['encrypt', 'decrypt']).then(function (key) {
-        return { key: key, topic: 'vous-' + hex };
+        // clé iPhone : la même clé, prête pour les widgets Scriptable (qui n'ont pas WebCrypto)
+        return { key: key, topic: 'vous-' + hex, phone: 'VW1.' + b64(bits.slice(0, 32)) + '.' + hex };
       });
     });
   }
 
-  async function seal(key, obj) {
+  async function seal(key, obj, raw) {
     var data = te.encode(JSON.stringify(obj)), z = 0;
-    if (typeof CompressionStream === 'function') { try { data = await squeeze(data); z = 1; } catch (e) {} }
+    if (!raw && typeof CompressionStream === 'function') { try { data = await squeeze(data); z = 1; } catch (e) {} }
     var iv = crypto.getRandomValues(new Uint8Array(12));
     var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, data));
     var out = new Uint8Array(14 + ct.length);
@@ -164,6 +165,18 @@
       if (!ok) throw { code: R.every(function (r) { return r.sendErr === 'rate'; }) ? 'rate' : R.every(function (r) { return r.sendErr === 'offline'; }) ? 'offline' : 'relay' };
       return { n: n, ok: ok, of: R.length };
     }
+    /* résumé pour les widgets iPhone (Scriptable) : un seul message, non compressé, sur un canal à part ;
+       le widget ne lit que le dernier (since=latest) */
+    async function sendW(obj) {
+      await ready;
+      var b = b64(await seal(K.key, obj, true));
+      if (b.length > PART) throw { code: 'size' };
+      var body = 'v1:' + rid(10) + ':0/1:' + b;
+      var res = await Promise.all(R.filter(function (r) { return !/ntfy\.sh/.test(r.host); }).map(function (r) {
+        return post(r.url + K.topic + '-w', body).then(function () { return true; }, function () { return false; });
+      }));
+      if (!res.some(Boolean)) throw { code: 'relay' };
+    }
     function close() {
       closed = true; clearInterval(watch); clearInterval(pollT);
       R.forEach(function (r) { clearTimeout(r.timer); if (r.es) r.es.close(); r.es = null; r.open = false; });
@@ -171,7 +184,8 @@
       status();
     }
     function diag() { return R.map(function (r) { return { host: r.host, open: r.open, err: r.sendErr || '' }; }); }
-    return { ready: ready, send: send, close: close, kick: kick, poll: poll, diag: diag,
+    return { ready: ready, send: send, sendW: sendW, close: close, kick: kick, poll: poll, diag: diag,
+      phoneKey: function () { return K && K.phone; },
       last: function () { return Math.max.apply(null, R.map(function (r) { return r.last || 0; })); } };
   }
 
