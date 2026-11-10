@@ -1,5 +1,5 @@
 // Service worker : l'appli s'ouvre même sans réseau. La sauvegarde (/api) n'est jamais mise en cache.
-const CACHE = 'rp-3acf9e2522';
+const CACHE = 'rp-20b967b5c3';
 const SHELL = ['./index.html'];
 const EXTRA = ['./manifest.json', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 

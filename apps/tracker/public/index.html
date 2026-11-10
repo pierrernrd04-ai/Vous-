@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <script>
-window.RP_BUILD = '3acf9e2522';
+window.RP_BUILD = '20b967b5c3';
 window.RP_MODE = 'local';
 window.RP_AI_SRC = 'ai.js?v=987e0780';
 /* Version web autonome : remplace les fonctions de Claude (window.claude.use) :
@@ -231,14 +231,15 @@ window.RP_AI_SRC = 'ai.js?v=987e0780';
       var bits = new Uint8Array(buf), hex = '';
       for (var i = 32; i < 44; i++) hex += (bits[i] < 16 ? '0' : '') + bits[i].toString(16);
       return crypto.subtle.importKey('raw', bits.slice(0, 32), 'AES-GCM', false, ['encrypt', 'decrypt']).then(function (key) {
-        return { key: key, topic: 'vous-' + hex };
+        // clé iPhone : la même clé, prête pour les widgets Scriptable (qui n'ont pas WebCrypto)
+        return { key: key, topic: 'vous-' + hex, phone: 'VW1.' + b64(bits.slice(0, 32)) + '.' + hex };
       });
     });
   }
 
-  async function seal(key, obj) {
+  async function seal(key, obj, raw) {
     var data = te.encode(JSON.stringify(obj)), z = 0;
-    if (typeof CompressionStream === 'function') { try { data = await squeeze(data); z = 1; } catch (e) {} }
+    if (!raw && typeof CompressionStream === 'function') { try { data = await squeeze(data); z = 1; } catch (e) {} }
     var iv = crypto.getRandomValues(new Uint8Array(12));
     var ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, data));
     var out = new Uint8Array(14 + ct.length);
@@ -355,6 +356,18 @@ window.RP_AI_SRC = 'ai.js?v=987e0780';
       if (!ok) throw { code: R.every(function (r) { return r.sendErr === 'rate'; }) ? 'rate' : R.every(function (r) { return r.sendErr === 'offline'; }) ? 'offline' : 'relay' };
       return { n: n, ok: ok, of: R.length };
     }
+    /* résumé pour les widgets iPhone (Scriptable) : un seul message, non compressé, sur un canal à part ;
+       le widget ne lit que le dernier (since=latest) */
+    async function sendW(obj) {
+      await ready;
+      var b = b64(await seal(K.key, obj, true));
+      if (b.length > PART) throw { code: 'size' };
+      var body = 'v1:' + rid(10) + ':0/1:' + b;
+      var res = await Promise.all(R.filter(function (r) { return !/ntfy\.sh/.test(r.host); }).map(function (r) {
+        return post(r.url + K.topic + '-w', body).then(function () { return true; }, function () { return false; });
+      }));
+      if (!res.some(Boolean)) throw { code: 'relay' };
+    }
     function close() {
       closed = true; clearInterval(watch); clearInterval(pollT);
       R.forEach(function (r) { clearTimeout(r.timer); if (r.es) r.es.close(); r.es = null; r.open = false; });
@@ -362,7 +375,8 @@ window.RP_AI_SRC = 'ai.js?v=987e0780';
       status();
     }
     function diag() { return R.map(function (r) { return { host: r.host, open: r.open, err: r.sendErr || '' }; }); }
-    return { ready: ready, send: send, close: close, kick: kick, poll: poll, diag: diag,
+    return { ready: ready, send: send, sendW: sendW, close: close, kick: kick, poll: poll, diag: diag,
+      phoneKey: function () { return K && K.phone; },
       last: function () { return Math.max.apply(null, R.map(function (r) { return r.last || 0; })); } };
   }
 
@@ -4931,6 +4945,8 @@ if (window.RP_STANDALONE && window.RPLink) {
       bump(r.n);
       if (kind === 's') cfg.snap = msg.at;
       cfg.sent = msg.at; cfg.relays = [r.ok, r.of]; cfg.err = ''; if (sum) cfg.sumDate = sum.date; saveCfg();
+      // et le résumé pour les widgets de l'écran d'accueil de l'iPhone (Scriptable)
+      if (sum) conn.sendW({ v: 1, k: 'w', sum }).catch(() => {});
       for (const k of LS_SYNC) if (docs['ls:' + k]) lsLast[k] = docs['ls:' + k].v;
     } catch (e) {
       ids.forEach((id) => queue.add(id)); if (kind === 's') pubKind = 's';
@@ -5081,6 +5097,8 @@ if (window.RP_STANDALONE && window.RPLink) {
       ${safariNote()}
       <p>Sur le PC, ouvre <b>${esc(WIDGETS_URL.replace(/^https:\/\//, ''))}</b> dans Chrome et tape ce code (ou envoie-toi le lien ci-dessous). Les 4 derniers caractères s'affichent aussi en bas des widgets : ils doivent être identiques.</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="btn go sm" data-a="linkTest">${ic('bolt', 14)} Tester la liaison</button><button class="btn ghost sm" data-a="linkCopy">${ic('copy', 14)} Copier le lien</button>${navigator.share ? `<button class="btn ghost sm" data-a="linkShare">${ic('ext', 14)} Envoyer le lien</button>` : ''}<button class="btn ghost sm" data-a="linkPush">${ic('repeat', 14)} Tout renvoyer</button></div>
+      <p style="margin:12px 0 6px"><b>Widgets de l'iPhone</b> (appli Scriptable) : copie ta clé iPhone, puis lance le script Tracker dans Scriptable.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="btn ghost sm" data-a="linkPhoneKey">${ic('copy', 14)} Copier ma clé iPhone</button></div>
       <p class="small muted" id="linkState" style="margin:0 0 4px">${esc(l1)}</p>
       <p class="small muted" id="linkSent" style="margin:0 0 10px">${esc(l2)}</p>
       <button class="btn ghost sm" data-a="linkOff" style="margin-bottom:10px">Désactiver sur cet appareil</button></div>`;
@@ -5119,6 +5137,17 @@ if (window.RP_STANDALONE && window.RPLink) {
     },
     linkShare() { navigator.share({ title: 'Mes widgets PC', text: 'Widgets du tracker pour Lively Wallpaper', url: linkUrl() }).catch(() => {}); },
     linkPush() { schedule('s', 0); toast('Envoi de toutes tes données…'); },
+    // clé des widgets iPhone : à coller dans Scriptable (le script la lit dans le presse-papiers)
+    async linkPhoneKey() {
+      if (!conn) return;
+      await conn.ready.catch(() => {});
+      const k = conn.phoneKey();
+      if (!k) { toast('Clé pas encore prête : réessaie dans une seconde.'); return; }
+      (navigator.clipboard ? navigator.clipboard.writeText(k) : Promise.reject()).then(
+        () => { toast('Clé iPhone copiée : ouvre Scriptable et lance le script Tracker.'); haptic('success'); },
+        () => toast(k));
+      schedule(null, 0); // un résumé frais pour les widgets
+    },
     // aller-retour par les relais : le message de test revient à l'iPhone et s'affiche aussi sur les widgets du PC
     async linkTest(t) {
       if (!conn) return;

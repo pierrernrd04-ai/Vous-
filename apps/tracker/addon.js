@@ -318,6 +318,8 @@ if (window.RP_STANDALONE && window.RPLink) {
       bump(r.n);
       if (kind === 's') cfg.snap = msg.at;
       cfg.sent = msg.at; cfg.relays = [r.ok, r.of]; cfg.err = ''; if (sum) cfg.sumDate = sum.date; saveCfg();
+      // et le résumé pour les widgets de l'écran d'accueil de l'iPhone (Scriptable)
+      if (sum) conn.sendW({ v: 1, k: 'w', sum }).catch(() => {});
       for (const k of LS_SYNC) if (docs['ls:' + k]) lsLast[k] = docs['ls:' + k].v;
     } catch (e) {
       ids.forEach((id) => queue.add(id)); if (kind === 's') pubKind = 's';
@@ -468,6 +470,8 @@ if (window.RP_STANDALONE && window.RPLink) {
       ${safariNote()}
       <p>Sur le PC, ouvre <b>${esc(WIDGETS_URL.replace(/^https:\/\//, ''))}</b> dans Chrome et tape ce code (ou envoie-toi le lien ci-dessous). Les 4 derniers caractères s'affichent aussi en bas des widgets : ils doivent être identiques.</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="btn go sm" data-a="linkTest">${ic('bolt', 14)} Tester la liaison</button><button class="btn ghost sm" data-a="linkCopy">${ic('copy', 14)} Copier le lien</button>${navigator.share ? `<button class="btn ghost sm" data-a="linkShare">${ic('ext', 14)} Envoyer le lien</button>` : ''}<button class="btn ghost sm" data-a="linkPush">${ic('repeat', 14)} Tout renvoyer</button></div>
+      <p style="margin:12px 0 6px"><b>Widgets de l'iPhone</b> (appli Scriptable) : copie ta clé iPhone, puis lance le script Tracker dans Scriptable.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><button class="btn ghost sm" data-a="linkPhoneKey">${ic('copy', 14)} Copier ma clé iPhone</button></div>
       <p class="small muted" id="linkState" style="margin:0 0 4px">${esc(l1)}</p>
       <p class="small muted" id="linkSent" style="margin:0 0 10px">${esc(l2)}</p>
       <button class="btn ghost sm" data-a="linkOff" style="margin-bottom:10px">Désactiver sur cet appareil</button></div>`;
@@ -506,6 +510,17 @@ if (window.RP_STANDALONE && window.RPLink) {
     },
     linkShare() { navigator.share({ title: 'Mes widgets PC', text: 'Widgets du tracker pour Lively Wallpaper', url: linkUrl() }).catch(() => {}); },
     linkPush() { schedule('s', 0); toast('Envoi de toutes tes données…'); },
+    // clé des widgets iPhone : à coller dans Scriptable (le script la lit dans le presse-papiers)
+    async linkPhoneKey() {
+      if (!conn) return;
+      await conn.ready.catch(() => {});
+      const k = conn.phoneKey();
+      if (!k) { toast('Clé pas encore prête : réessaie dans une seconde.'); return; }
+      (navigator.clipboard ? navigator.clipboard.writeText(k) : Promise.reject()).then(
+        () => { toast('Clé iPhone copiée : ouvre Scriptable et lance le script Tracker.'); haptic('success'); },
+        () => toast(k));
+      schedule(null, 0); // un résumé frais pour les widgets
+    },
     // aller-retour par les relais : le message de test revient à l'iPhone et s'affiche aussi sur les widgets du PC
     async linkTest(t) {
       if (!conn) return;

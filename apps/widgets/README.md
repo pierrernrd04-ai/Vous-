@@ -49,3 +49,19 @@ Le lien a la forme `…/widgets/#XXXX-XXXX-XXXX`. Options à ajouter après le c
   (erreur 429) : widget à jour 1,2 s après l'appui, test de liaison en 1,4 s aller-retour.
 
 `link.js` est partagé : `apps/tracker/build.mjs` l'intègre à la page du tracker, la page des widgets le charge tel quel.
+
+## Widgets de l'iPhone (Scriptable)
+
+`iphone.js` : script pour l'appli gratuite Scriptable (App Store), qui affiche de vrais widgets iOS (écran d'accueil
+petit, moyen, grand ; écran verrouillé rond, rectangulaire, en ligne). Le paramètre du widget choisit l'affichage :
+`score`, `eau`, `pas`, `sobriete`, `repas`, `sommeil`, `taches`, `banque`, `doit`, `sport`, `semaine` (petit) ;
+`journee`, `banque`, `taches`, `semaine` (moyen) ; `score`, `eau`, `pas`, `sobriete` (écran verrouillé rond).
+
+- Le tracker envoie, avec chaque modification, un résumé à part (canal `…-w`, un seul message non compressé) aux
+  deux relais ntfy à fort quota. Le widget ne lit que le dernier (`since=latest`).
+- Clé : tracker › Widgets PC › **Copier ma clé iPhone** (`VW1.<clé AES en base64url>.<canal>`) ; le script la lit
+  dans le presse-papiers au premier lancement et la garde dans le trousseau d'iOS (Keychain).
+- Scriptable n'a pas WebCrypto : le script déchiffre en JavaScript pur (AES-256 en mode compteur, celui de GCM ;
+  vérifié avec le vecteur officiel FIPS-197 et contre les messages chiffrés par link.js).
+- iOS rafraîchit les widgets lui-même, en général toutes les 5 à 15 minutes : ce n'est pas instantané comme sur le PC.
+- Le script se met à jour depuis `…/Vous-/widgets/iphone.js` quand on l'ouvre dans l'appli (constante VERSION).
